@@ -419,6 +419,39 @@
             background: #22c55e;
         }
 
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #000;
+            border: 2px solid #22c55e;
+            box-shadow: 0 0 30px rgba(34, 197, 94, 0.5);
+        }
+
+        .modal-header {
+            font-size: 18px;
+            font-weight: bold;
+            color: #22c55e;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #166534;
+        }
+
+        .modal-body {
+            padding: 15px;
+        }
+
         /* Filter buttons */
         .filter-group {
             display: flex;
@@ -579,13 +612,61 @@
                     <div class="panel" style="width: 100%;">
                         <div class="panel-header">
                             <span class="panel-title">クレジットカード未払金管理</span>
+                            <button class="btn btn-small" onclick="app.showCreditSettings()" style="margin-left: auto;">⚙ 設定</button>
                         </div>
                         <div class="panel-body">
+                            <!-- Summary boxes -->
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                                <div class="summary-box" style="padding: 15px;">
+                                    <div class="summary-label" style="font-size: 11px;">今月分（引落予定）</div>
+                                    <div class="summary-value" style="font-size: 24px; color: #ef4444;" id="currentMonthCredit">¥0</div>
+                                    <div style="font-size: 10px; color: #16a34a; margin-top: 5px;">引落日: <span id="creditPaymentDay">-</span></div>
+                                </div>
+                                <div class="summary-box" style="padding: 15px;">
+                                    <div class="summary-label" style="font-size: 11px;">来月分（未確定）</div>
+                                    <div class="summary-value" style="font-size: 24px; color: #f59e0b;" id="nextMonthCredit">¥0</div>
+                                    <div style="font-size: 10px; color: #16a34a; margin-top: 5px;">対象期間: <span id="creditPeriod">-</span></div>
+                                </div>
+                            </div>
+
                             <div class="summary-box">
                                 <div class="summary-label">未払金合計</div>
                                 <div class="summary-value" id="totalCredit">¥0</div>
                             </div>
                             <div id="creditList"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Credit Settings Modal -->
+                <div class="modal" id="creditSettingsModal">
+                    <div class="modal-content" style="max-width: 500px;">
+                        <div class="modal-header">クレジットカード設定</div>
+                        <div class="modal-body" style="padding: 20px;">
+                            <div class="form-group">
+                                <label class="form-label">締め日:</label>
+                                <select class="form-input" id="creditClosingDay">
+                                    ${Array.from({length: 31}, (_, i) => i + 1).map(d => 
+                                        `<option value="${d}">${d}日</option>`
+                                    ).join('')}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">引落日:</label>
+                                <select class="form-input" id="creditPaymentDayInput">
+                                    ${Array.from({length: 31}, (_, i) => i + 1).map(d => 
+                                        `<option value="${d}">${d}日</option>`
+                                    ).join('')}
+                                </select>
+                            </div>
+                            <div style="font-size: 11px; color: #16a34a; margin-top: 10px; line-height: 1.6;">
+                                例: 締め日「月末(31日)」、引落日「翌月27日」<br>
+                                → 1/1-1/31の利用分が2/27に引き落とし
+                            </div>
+                            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                                <button class="btn" onclick="app.saveCreditSettings()" style="flex: 1; background: rgba(34, 197, 94, 0.2);">保存</button>
+                                <button class="btn" onclick="app.closeCreditSettings()" style="flex: 1;">キャンセル</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -716,6 +797,10 @@
             entries: [],
             financeEntries: [],
             recurringPayments: [],
+            creditSettings: {
+                closingDay: 31,    // 締め日（デフォルト: 月末）
+                paymentDay: 27     // 引落日（デフォルト: 27日）
+            },
 
             init() {
                 this.loadData();
@@ -742,6 +827,7 @@
                 this.entries = JSON.parse(localStorage.getItem('financialEntries') || '[]');
                 this.financeEntries = JSON.parse(localStorage.getItem('financeEntries') || '[]');
                 this.recurringPayments = JSON.parse(localStorage.getItem('recurringPayments') || '[]');
+                this.creditSettings = JSON.parse(localStorage.getItem('creditSettings') || '{"closingDay":31,"paymentDay":27}');
                 
                 // 既存データに creditPaid フィールドを追加（互換性対応）
                 this.entries = this.entries.map(entry => {
@@ -756,6 +842,7 @@
                 localStorage.setItem('financialEntries', JSON.stringify(this.entries));
                 localStorage.setItem('financeEntries', JSON.stringify(this.financeEntries));
                 localStorage.setItem('recurringPayments', JSON.stringify(this.recurringPayments));
+                localStorage.setItem('creditSettings', JSON.stringify(this.creditSettings));
             },
 
             switchTab(tab) {
@@ -801,16 +888,20 @@
                     return;
                 }
 
-                this.entries.push({
+                const entry = {
                     date,
-                    type: this.currentInputType,
+                    type: this.currentInputType, // 'income' または 'expense'
                     category,
                     amount,
                     memo,
                     isCredit,
                     creditPaid: false, // 支払済みフラグ（初期値: 未払い）
                     timestamp: Date.now()
-                });
+                };
+                
+                console.log('保存するエントリー:', entry); // デバッグ用
+                
+                this.entries.push(entry);
 
                 this.saveData();
                 this.render();
@@ -926,8 +1017,45 @@
                 const unpaidTotal = unpaidCredits.reduce((sum, e) => sum + e.amount, 0);
                 const paidTotal = paidCredits.reduce((sum, e) => sum + e.amount, 0);
                 
+                // 今月と来月の集計
+                const today = new Date();
+                const currentYear = today.getFullYear();
+                const currentMonth = today.getMonth();
+                
+                // 締め日と引落日の計算
+                const { closingDay, paymentDay } = this.creditSettings;
+                
+                // 今月の引落対象期間（先月の締め日翌日〜今月の締め日）
+                const currentPeriodStart = new Date(currentYear, currentMonth - 1, closingDay + 1);
+                const currentPeriodEnd = new Date(currentYear, currentMonth, closingDay);
+                
+                // 来月の引落対象期間（今月の締め日翌日〜来月の締め日）
+                const nextPeriodStart = new Date(currentYear, currentMonth, closingDay + 1);
+                const nextPeriodEnd = new Date(currentYear, currentMonth + 1, closingDay);
+                
+                const currentMonthTotal = unpaidCredits.filter(e => {
+                    const date = new Date(e.date);
+                    return date >= currentPeriodStart && date <= currentPeriodEnd;
+                }).reduce((sum, e) => sum + e.amount, 0);
+                
+                const nextMonthTotal = unpaidCredits.filter(e => {
+                    const date = new Date(e.date);
+                    return date >= nextPeriodStart && date <= nextPeriodEnd;
+                }).reduce((sum, e) => sum + e.amount, 0);
+                
                 document.getElementById('totalCredit').textContent = `¥${unpaidTotal.toLocaleString()}`;
                 document.getElementById('creditBalance').textContent = `¥${unpaidTotal.toLocaleString()}`;
+                document.getElementById('currentMonthCredit').textContent = `¥${currentMonthTotal.toLocaleString()}`;
+                document.getElementById('nextMonthCredit').textContent = `¥${nextMonthTotal.toLocaleString()}`;
+                
+                // 引落日と期間の表示
+                const paymentDate = new Date(currentYear, currentMonth + 1, paymentDay);
+                document.getElementById('creditPaymentDay').textContent = 
+                    `${paymentDate.getMonth() + 1}/${paymentDate.getDate()}`;
+                
+                const periodStartStr = `${nextPeriodStart.getMonth() + 1}/${nextPeriodStart.getDate()}`;
+                const periodEndStr = `${nextPeriodEnd.getMonth() + 1}/${nextPeriodEnd.getDate()}`;
+                document.getElementById('creditPeriod').textContent = `${periodStartStr}-${periodEndStr}`;
                 
                 list.innerHTML = `
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
@@ -1555,6 +1683,25 @@
                     this.saveData();
                     this.render();
                 }
+            },
+
+            showCreditSettings() {
+                document.getElementById('creditClosingDay').value = this.creditSettings.closingDay;
+                document.getElementById('creditPaymentDayInput').value = this.creditSettings.paymentDay;
+                document.getElementById('creditSettingsModal').classList.add('active');
+            },
+
+            closeCreditSettings() {
+                document.getElementById('creditSettingsModal').classList.remove('active');
+            },
+
+            saveCreditSettings() {
+                this.creditSettings.closingDay = parseInt(document.getElementById('creditClosingDay').value);
+                this.creditSettings.paymentDay = parseInt(document.getElementById('creditPaymentDayInput').value);
+                this.saveData();
+                this.render();
+                this.closeCreditSettings();
+                alert('設定を保存しました');
             }
         };
 
