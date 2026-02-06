@@ -1,0 +1,1447 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>財務ダッシュボード</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #1a2332 0%, #0f1419 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 20px;
+        }
+
+        .company-name {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            width: 40px;
+            height: 40px;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            border-radius: 50%;
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .close-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .period-selector {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .period-btn {
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .period-btn.active {
+            background: rgba(74, 144, 226, 0.3);
+            border-color: #4a90e2;
+        }
+
+        .period-btn:hover {
+            background: rgba(255,255,255,0.15);
+        }
+
+        .chart-container {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .chart-value {
+            font-size: 32px;
+            font-weight: bold;
+        }
+
+        .chart-change {
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .chart-change.positive { color: #4a90e2; }
+        .chart-change.negative { color: #ff6b6b; }
+
+        .chart-bars {
+            display: flex;
+            align-items: flex-end;
+            gap: 40px;
+            height: 200px;
+            margin-bottom: 10px;
+        }
+
+        .bar-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100%;
+        }
+
+        .bars {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+            flex: 1;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .bar {
+            width: 30px;
+            background: linear-gradient(to top, #ff8a65, #ff6b6b);
+            border-radius: 4px 4px 0 0;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .bar.primary {
+            background: linear-gradient(to top, #e0e0e0, #fff);
+        }
+
+        .bar-label {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #999;
+        }
+
+        .statement-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab-btn {
+            padding: 12px 30px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 10px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+
+        .tab-btn.active {
+            background: rgba(74, 144, 226, 0.25);
+            border-color: #4a90e2;
+        }
+
+        .tab-btn:hover {
+            background: rgba(255,255,255,0.12);
+        }
+
+        .statement-content {
+            display: none;
+        }
+
+        .statement-content.active {
+            display: block;
+        }
+
+        .data-table {
+            width: 100%;
+        }
+
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .data-row:hover {
+            background: rgba(255,255,255,0.03);
+        }
+
+        .data-label {
+            color: #ccc;
+            font-size: 14px;
+        }
+
+        .data-values {
+            display: flex;
+            gap: 80px;
+        }
+
+        .data-value {
+            width: 120px;
+            text-align: right;
+            font-size: 14px;
+        }
+
+        .section-header {
+            background: rgba(255,255,255,0.1);
+            padding: 15px 20px;
+            font-weight: bold;
+            margin-top: 20px;
+            border-radius: 8px;
+        }
+
+        .section-total {
+            background: rgba(74, 144, 226, 0.15);
+            font-weight: bold;
+            font-size: 15px;
+        }
+
+        .edit-btn {
+            padding: 12px 30px;
+            background: #ff8a65;
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin: 20px auto;
+            display: block;
+        }
+
+        .edit-btn:hover {
+            background: #ff6b6b;
+            transform: translateY(-2px);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #1a2332;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: #999;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 10px 15px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #4a90e2;
+        }
+
+        select.input-field {
+            cursor: pointer;
+            appearance: none;
+            background-image: linear-gradient(45deg, transparent 50%, #4a90e2 50%), linear-gradient(135deg, #4a90e2 50%, transparent 50%);
+            background-position: calc(100% - 20px) calc(1em), calc(100% - 15px) calc(1em);
+            background-size: 5px 5px, 5px 5px;
+            background-repeat: no-repeat;
+            padding-right: 35px;
+        }
+
+        select.input-field option {
+            background: #1a2332;
+            color: #fff;
+        }
+
+        select.input-field optgroup {
+            background: #0f1419;
+            color: #4a90e2;
+            font-weight: bold;
+        }
+
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .detail-item-info {
+            flex: 1;
+        }
+
+        .detail-item-date {
+            font-size: 11px;
+            color: #999;
+        }
+
+        .detail-item-category {
+            font-size: 13px;
+            margin: 3px 0;
+        }
+
+        .detail-item-memo {
+            font-size: 11px;
+            color: #777;
+        }
+
+        .detail-item-amount {
+            font-size: 16px;
+            font-weight: bold;
+            margin: 0 15px;
+        }
+
+        .detail-item-delete {
+            padding: 5px 10px;
+            background: rgba(255,107,107,0.2);
+            border: 1px solid #ff6b6b;
+            border-radius: 5px;
+            color: #ff6b6b;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.2s;
+        }
+
+        .detail-item-delete:hover {
+            background: #ff6b6b;
+            color: #fff;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #4a90e2;
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: #357abd;
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.15);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="company-name">収支・経理管理</div>
+        </div>
+
+        <!-- Statement Tabs -->
+        <div class="statement-tabs">
+            <button class="tab-btn active" onclick="app.switchStatement('pl')">損益計算書</button>
+            <button class="tab-btn" onclick="app.switchStatement('bs')">貸借対照表</button>
+            <button class="tab-btn" onclick="app.switchStatement('cf')">キャッシュフロー</button>
+            <div style="width: 30px;"></div>
+            <button class="tab-btn" style="background: rgba(74, 144, 226, 0.3); border-color: #4a90e2;" onclick="app.openDetailEntry()">収支入力</button>
+        </div>
+
+        <div class="period-selector">
+            <button class="period-btn" onclick="app.setPeriod('week')">週間</button>
+            <button class="period-btn active" onclick="app.setPeriod('month')">月間</button>
+            <button class="period-btn" onclick="app.setPeriod('quarter')">四半期</button>
+            <div style="width: 30px;"></div>
+            <button class="period-btn" onclick="app.openTransactionList()">収支リスト</button>
+        </div>
+
+        <!-- PL Statement -->
+        <div class="statement-content active" id="plContent">
+            <div class="chart-container">
+                <div class="chart-header">
+                    <div>
+                        <div style="color: #999; font-size: 14px;">売上高</div>
+                        <div class="chart-value" id="plRevenue">¥0</div>
+                        <div class="chart-change positive" id="plRevenueChange">+¥0 (0%)</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="color: #999; font-size: 14px;">純利益</div>
+                        <div class="chart-value" style="color: #ff8a65;" id="plProfit">¥0</div>
+                        <div class="chart-change negative" id="plProfitChange">+¥0 (0%)</div>
+                    </div>
+                </div>
+                <div class="chart-bars" id="plChartBars"></div>
+                <div class="data-table" id="plTable"></div>
+                <button class="edit-btn" onclick="app.openEditModal('pl')">データを編集</button>
+            </div>
+        </div>
+
+        <!-- BS Statement -->
+        <div class="statement-content" id="bsContent">
+            <div class="chart-container">
+                <div class="chart-header">
+                    <div>
+                        <div style="color: #999; font-size: 14px;">総資産</div>
+                        <div class="chart-value" id="bsAssets">¥0</div>
+                        <div class="chart-change positive" id="bsAssetsChange">+¥0 (0%)</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="color: #999; font-size: 14px;">純資産</div>
+                        <div class="chart-value" style="color: #ff8a65;" id="bsEquity">¥0</div>
+                        <div class="chart-change negative" id="bsEquityChange">+¥0 (0%)</div>
+                    </div>
+                </div>
+                <div class="chart-bars" id="bsChartBars"></div>
+                <div class="data-table" id="bsTable"></div>
+                <button class="edit-btn" onclick="app.openEditModal('bs')">データを編集</button>
+            </div>
+        </div>
+
+        <!-- CF Statement -->
+        <div class="statement-content" id="cfContent">
+            <div class="chart-container">
+                <div class="chart-header">
+                    <div>
+                        <div style="color: #999; font-size: 14px;">営業CF</div>
+                        <div class="chart-value" id="cfOperating">¥0</div>
+                        <div class="chart-change positive" id="cfOperatingChange">+¥0 (0%)</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="color: #999; font-size: 14px;">総キャッシュフロー</div>
+                        <div class="chart-value" style="color: #ff8a65;" id="cfNet">¥0</div>
+                        <div class="chart-change negative" id="cfNetChange">+¥0 (0%)</div>
+                    </div>
+                </div>
+                <div class="chart-bars" id="cfChartBars"></div>
+                <div class="data-table" id="cfTable"></div>
+                <button class="edit-btn" onclick="app.openEditModal('cf')">データを編集</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <div class="modal-header" id="modalTitle">データ編集</div>
+            <div id="modalBody"></div>
+            <div class="modal-buttons">
+                <button class="btn btn-primary" onclick="app.saveData()">保存</button>
+                <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail Entry Modal -->
+    <div class="modal" id="detailModal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">収支詳細入力</div>
+            <div style="margin-bottom: 20px;">
+                <label class="input-label">日付</label>
+                <input type="date" class="input-field" id="detailDate">
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label class="input-label">カテゴリ</label>
+                <select class="input-field" id="detailCategory">
+                    <optgroup label="収入">
+                        <option value="給与">給与</option>
+                        <option value="ボーナス">ボーナス</option>
+                    </optgroup>
+                    <optgroup label="支出">
+                        <option value="住居費">住居費</option>
+                        <option value="食費">食費</option>
+                        <option value="水道光熱費">水道光熱費</option>
+                        <option value="通信費">通信費</option>
+                        <option value="生命保険料">生命保険料</option>
+                        <option value="日用品費">日用品費</option>
+                        <option value="教育費">教育費</option>
+                        <option value="被服費">被服費</option>
+                        <option value="交際・娯楽費">交際・娯楽費</option>
+                        <option value="車両コスト">車両コスト</option>
+                        <option value="その他">その他</option>
+                    </optgroup>
+                </select>
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label class="input-label">金額</label>
+                <input type="number" class="input-field" id="detailAmount" placeholder="0">
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label class="input-label">メモ</label>
+                <textarea class="input-field" id="detailMemo" style="min-height: 80px;" placeholder="メモ（任意）"></textarea>
+            </div>
+            <div style="margin-bottom: 20px;">
+                <div style="font-size: 14px; font-weight: bold; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1);">入力済みデータ</div>
+                <div id="detailList" style="max-height: 200px; overflow-y: auto;"></div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-primary" onclick="app.saveDetailEntry()">追加</button>
+                <button class="btn btn-secondary" onclick="app.closeDetailModal()">閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transaction List Modal -->
+    <div class="modal" id="transactionListModal">
+        <div class="modal-content" style="max-width: 900px; max-height: 85vh;">
+            <div class="modal-header">収支情報リスト</div>
+            <div style="margin-bottom: 15px; display: flex; gap: 10px;">
+                <input type="text" class="input-field" id="searchQuery" placeholder="検索..." style="flex: 1;">
+                <select class="input-field" id="filterCategory" style="width: 150px;">
+                    <option value="">全カテゴリ</option>
+                    <option value="給与">給与</option>
+                    <option value="ボーナス">ボーナス</option>
+                    <option value="住居費">住居費</option>
+                    <option value="食費">食費</option>
+                    <option value="水道光熱費">水道光熱費</option>
+                    <option value="通信費">通信費</option>
+                    <option value="生命保険料">生命保険料</option>
+                    <option value="日用品費">日用品費</option>
+                    <option value="教育費">教育費</option>
+                    <option value="被服費">被服費</option>
+                    <option value="交際・娯楽費">交際・娯楽費</option>
+                    <option value="車両コスト">車両コスト</option>
+                    <option value="その他">その他</option>
+                </select>
+                <button class="btn btn-primary" onclick="app.filterTransactionList()">検索</button>
+            </div>
+            <div id="transactionListContent" style="max-height: 50vh; overflow-y: auto;"></div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="app.closeTransactionList()">閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const app = {
+            currentPeriod: 'quarter',
+            currentStatement: 'pl',
+            currentChart: 'cf',
+            periods: ['期1', '期2', '期3', '期4', '期5'],
+            
+            data: {
+                pl: {
+                    // 売上高
+                    salary: [359412, 260000, 260000, 260000, 272000],
+                    bonus: [352637, 0, 0, 0, 0],
+                    totalRevenue: [712049, 260000, 260000, 260000, 272000],
+                    
+                    // 費用
+                    rent: [0, 0, 0, 0, 0],
+                    food: [20000, 20000, 20000, 0, 20000],
+                    utilities: [0, 0, 0, 0, 0],
+                    communication: [10000, 10000, 10000, 10000, 10000],
+                    insurance: [0, 0, 0, 0, 0],
+                    daily: [13250, 13250, 0, 13250, 13250],
+                    education: [0, 0, 0, 0, 0],
+                    clothing: [2000, 2000, 2000, 2000, 2000],
+                    entertainment: [16000, 0, 0, 16000, 0],
+                    carCost: [134260, 0, 0, 0, 0],
+                    other: [0, 0, 0, 0, 0],
+                    totalExpenses: [195510, 45250, 32000, 41250, 45250],
+                    
+                    // 営業利益
+                    operatingProfit: [516539, 214750, 228000, 218750, 226750],
+                    
+                    // その他
+                    interestIncome: [0, 0, 0, 0, 0],
+                    investmentGain: [0, 0, 0, 0, 0],
+                    otherIncome: [0, 0, 0, 0, 0],
+                    
+                    // 税引前利益
+                    pretaxProfit: [516539, 214750, 228000, 218750, 226750],
+                    
+                    // 税金
+                    tax1: [0, 0, 0, 0, 0],
+                    tax2: [0, 0, 0, 0, 0],
+                    tax3: [0, 0, 0, 0, 0],
+                    totalTax: [0, 0, 0, 0, 0],
+                    
+                    // 純利益
+                    netProfit: [516539, 214750, 228000, 218750, 226750]
+                },
+                bs: {
+                    // 資産
+                    cash: [104417, 141353, 204353, 251103, 315853],
+                    securities: [0, 0, 0, 0, 0],
+                    totalCurrentAssets: [104417, 141353, 204353, 251103, 315853],
+                    
+                    buildings: [0, 0, 0, 0, 0],
+                    insurance: [0, 0, 0, 0, 0],
+                    foodStock: [0, 0, 0, 0, 0],
+                    depreciationAccum: [0, 0, 0, 0, 0],
+                    otherAssets: [0, 0, 0, 0, 0],
+                    totalFixedAssets: [0, 0, 0, 0, 0],
+                    
+                    totalAssets: [104417, 141353, 204353, 251103, 315853],
+                    
+                    // 負債
+                    shortTermDebt: [195510, 45250, 32000, 41250, 45250],
+                    longTermDebt: [922000, 752000, 587000, 415000, 265000],
+                    totalLiabilities: [1117510, 797250, 619000, 456250, 310250],
+                    
+                    // 純資産
+                    capital: [0, 0, 0, 0, 0],
+                    retainedEarnings: [-1013093, -655897, -414647, -205147, 5603],
+                    treasuryStock: [0, 0, 0, 0, 0],
+                    totalEquity: [-1013093, -655897, -414647, -205147, 5603],
+                    
+                    totalLiabilitiesEquity: [104417, 141353, 204353, 251103, 315853]
+                },
+                cf: {
+                    // 営業活動
+                    netProfitCF: [516539, 214750, 228000, 218750, 226750],
+                    depreciationCF: [0, 0, 0, 0, 0],
+                    workingCapitalChange: [0, 0, 0, 0, 0],
+                    otherOperating: [0, 0, 0, 0, 0],
+                    totalOperating: [516539, 214750, 228000, 218750, 226750],
+                    
+                    // 財務活動
+                    dividendPayment: [0, 0, 0, 0, 0],
+                    debtBorrowing: [280000, 170000, 165000, 172000, 150000],
+                    debtRepayment: [0, 0, 0, 0, 0],
+                    otherFinancing: [0, 0, 0, 0, 0],
+                    totalFinancing: [280000, 170000, 165000, 172000, 150000],
+                    
+                    // 投資活動
+                    investmentActivity1: [0, 0, 0, 0, 0],
+                    investmentActivity2: [0, 0, 0, 0, 0],
+                    investmentActivity3: [0, 0, 0, 0, 0],
+                    investmentActivity4: [0, 0, 0, 0, 0],
+                    totalInvesting: [0, 0, 0, 0, 0],
+                    
+                    // 現金増減
+                    netCashChange: [796539, 384750, 393000, 390750, 376750]
+                }
+            },
+
+            init() {
+                this.loadData();
+                this.calculateFromTransactions();
+                this.render();
+            },
+
+            loadData() {
+                const saved = localStorage.getItem('financialData');
+                if (saved) {
+                    this.data = JSON.parse(saved);
+                }
+            },
+
+            calculateFromTransactions() {
+                const details = JSON.parse(localStorage.getItem('detailEntries') || '[]');
+                
+                // 各期間のデータを初期化
+                for (let i = 0; i < this.periods.length; i++) {
+                    this.resetPeriodData(i);
+                }
+
+                // 取引データを集計
+                details.forEach(entry => {
+                    const periodIndex = this.getPeriodIndex(entry.date);
+                    if (periodIndex === -1) return;
+
+                    const amount = entry.amount;
+                    const category = entry.category;
+
+                    // 収入
+                    if (category === '給与') {
+                        this.data.pl.salary[periodIndex] += amount;
+                    } else if (category === 'ボーナス') {
+                        this.data.pl.bonus[periodIndex] += amount;
+                    }
+                    // 支出
+                    else if (category === '住居費') {
+                        this.data.pl.rent[periodIndex] += amount;
+                    } else if (category === '食費') {
+                        this.data.pl.food[periodIndex] += amount;
+                    } else if (category === '水道光熱費') {
+                        this.data.pl.utilities[periodIndex] += amount;
+                    } else if (category === '通信費') {
+                        this.data.pl.communication[periodIndex] += amount;
+                    } else if (category === '生命保険料') {
+                        this.data.pl.insurance[periodIndex] += amount;
+                    } else if (category === '日用品費') {
+                        this.data.pl.daily[periodIndex] += amount;
+                    } else if (category === '教育費') {
+                        this.data.pl.education[periodIndex] += amount;
+                    } else if (category === '被服費') {
+                        this.data.pl.clothing[periodIndex] += amount;
+                    } else if (category === '交際・娯楽費') {
+                        this.data.pl.entertainment[periodIndex] += amount;
+                    } else if (category === '車両コスト') {
+                        this.data.pl.carCost[periodIndex] += amount;
+                    } else if (category === 'その他') {
+                        this.data.pl.other[periodIndex] += amount;
+                    }
+                });
+
+                // PL計算
+                for (let i = 0; i < this.periods.length; i++) {
+                    // 売上高計算
+                    this.data.pl.totalRevenue[i] = this.data.pl.salary[i] + this.data.pl.bonus[i];
+                    
+                    // 費用計算
+                    this.data.pl.totalExpenses[i] = 
+                        this.data.pl.rent[i] +
+                        this.data.pl.food[i] +
+                        this.data.pl.utilities[i] +
+                        this.data.pl.communication[i] +
+                        this.data.pl.insurance[i] +
+                        this.data.pl.daily[i] +
+                        this.data.pl.education[i] +
+                        this.data.pl.clothing[i] +
+                        this.data.pl.entertainment[i] +
+                        this.data.pl.carCost[i] +
+                        this.data.pl.other[i];
+                    
+                    // 営業利益計算
+                    this.data.pl.operatingProfit[i] = this.data.pl.totalRevenue[i] - this.data.pl.totalExpenses[i];
+                    
+                    // 税引前利益
+                    this.data.pl.pretaxProfit[i] = this.data.pl.operatingProfit[i];
+                    
+                    // 純利益（税金を引く）
+                    this.data.pl.totalTax[i] = this.data.pl.tax1[i] + this.data.pl.tax2[i] + this.data.pl.tax3[i];
+                    this.data.pl.netProfit[i] = this.data.pl.pretaxProfit[i] - this.data.pl.totalTax[i];
+                }
+
+                // CF計算
+                for (let i = 0; i < this.periods.length; i++) {
+                    // 営業CF = 純利益
+                    this.data.cf.netProfitCF[i] = this.data.pl.netProfit[i];
+                    this.data.cf.totalOperating[i] = 
+                        this.data.cf.netProfitCF[i] +
+                        this.data.cf.depreciationCF[i] +
+                        this.data.cf.workingCapitalChange[i] +
+                        this.data.cf.otherOperating[i];
+                    
+                    // 財務CF
+                    this.data.cf.totalFinancing[i] = 
+                        this.data.cf.dividendPayment[i] +
+                        this.data.cf.debtBorrowing[i] +
+                        this.data.cf.debtRepayment[i] +
+                        this.data.cf.otherFinancing[i];
+                    
+                    // 投資CF
+                    this.data.cf.totalInvesting[i] = 
+                        this.data.cf.investmentActivity1[i] +
+                        this.data.cf.investmentActivity2[i] +
+                        this.data.cf.investmentActivity3[i] +
+                        this.data.cf.investmentActivity4[i];
+                    
+                    // 現金増減
+                    this.data.cf.netCashChange[i] = 
+                        this.data.cf.totalOperating[i] +
+                        this.data.cf.totalFinancing[i] +
+                        this.data.cf.totalInvesting[i];
+                }
+
+                // BS計算（累積）
+                for (let i = 0; i < this.periods.length; i++) {
+                    if (i === 0) {
+                        this.data.bs.cash[i] = this.data.cf.netCashChange[i];
+                    } else {
+                        this.data.bs.cash[i] = this.data.bs.cash[i - 1] + this.data.cf.netCashChange[i];
+                    }
+                    
+                    // 流動資産
+                    this.data.bs.totalCurrentAssets[i] = this.data.bs.cash[i] + this.data.bs.securities[i];
+                    
+                    // 固定資産
+                    this.data.bs.totalFixedAssets[i] = 
+                        this.data.bs.buildings[i] +
+                        this.data.bs.insurance[i] +
+                        this.data.bs.foodStock[i] +
+                        this.data.bs.depreciationAccum[i] +
+                        this.data.bs.otherAssets[i];
+                    
+                    // 総資産
+                    this.data.bs.totalAssets[i] = this.data.bs.totalCurrentAssets[i] + this.data.bs.totalFixedAssets[i];
+                    
+                    // 負債
+                    this.data.bs.shortTermDebt[i] = this.data.pl.totalExpenses[i]; // 当期費用を短期負債とする
+                    this.data.bs.totalLiabilities[i] = this.data.bs.shortTermDebt[i] + this.data.bs.longTermDebt[i];
+                    
+                    // 純資産（累積利益）
+                    if (i === 0) {
+                        this.data.bs.retainedEarnings[i] = this.data.pl.netProfit[i];
+                    } else {
+                        this.data.bs.retainedEarnings[i] = this.data.bs.retainedEarnings[i - 1] + this.data.pl.netProfit[i];
+                    }
+                    this.data.bs.totalEquity[i] = this.data.bs.capital[i] + this.data.bs.retainedEarnings[i] + this.data.bs.treasuryStock[i];
+                    
+                    // バランスチェック
+                    this.data.bs.totalLiabilitiesEquity[i] = this.data.bs.totalLiabilities[i] + this.data.bs.totalEquity[i];
+                }
+
+                this.saveToStorage();
+            },
+
+            resetPeriodData(index) {
+                // PLをリセット
+                this.data.pl.salary[index] = 0;
+                this.data.pl.bonus[index] = 0;
+                this.data.pl.rent[index] = 0;
+                this.data.pl.food[index] = 0;
+                this.data.pl.utilities[index] = 0;
+                this.data.pl.communication[index] = 0;
+                this.data.pl.insurance[index] = 0;
+                this.data.pl.daily[index] = 0;
+                this.data.pl.education[index] = 0;
+                this.data.pl.clothing[index] = 0;
+                this.data.pl.entertainment[index] = 0;
+                this.data.pl.carCost[index] = 0;
+                this.data.pl.other[index] = 0;
+            },
+
+            getPeriodIndex(dateStr) {
+                // 簡易実装: 月ごとに期間を分ける（0-4の5期間）
+                const date = new Date(dateStr);
+                const month = date.getMonth(); // 0-11
+                
+                // 現在の月から遡って5ヶ月分
+                const now = new Date();
+                const currentMonth = now.getMonth();
+                
+                for (let i = 0; i < 5; i++) {
+                    const targetMonth = (currentMonth - (4 - i) + 12) % 12;
+                    if (month === targetMonth) {
+                        return i;
+                    }
+                }
+                
+                // 該当しない場合は最新期に入れる
+                return 4;
+            },
+
+            saveToStorage() {
+                localStorage.setItem('financialData', JSON.stringify(this.data));
+            },
+
+            render() {
+                this.renderPL();
+                this.renderBS();
+                this.renderCF();
+                this.renderPLChart();
+                this.renderBSChart();
+                this.renderCFChart();
+            },
+
+            renderPLChart() {
+                const data1 = this.data.pl.totalRevenue;
+                const data2 = this.data.pl.netProfit;
+                this.renderChart('plChartBars', data1, data2);
+                this.updateSummary('pl', data1, data2, 'plRevenue', 'plProfit', 'plRevenueChange', 'plProfitChange');
+            },
+
+            renderBSChart() {
+                const data1 = this.data.bs.totalAssets;
+                const data2 = this.data.bs.totalEquity;
+                this.renderChart('bsChartBars', data1, data2);
+                this.updateSummary('bs', data1, data2, 'bsAssets', 'bsEquity', 'bsAssetsChange', 'bsEquityChange');
+            },
+
+            renderCFChart() {
+                const data1 = this.data.cf.totalOperating;
+                const data2 = this.data.cf.netCashChange;
+                this.renderChart('cfChartBars', data1, data2);
+                this.updateSummary('cf', data1, data2, 'cfOperating', 'cfNet', 'cfOperatingChange', 'cfNetChange');
+            },
+
+            renderChart(containerId, data1, data2) {
+                const max1 = Math.max(...data1.map(Math.abs));
+                const max2 = Math.max(...data2.map(Math.abs));
+
+                const container = document.getElementById(containerId);
+                container.innerHTML = '';
+
+                this.periods.forEach((period, i) => {
+                    const height1 = (Math.abs(data1[i]) / max1) * 100;
+                    const height2 = (Math.abs(data2[i]) / max2) * 100;
+
+                    const barGroup = document.createElement('div');
+                    barGroup.className = 'bar-group';
+                    barGroup.innerHTML = `
+                        <div class="bars">
+                            <div class="bar primary" style="height: ${height1}%"></div>
+                            <div class="bar" style="height: ${height2}%"></div>
+                        </div>
+                        <div class="bar-label">${period}</div>
+                    `;
+                    container.appendChild(barGroup);
+                });
+            },
+
+            updateSummary(type, data1, data2, id1, id2, changeId1, changeId2) {
+                const lastIndex = data1.length - 1;
+                
+                document.getElementById(id1).textContent = `¥${data1[lastIndex].toLocaleString()}`;
+                document.getElementById(id2).textContent = `¥${data2[lastIndex].toLocaleString()}`;
+
+                if (lastIndex > 0) {
+                    const change1 = data1[lastIndex] - data1[lastIndex - 1];
+                    const changePercent1 = data1[lastIndex - 1] !== 0 ? ((change1 / Math.abs(data1[lastIndex - 1])) * 100).toFixed(1) : 0;
+                    document.getElementById(changeId1).textContent = `${change1 >= 0 ? '+' : ''}¥${change1.toLocaleString()} (${changePercent1}%)`;
+                    document.getElementById(changeId1).className = `chart-change ${change1 >= 0 ? 'positive' : 'negative'}`;
+
+                    const change2 = data2[lastIndex] - data2[lastIndex - 1];
+                    const changePercent2 = data2[lastIndex - 1] !== 0 ? ((change2 / Math.abs(data2[lastIndex - 1])) * 100).toFixed(1) : 0;
+                    document.getElementById(changeId2).textContent = `${change2 >= 0 ? '+' : ''}¥${change2.toLocaleString()} (${changePercent2}%)`;
+                    document.getElementById(changeId2).className = `chart-change ${change2 >= 0 ? 'positive' : 'negative'}`;
+                }
+            },
+
+            renderPL() {
+                const table = document.getElementById('plTable');
+                const lastIndex = this.periods.length - 1;
+                const prev = lastIndex - 1;
+
+                table.innerHTML = `
+                    <div class="section-header">売上高</div>
+                    ${this.renderRow('給与', this.data.pl.salary, prev, lastIndex)}
+                    ${this.renderRow('ボーナス', this.data.pl.bonus, prev, lastIndex)}
+                    <div class="data-row section-total">
+                        <div class="data-label">総売上高</div>
+                        <div class="data-values">
+                            <div class="data-value">¥${this.data.pl.totalRevenue[prev].toLocaleString()}</div>
+                            <div class="data-value">¥${this.data.pl.totalRevenue[lastIndex].toLocaleString()}</div>
+                        </div>
+                    </div>
+
+                    <div class="section-header">費用</div>
+                    ${this.renderRow('住居費', this.data.pl.rent, prev, lastIndex)}
+                    ${this.renderRow('食費', this.data.pl.food, prev, lastIndex)}
+                    ${this.renderRow('水道光熱費', this.data.pl.utilities, prev, lastIndex)}
+                    ${this.renderRow('通信費', this.data.pl.communication, prev, lastIndex)}
+                    ${this.renderRow('生命保険料', this.data.pl.insurance, prev, lastIndex)}
+                    ${this.renderRow('日用品費', this.data.pl.daily, prev, lastIndex)}
+                    ${this.renderRow('教育費', this.data.pl.education, prev, lastIndex)}
+                    ${this.renderRow('被服費', this.data.pl.clothing, prev, lastIndex)}
+                    ${this.renderRow('交際・娯楽費', this.data.pl.entertainment, prev, lastIndex)}
+                    ${this.renderRow('車両コスト', this.data.pl.carCost, prev, lastIndex)}
+                    ${this.renderRow('その他', this.data.pl.other, prev, lastIndex)}
+                    <div class="data-row section-total">
+                        <div class="data-label">総費用</div>
+                        <div class="data-values">
+                            <div class="data-value">¥${this.data.pl.totalExpenses[prev].toLocaleString()}</div>
+                            <div class="data-value">¥${this.data.pl.totalExpenses[lastIndex].toLocaleString()}</div>
+                        </div>
+                    </div>
+
+                    <div class="data-row section-total">
+                        <div class="data-label">営業利益</div>
+                        <div class="data-values">
+                            <div class="data-value">¥${this.data.pl.operatingProfit[prev].toLocaleString()}</div>
+                            <div class="data-value">¥${this.data.pl.operatingProfit[lastIndex].toLocaleString()}</div>
+                        </div>
+                    </div>
+
+                    <div class="section-header">その他</div>
+                    ${this.renderRow('支払利息', this.data.pl.interestIncome, prev, lastIndex)}
+                    ${this.renderRow('投資損益', this.data.pl.investmentGain, prev, lastIndex)}
+                    ${this.renderRow('その他', this.data.pl.otherIncome, prev, lastIndex)}
+
+                    <div class="data-row section-total">
+                        <div class="data-label">税引前利益</div>
+                        <div class="data-values">
+                            <div class="data-value">¥${this.data.pl.pretaxProfit[prev].toLocaleString()}</div>
+                            <div class="data-value">¥${this.data.pl.pretaxProfit[lastIndex].toLocaleString()}</div>
+                        </div>
+                    </div>
+
+                    <div class="section-header">税金</div>
+                    ${this.renderRow('税金1', this.data.pl.tax1, prev, lastIndex)}
+                    ${this.renderRow('税金2', this.data.pl.tax2, prev, lastIndex)}
+                    ${this.renderRow('税金3', this.data.pl.tax3, prev, lastIndex)}
+                    <div class="data-row section-total">
+                        <div class="data-label">総諸税金</div>
+                        <div class="data-values">
+                            <div class="data-value">¥${this.data.pl.totalTax[prev].toLocaleString()}</div>
+                            <div class="data-value">¥${this.data.pl.totalTax[lastIndex].toLocaleString()}</div>
+                        </div>
+                    </div>
+
+                    <div class="data-row section-total" style="background: rgba(74, 144, 226, 0.25);">
+                        <div class="data-label">純利益</div>
+                        <div class="data-values">
+                            <div class="data-value">¥${this.data.pl.netProfit[prev].toLocaleString()}</div>
+                            <div class="data-value">¥${this.data.pl.netProfit[lastIndex].toLocaleString()}</div>
+                        </div>
+                    </div>
+                `;
+            },
+
+            renderBS() {
+                const table = document.getElementById('bsTable');
+                const lastIndex = this.periods.length - 1;
+                const prev = lastIndex - 1;
+
+                table.innerHTML = `
+                    <div class="section-header">資産</div>
+                    ${this.renderRow('現金', this.data.bs.cash, prev, lastIndex)}
+                    ${this.renderRow('有価証券', this.data.bs.securities, prev, lastIndex)}
+                    <div class="data-row section-total">
+                        <div class="data-label">総流動資産</div>
+                        <div class="data-values">
+                            <div class="data-value">¥${this.data.bs.totalCurrentAssets[prev].toLocaleString()}</div>
+                            <div class="data-value">¥${this.data.bs.totalCurrentAssets[lastIndex].toLocaleString()}</div>
+                        </div>
+                    </div>
+
+                    ${this.renderRow('建物・備品', this.data.bs.buildings, prev, lastIndex)}
+                    ${this.renderRow('保証・保険金', this.data.bs.insurance, prev, lastIndex)}
+                    ${this.renderRow('食材等在庫', this.data.bs.foodStock, prev, lastIndex)}
+                    ${this.renderRow('減価償却累計', this.data.bs.depreciationAccum, prev, lastIndex)}
+                    ${this.renderRow('のれん債却', this.data.bs.otherAssets, prev, lastIndex)}
+                    <div class="data-row section-total">
+                        <div class="data-label">総固定資産</div>
+                        <div class="data-values">
+                            <div class="data-value">¥${this.data.bs.totalFixedAssets[prev].toLocaleString()}</div>
+                            <div class="data-value">¥${this.data.bs.totalFixedAssets[lastIndex].toLocaleString()}</div>
+                        </div>
+                    </div>
+
+                    <div class="data-row section-total" style="background: rgba(74, 144, 226, 0.25);">
+                        <div class="data-label">総資産</div>
+                        <div class="data-values">
+                            <div class="data-value">¥${this.data.bs.totalAssets[prev].toLocaleString()}</div>
+                            <div class="data-value">¥${this.data.bs.totalAssets[lastIndex].toLocaleString()}</div>
+                        </div>
+                    </div>
+
+                    <div class="section-header">負債</div>
+                    ${this.renderRow('短期借入金（流動負債）', this.data.bs.shortTermDebt, prev, lastIndex)}
+                    ${this.renderRow('長期借入金（固定負債）', this.data.bs.longTermDebt, prev, lastIndex)}
+                    <div class="data-row section-total">
+                        <div class="data-label">総負債</div>
+                        <div class="data-values">
+                            <div class="data-value">¥${this.data.bs.totalLiabilities[prev].toLocaleString()}</div>
+                            <div class="data-value">¥${this.data.bs.totalLiabilities[lastIndex].toLocaleString()}</div>
+                        </div>
+                    </div>
+
+                    <div class="section-header">純資産</div>
+                    ${this.renderRow('資本金', this.data.bs.capital, prev, lastIndex)}
+                    ${this.renderRow('内部留保', this.data.bs.retainedEarnings, prev, lastIndex)}
+                    ${this.renderRow('自己株式', this.data.bs.treasuryStock, prev, lastIndex)}
+                    <div class="data-row section-total">
+                        <div class="data-label">総純資産</div>
+                        <div class="data-values">
+                            <div class="data-value">¥${this.data.bs.totalEquity[prev].toLocaleString()}</div>
+                            <div class="data-value">¥${this.data.bs.totalEquity[lastIndex].toLocaleString()}</div>
+                        </div>
+                    </div>
+
+                    <div class="data-row section-total" style="background: rgba(74, 144, 226, 0.25);">
+                        <div class="data-label">純資産と総純負債</div>
+                        <div class="data-values">
+                            <div class="data-value">¥${this.data.bs.totalLiabilitiesEquity[prev].toLocaleString()}</div>
+                            <div class="data-value">¥${this.data.bs.totalLiabilitiesEquity[lastIndex].toLocaleString()}</div>
+                        </div>
+                    </div>
+                `;
+            },
+
+            renderCF() {
+                const table = document.getElementById('cfTable');
+                const lastIndex = this.periods.length - 1;
+                const prev = lastIndex - 1;
+
+                table.innerHTML = `
+                    <div class="section-header">営業（仕事）によるキャッシュフロー</div>
+                    ${this.renderRow('純利益', this.data.cf.netProfitCF, prev, lastIndex)}
+                    ${this.renderRow('減価償却費', this.data.cf.depreciationCF, prev, lastIndex)}
+                    ${this.renderRow('配当金収入', this.data.cf.workingCapitalChange, prev, lastIndex)}
+                    ${this.renderRow('所持品等在庫変動によるフロー', this.data.cf.otherOperating, prev, lastIndex)}
+                    <div class="data-row section-total">
+                        <div class="data-label">小計</div>
+                        <div class="data-values">
+                            <div class="data-value">¥${this.data.cf.totalOperating[prev].toLocaleString()}</div>
+                            <div class="data-value">¥${this.data.cf.totalOperating[lastIndex].toLocaleString()}</div>
+                        </div>
+                    </div>
+
+                    <div class="section-header">財務によるキャッシュフロー</div>
+                    ${this.renderRow('利息支払い', this.data.cf.dividendPayment, prev, lastIndex)}
+                    ${this.renderRow('借入金', this.data.cf.debtBorrowing, prev, lastIndex)}
+                    ${this.renderRow('返済', this.data.cf.debtRepayment, prev, lastIndex)}
+                    ${this.renderRow('', this.data.cf.otherFinancing, prev, lastIndex)}
+                    <div class="data-row section-total">
+                        <div class="data-label">小計</div>
+                        <div class="data-values">
+                            <div class="data-value">¥${this.data.cf.totalFinancing[prev].toLocaleString()}</div>
+                            <div class="data-value">¥${this.data.cf.totalFinancing[lastIndex].toLocaleString()}</div>
+                        </div>
+                    </div>
+
+                    <div class="section-header">投資によるキャッシュフロー</div>
+                    ${this.renderRow('', this.data.cf.investmentActivity1, prev, lastIndex)}
+                    ${this.renderRow('', this.data.cf.investmentActivity2, prev, lastIndex)}
+                    ${this.renderRow('', this.data.cf.investmentActivity3, prev, lastIndex)}
+                    ${this.renderRow('', this.data.cf.investmentActivity4, prev, lastIndex)}
+                    <div class="data-row section-total">
+                        <div class="data-label">小計</div>
+                        <div class="data-values">
+                            <div class="data-value">¥${this.data.cf.totalInvesting[prev].toLocaleString()}</div>
+                            <div class="data-value">¥${this.data.cf.totalInvesting[lastIndex].toLocaleString()}</div>
+                        </div>
+                    </div>
+
+                    <div class="data-row section-total" style="background: rgba(74, 144, 226, 0.25);">
+                        <div class="data-label">現金の期末増減</div>
+                        <div class="data-values">
+                            <div class="data-value">¥${this.data.cf.netCashChange[prev].toLocaleString()}</div>
+                            <div class="data-value">¥${this.data.cf.netCashChange[lastIndex].toLocaleString()}</div>
+                        </div>
+                    </div>
+                `;
+            },
+
+            renderRow(label, data, prev, curr) {
+                return `
+                    <div class="data-row">
+                        <div class="data-label">${label}</div>
+                        <div class="data-values">
+                            <div class="data-value">¥${data[prev].toLocaleString()}</div>
+                            <div class="data-value">¥${data[curr].toLocaleString()}</div>
+                        </div>
+                    </div>
+                `;
+            },
+
+            switchStatement(type) {
+                this.currentStatement = type;
+                
+                document.querySelectorAll('.statement-content').forEach(el => el.classList.remove('active'));
+                document.getElementById(`${type}Content`).classList.add('active');
+
+                const tabs = document.querySelectorAll('.statement-tabs .tab-btn');
+                tabs.forEach(btn => btn.classList.remove('active'));
+                event.target.classList.add('active');
+            },
+
+            setPeriod(period) {
+                this.currentPeriod = period;
+                document.querySelectorAll('.period-btn').forEach(btn => btn.classList.remove('active'));
+                event.target.classList.add('active');
+            },
+
+            openDetailEntry(type) {
+                document.getElementById('detailModal').classList.add('active');
+                document.getElementById('detailDate').value = new Date().toISOString().split('T')[0];
+                document.getElementById('detailCategory').value = '食費';
+                document.getElementById('detailAmount').value = '';
+                document.getElementById('detailMemo').value = '';
+                this.renderDetailList();
+            },
+
+            renderDetailList() {
+                const list = document.getElementById('detailList');
+                const details = JSON.parse(localStorage.getItem('detailEntries') || '[]');
+                
+                list.innerHTML = '';
+                details.forEach((entry, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'detail-item';
+                    div.innerHTML = `
+                        <div class="detail-item-info">
+                            <div class="detail-item-date">${entry.date}</div>
+                            <div class="detail-item-category">${entry.category}</div>
+                            ${entry.memo ? `<div class="detail-item-memo">${entry.memo}</div>` : ''}
+                        </div>
+                        <div class="detail-item-amount">¥${entry.amount.toLocaleString()}</div>
+                        <button class="detail-item-delete" onclick="app.deleteDetailEntry(${index})">削除</button>
+                    `;
+                    list.appendChild(div);
+                });
+            },
+
+            saveDetailEntry() {
+                const date = document.getElementById('detailDate').value;
+                const category = document.getElementById('detailCategory').value;
+                const amount = parseFloat(document.getElementById('detailAmount').value);
+                const memo = document.getElementById('detailMemo').value.trim();
+
+                if (!date || !amount) {
+                    alert('日付と金額は必須です');
+                    return;
+                }
+
+                const details = JSON.parse(localStorage.getItem('detailEntries') || '[]');
+                details.push({ date, category, amount, memo, timestamp: Date.now() });
+                localStorage.setItem('detailEntries', JSON.stringify(details));
+
+                // 財務諸表を再計算
+                this.calculateFromTransactions();
+                this.render();
+
+                document.getElementById('detailAmount').value = '';
+                document.getElementById('detailMemo').value = '';
+                this.renderDetailList();
+            },
+
+            deleteDetailEntry(index) {
+                const details = JSON.parse(localStorage.getItem('detailEntries') || '[]');
+                details.splice(index, 1);
+                localStorage.setItem('detailEntries', JSON.stringify(details));
+                
+                // 財務諸表を再計算
+                this.calculateFromTransactions();
+                this.render();
+                
+                this.renderDetailList();
+            },
+
+            closeDetailModal() {
+                document.getElementById('detailModal').classList.remove('active');
+            },
+
+            openTransactionList() {
+                document.getElementById('transactionListModal').classList.add('active');
+                this.renderTransactionList();
+            },
+
+            renderTransactionList(filter = {}) {
+                const list = document.getElementById('transactionListContent');
+                const details = JSON.parse(localStorage.getItem('detailEntries') || '[]');
+                
+                // フィルタリング
+                let filtered = details;
+                if (filter.category) {
+                    filtered = filtered.filter(d => d.category === filter.category);
+                }
+                if (filter.search) {
+                    filtered = filtered.filter(d => 
+                        d.category.includes(filter.search) || 
+                        (d.memo && d.memo.includes(filter.search))
+                    );
+                }
+
+                // 日付順にソート（新しい順）
+                filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+                list.innerHTML = '';
+                
+                if (filtered.length === 0) {
+                    list.innerHTML = '<div style="text-align: center; color: #999; padding: 40px;">データがありません</div>';
+                    return;
+                }
+
+                // 合計計算
+                const total = filtered.reduce((sum, entry) => sum + entry.amount, 0);
+                const summary = document.createElement('div');
+                summary.style.cssText = 'background: rgba(74, 144, 226, 0.2); padding: 15px; border-radius: 8px; margin-bottom: 15px; text-align: center;';
+                summary.innerHTML = `
+                    <div style="font-size: 12px; color: #999; margin-bottom: 5px;">合計金額</div>
+                    <div style="font-size: 24px; font-weight: bold;">¥${total.toLocaleString()}</div>
+                    <div style="font-size: 12px; color: #999; margin-top: 5px;">全${filtered.length}件</div>
+                `;
+                list.appendChild(summary);
+
+                filtered.forEach((entry, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'detail-item';
+                    div.innerHTML = `
+                        <div class="detail-item-info">
+                            <div class="detail-item-date">${entry.date}</div>
+                            <div class="detail-item-category">${entry.category}</div>
+                            ${entry.memo ? `<div class="detail-item-memo">${entry.memo}</div>` : ''}
+                        </div>
+                        <div class="detail-item-amount">¥${entry.amount.toLocaleString()}</div>
+                        <button class="detail-item-delete" onclick="app.deleteDetailEntryFromList(${details.indexOf(entry)})">削除</button>
+                    `;
+                    list.appendChild(div);
+                });
+            },
+
+            filterTransactionList() {
+                const search = document.getElementById('searchQuery').value;
+                const category = document.getElementById('filterCategory').value;
+                this.renderTransactionList({ search, category });
+            },
+
+            deleteDetailEntryFromList(index) {
+                const details = JSON.parse(localStorage.getItem('detailEntries') || '[]');
+                details.splice(index, 1);
+                localStorage.setItem('detailEntries', JSON.stringify(details));
+                
+                // 財務諸表を再計算
+                this.calculateFromTransactions();
+                this.render();
+                
+                this.renderTransactionList();
+            },
+
+            closeTransactionList() {
+                document.getElementById('transactionListModal').classList.remove('active');
+            },
+
+            openEditModal(type) {
+                const modal = document.getElementById('editModal');
+                const modalBody = document.getElementById('modalBody');
+                const modalTitle = document.getElementById('modalTitle');
+
+                let fields = [];
+                if (type === 'pl') {
+                    modalTitle.textContent = '損益計算書データ編集';
+                    fields = [
+                        { label: '売上高', key: 'revenue', data: this.data.pl },
+                        { label: '売上原価', key: 'cogs', data: this.data.pl },
+                        { label: '販売費及び一般管理費', key: 'opex', data: this.data.pl }
+                    ];
+                } else if (type === 'bs') {
+                    modalTitle.textContent = '貸借対照表データ編集';
+                    fields = [
+                        { label: '現金', key: 'cash', data: this.data.bs },
+                        { label: '有価証券', key: 'securities', data: this.data.bs },
+                        { label: '在庫', key: 'inventory', data: this.data.bs },
+                        { label: '総負債', key: 'liabilities', data: this.data.bs }
+                    ];
+                } else {
+                    modalTitle.textContent = 'キャッシュフローデータ編集';
+                    fields = [
+                        { label: '営業CF', key: 'operating', data: this.data.cf },
+                        { label: '投資CF', key: 'investing', data: this.data.cf },
+                        { label: '財務CF', key: 'financing', data: this.data.cf }
+                    ];
+                }
+
+                modalBody.innerHTML = '';
+                fields.forEach(field => {
+                    const lastIndex = this.periods.length - 1;
+                    const group = document.createElement('div');
+                    group.className = 'input-group';
+                    group.innerHTML = `
+                        <label class="input-label">${field.label} (${this.periods[lastIndex]})</label>
+                        <input type="number" class="input-field" data-key="${field.key}" data-type="${type}" value="${field.data[field.key][lastIndex]}">
+                    `;
+                    modalBody.appendChild(group);
+                });
+
+                modal.classList.add('active');
+            },
+
+            saveData() {
+                const inputs = document.querySelectorAll('#modalBody .input-field');
+                const lastIndex = this.periods.length - 1;
+
+                inputs.forEach(input => {
+                    const key = input.dataset.key;
+                    const type = input.dataset.type;
+                    const value = parseFloat(input.value);
+
+                    if (type === 'pl') {
+                        this.data.pl[key][lastIndex] = value;
+                        // 計算
+                        this.data.pl.grossProfit[lastIndex] = this.data.pl.revenue[lastIndex] - this.data.pl.cogs[lastIndex];
+                        this.data.pl.operatingProfit[lastIndex] = this.data.pl.grossProfit[lastIndex] - this.data.pl.opex[lastIndex];
+                        this.data.pl.netProfit[lastIndex] = this.data.pl.operatingProfit[lastIndex] * 0.8;
+                    } else if (type === 'bs') {
+                        this.data.bs[key][lastIndex] = value;
+                        // 計算
+                        this.data.bs.totalAssets[lastIndex] = this.data.bs.cash[lastIndex] + this.data.bs.securities[lastIndex] + this.data.bs.inventory[lastIndex];
+                        this.data.bs.equity[lastIndex] = this.data.bs.totalAssets[lastIndex] - this.data.bs.liabilities[lastIndex];
+                    } else {
+                        this.data.cf[key][lastIndex] = value;
+                        // 計算
+                        this.data.cf.netCash[lastIndex] = this.data.cf.operating[lastIndex] + this.data.cf.investing[lastIndex] + this.data.cf.financing[lastIndex];
+                    }
+                });
+
+                this.saveToStorage();
+                this.render();
+                this.closeModal();
+            },
+
+            closeModal() {
+                document.getElementById('editModal').classList.remove('active');
+            }
+        };
+
+        window.addEventListener('DOMContentLoaded', () => app.init());
+    </script>
+</body>
+</html>
