@@ -120,6 +120,31 @@
             font-size: 14px;
             border-top: 1px solid #16a34a;
             padding-top: 8px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: 1px solid #166534;
+            color: #16a34a;
+            font-family: inherit;
+            font-size: 13px;
+            padding: 5px 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab-btn:hover {
+            border-color: #22c55e;
+            color: #22c55e;
+        }
+
+        .tab-btn.active {
+            border-color: #22c55e;
+            color: #22c55e;
+            background: rgba(34, 197, 94, 0.1);
         }
 
         /* Main content */
@@ -250,6 +275,88 @@
             line-height: 1.6;
             outline: none;
             text-shadow: 0 0 5px rgba(34, 197, 94, 0.5);
+        }
+
+        .task-input {
+            background: transparent;
+            border: 1px solid #166534;
+            padding: 12px 15px;
+            color: #22c55e;
+            font-family: inherit;
+            font-size: 16px;
+            font-weight: bold;
+            outline: none;
+            text-shadow: 0 0 5px rgba(34, 197, 94, 0.5);
+            margin-bottom: 10px;
+        }
+
+        .task-input:focus {
+            border-color: #22c55e;
+        }
+
+        .task-input::placeholder {
+            color: #166534;
+        }
+
+        .task-item {
+            padding: 12px;
+            border: 1px solid #166534;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .task-item:hover {
+            border-color: #22c55e;
+        }
+
+        .task-item.selected {
+            border-color: #86efac;
+            background: rgba(34, 197, 94, 0.2);
+        }
+
+        .task-item.completed {
+            opacity: 0.6;
+            text-decoration: line-through;
+        }
+
+        .task-checkbox {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #22c55e;
+            background: transparent;
+            cursor: pointer;
+            flex-shrink: 0;
+            margin-top: 2px;
+            position: relative;
+        }
+
+        .task-checkbox.checked::after {
+            content: '✓';
+            position: absolute;
+            top: -4px;
+            left: 1px;
+            color: #22c55e;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .task-content {
+            flex: 1;
+        }
+
+        .task-title {
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+
+        .task-desc {
+            font-size: 11px;
+            color: #16a34a;
         }
 
         .editor-textarea:focus {
@@ -486,11 +593,14 @@
                         <div class="datetime-time" id="currentTime"></div>
                     </div>
                 </div>
-                <div class="subtitle">&gt;&gt;&gt; PERSONAL JOURNAL SYSTEM &lt;&lt;&lt;</div>
+                <div class="subtitle">
+                    <button class="tab-btn active" onclick="app.switchTab('journal')">&gt;&gt;&gt; JOURNAL &lt;&lt;&lt;</button>
+                    <button class="tab-btn" onclick="app.switchTab('tasks')">&gt;&gt;&gt; TASKS &lt;&lt;&lt;</button>
+                </div>
             </div>
 
             <!-- Main Content -->
-            <div class="main-content">
+            <div class="main-content" id="journalContent">
                 <!-- Entries List -->
                 <div class="entries-panel">
                     <div class="entries-header">
@@ -512,6 +622,39 @@
                         <button class="btn" onclick="app.saveEntry()" id="btnSave">SAVE</button>
                         <button class="btn btn-sync" onclick="app.syncData()" id="btnSync">SYNC</button>
                         <button class="btn btn-delete" onclick="app.deleteEntry()" id="btnDelete" style="display:none;">DEL</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Task Content -->
+            <div class="main-content" id="taskContent" style="display:none;">
+                <!-- Task List -->
+                <div class="entries-panel">
+                    <div class="entries-header">
+                        <span class="entries-title">TASKS [<span id="taskCount">0</span>]</span>
+                        <button class="btn-new" onclick="app.newTask()">+ NEW</button>
+                    </div>
+                    <div class="entries-list" id="tasksList"></div>
+                </div>
+
+                <!-- Task Editor -->
+                <div class="editor-panel">
+                    <div class="editor-header" id="taskEditorHeader">NEW TASK</div>
+                    <input 
+                        type="text"
+                        class="task-input" 
+                        id="taskTitle" 
+                        placeholder="Task title..."
+                    />
+                    <textarea 
+                        class="editor-textarea" 
+                        id="taskDescription" 
+                        placeholder="Task description (optional)..."
+                        style="flex: 1;"
+                    ></textarea>
+                    <div class="editor-buttons">
+                        <button class="btn" onclick="app.saveTask()" id="btnSaveTask">SAVE</button>
+                        <button class="btn btn-delete" onclick="app.deleteTask()" id="btnDeleteTask" style="display:none;">DEL</button>
                     </div>
                 </div>
             </div>
@@ -569,10 +712,13 @@
     <script>
         const app = {
             entries: [],
+            tasks: [],
             currentEntry: null,
+            currentTask: null,
+            currentTab: 'journal',
             githubToken: localStorage.getItem('githubToken') || '',
             gistId: localStorage.getItem('gistId') || '',
-            typingSpeed: 50, // ミリ秒（速度調整可能）
+            typingSpeed: 15, // ミリ秒（速度調整可能）
 
             init() {
                 this.updateDateTime();
@@ -583,6 +729,25 @@
                 // 初回起動時に設定モーダルを表示
                 if (!this.githubToken) {
                     document.getElementById('settingsModal').classList.add('active');
+                }
+            },
+
+            switchTab(tab) {
+                this.currentTab = tab;
+                
+                // タブボタンの表示切り替え
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                event.target.classList.add('active');
+
+                // コンテンツの表示切り替え
+                if (tab === 'journal') {
+                    document.getElementById('journalContent').style.display = 'flex';
+                    document.getElementById('taskContent').style.display = 'none';
+                } else {
+                    document.getElementById('journalContent').style.display = 'none';
+                    document.getElementById('taskContent').style.display = 'flex';
                 }
             },
 
@@ -600,13 +765,25 @@
                     this.entries = JSON.parse(saved);
                     this.entries.sort((a, b) => b.timestamp - a.timestamp);
                 }
+
+                const savedTasks = localStorage.getItem('tasks');
+                if (savedTasks) {
+                    this.tasks = JSON.parse(savedTasks);
+                    this.tasks.sort((a, b) => a.completed - b.completed || b.timestamp - a.timestamp);
+                }
             },
 
             saveLocalData() {
                 localStorage.setItem('journalEntries', JSON.stringify(this.entries));
+                localStorage.setItem('tasks', JSON.stringify(this.tasks));
             },
 
             render() {
+                this.renderEntries();
+                this.renderTasks();
+            },
+
+            renderEntries() {
                 const list = document.getElementById('entriesList');
                 list.innerHTML = '';
                 
@@ -626,6 +803,46 @@
                 });
 
                 document.getElementById('entryCount').textContent = this.entries.length;
+            },
+
+            renderTasks() {
+                const list = document.getElementById('tasksList');
+                list.innerHTML = '';
+                
+                this.tasks.forEach((task, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'task-item' + (task.completed ? ' completed' : '') + (this.currentTask === task ? ' selected' : '');
+                    
+                    const checkbox = document.createElement('div');
+                    checkbox.className = 'task-checkbox' + (task.completed ? ' checked' : '');
+                    checkbox.onclick = (e) => {
+                        e.stopPropagation();
+                        this.toggleTask(task.id);
+                    };
+                    
+                    const content = document.createElement('div');
+                    content.className = 'task-content';
+                    content.onclick = () => this.editTask(task);
+                    
+                    const title = document.createElement('div');
+                    title.className = 'task-title';
+                    title.textContent = task.title;
+                    
+                    content.appendChild(title);
+                    
+                    if (task.description) {
+                        const desc = document.createElement('div');
+                        desc.className = 'task-desc';
+                        desc.textContent = task.description.substring(0, 50) + (task.description.length > 50 ? '...' : '');
+                        content.appendChild(desc);
+                    }
+                    
+                    div.appendChild(checkbox);
+                    div.appendChild(content);
+                    list.appendChild(div);
+                });
+
+                document.getElementById('taskCount').textContent = this.tasks.length;
             },
 
             newEntry() {
@@ -697,6 +914,85 @@
 
             closeModal() {
                 document.getElementById('viewModal').classList.remove('active');
+            },
+
+            newTask() {
+                this.currentTask = null;
+                document.getElementById('taskTitle').value = '';
+                document.getElementById('taskDescription').value = '';
+                document.getElementById('taskEditorHeader').textContent = 'NEW TASK';
+                document.getElementById('btnDeleteTask').style.display = 'none';
+                this.renderTasks();
+            },
+
+            saveTask() {
+                const title = document.getElementById('taskTitle').value.trim();
+                const description = document.getElementById('taskDescription').value.trim();
+                
+                if (!title) return;
+
+                if (this.currentTask) {
+                    // 既存タスクの更新
+                    this.currentTask.title = title;
+                    this.currentTask.description = description;
+                } else {
+                    // 新規タスク
+                    const task = {
+                        id: Date.now().toString(),
+                        title: title,
+                        description: description,
+                        completed: false,
+                        timestamp: Date.now()
+                    };
+                    this.tasks.push(task);
+                }
+
+                this.saveLocalData();
+                this.newTask();
+                this.renderTasks();
+
+                // 自動同期
+                if (this.githubToken && this.gistId) {
+                    this.syncData();
+                }
+            },
+
+            editTask(task) {
+                this.currentTask = task;
+                document.getElementById('taskTitle').value = task.title;
+                document.getElementById('taskDescription').value = task.description || '';
+                document.getElementById('taskEditorHeader').textContent = 'EDIT TASK';
+                document.getElementById('btnDeleteTask').style.display = 'block';
+                this.renderTasks();
+            },
+
+            toggleTask(taskId) {
+                const task = this.tasks.find(t => t.id === taskId);
+                if (task) {
+                    task.completed = !task.completed;
+                    this.saveLocalData();
+                    this.renderTasks();
+
+                    // 自動同期
+                    if (this.githubToken && this.gistId) {
+                        this.syncData();
+                    }
+                }
+            },
+
+            deleteTask() {
+                if (!this.currentTask) return;
+                if (!confirm('このタスクを削除しますか？')) return;
+
+                this.tasks = this.tasks.filter(t => t.id !== this.currentTask.id);
+                this.saveLocalData();
+                this.newTask();
+                this.renderTasks();
+
+                // 自動同期
+                if (this.githubToken && this.gistId) {
+                    this.syncData();
+                }
             },
 
             deleteEntry() {
@@ -782,11 +1078,11 @@
                 if (!response.ok) throw new Error('Gistの読み込みに失敗しました');
 
                 const gist = await response.json();
-                const content = gist.files['journal.json']?.content;
                 
-                if (content) {
-                    const remoteEntries = JSON.parse(content);
-                    // マージ処理（IDベースで重複を避ける）
+                // ジャーナルエントリーの同期
+                const journalContent = gist.files['journal.json']?.content;
+                if (journalContent) {
+                    const remoteEntries = JSON.parse(journalContent);
                     const mergedEntries = [...this.entries];
                     remoteEntries.forEach(remote => {
                         if (!mergedEntries.find(local => local.id === remote.id)) {
@@ -794,18 +1090,41 @@
                         }
                     });
                     this.entries = mergedEntries.sort((a, b) => b.timestamp - a.timestamp);
-                    this.saveLocalData();
-                    this.render();
                 }
+
+                // タスクの同期
+                const tasksContent = gist.files['tasks.json']?.content;
+                if (tasksContent) {
+                    const remoteTasks = JSON.parse(tasksContent);
+                    const mergedTasks = [...this.tasks];
+                    remoteTasks.forEach(remote => {
+                        const local = mergedTasks.find(l => l.id === remote.id);
+                        if (!local) {
+                            mergedTasks.push(remote);
+                        } else {
+                            // より新しいタイムスタンプのものを優先
+                            if (remote.timestamp > local.timestamp) {
+                                Object.assign(local, remote);
+                            }
+                        }
+                    });
+                    this.tasks = mergedTasks.sort((a, b) => a.completed - b.completed || b.timestamp - a.timestamp);
+                }
+
+                this.saveLocalData();
+                this.render();
             },
 
             async pushToGist() {
                 const data = {
-                    description: 'PIP-BOY Journal Data',
+                    description: 'PIP-BOY Journal & Tasks Data',
                     public: false,
                     files: {
                         'journal.json': {
                             content: JSON.stringify(this.entries, null, 2)
+                        },
+                        'tasks.json': {
+                            content: JSON.stringify(this.tasks, null, 2)
                         }
                     }
                 };
