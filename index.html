@@ -678,6 +678,20 @@
         </div>
     </div>
 
+    <!-- View Task Modal -->
+    <div class="modal" id="viewTaskModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">TASK VIEWER</div>
+            </div>
+            <div class="modal-body">
+                <div style="font-size: 18px; font-weight: bold; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #22c55e;" id="taskModalTitle"></div>
+                <div id="taskModalBody"></div>
+            </div>
+            <button class="modal-close" onclick="app.closeTaskModal()">[ CLOSE ]</button>
+        </div>
+    </div>
+
     <!-- Settings Modal -->
     <div class="modal" id="settingsModal">
         <div class="modal-content settings-content">
@@ -719,6 +733,7 @@
             githubToken: localStorage.getItem('githubToken') || '',
             gistId: localStorage.getItem('gistId') || '',
             typingSpeed: 30, // ミリ秒（速度調整可能）
+            audioContext: null,
 
             init() {
                 this.updateDateTime();
@@ -726,10 +741,39 @@
                 this.loadLocalData();
                 this.render();
 
+                // Audio Context初期化（ユーザー操作後に初期化）
+                document.addEventListener('click', () => {
+                    if (!this.audioContext) {
+                        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    }
+                }, { once: true });
+
                 // 初回起動時に設定モーダルを表示
                 if (!this.githubToken) {
                     document.getElementById('settingsModal').classList.add('active');
                 }
+            },
+
+            playPipSound() {
+                if (!this.audioContext) return;
+
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(this.audioContext.destination);
+
+                // 低めの周波数でPip-Boy風の重厚な音
+                oscillator.frequency.value = 280; // 280Hz（低め）
+                oscillator.type = 'square'; // 矩形波でレトロな音質
+
+                // 音量エンベロープ（短く鋭い音）
+                const now = this.audioContext.currentTime;
+                gainNode.gain.setValueAtTime(0.08, now); // 音量を小さめに
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+
+                oscillator.start(now);
+                oscillator.stop(now + 0.05);
             },
 
             switchTab(tab) {
@@ -822,7 +866,7 @@
                     
                     const content = document.createElement('div');
                     content.className = 'task-content';
-                    content.onclick = () => this.editTask(task);
+                    content.onclick = () => this.viewTask(task);
                     
                     const title = document.createElement('div');
                     title.className = 'task-title';
@@ -895,16 +939,22 @@
                 element.textContent = '';
                 for (let i = 0; i < text.length; i++) {
                     element.textContent += text[i];
+                    
+                    // 文字が表示されたらピッ音を鳴らす（スペースと改行以外）
+                    if (text[i] !== ' ' && text[i] !== '\n' && text[i] !== '\r') {
+                        this.playPipSound();
+                    }
+                    
                     if (i < text.length - 1) {
                         let delay = this.typingSpeed;
                         
-                        // 句点やピリオドの後は長めの間
+                        // 句点やピリオドの後は15倍の間
                         if (text[i] === '。' || text[i] === '.' || text[i] === '!' || text[i] === '?') {
-                            delay = this.typingSpeed * 15; // 15倍の間
+                            delay = this.typingSpeed * 15;
                         }
-                        // 読点、カンマ、中点の後は短めの間
+                        // 読点、カンマ、中点の後は4倍の間
                         else if (text[i] === '、' || text[i] === ',' || text[i] === '・') {
-                            delay = this.typingSpeed * 4; // 8倍の間
+                            delay = this.typingSpeed * 4;
                         }
                         
                         await new Promise(resolve => setTimeout(resolve, delay));
@@ -964,6 +1014,29 @@
                 document.getElementById('taskEditorHeader').textContent = 'EDIT TASK';
                 document.getElementById('btnDeleteTask').style.display = 'block';
                 this.renderTasks();
+            },
+
+            async viewTask(task) {
+                const modal = document.getElementById('viewTaskModal');
+                const titleEl = document.getElementById('taskModalTitle');
+                const bodyEl = document.getElementById('taskModalBody');
+
+                titleEl.textContent = task.title;
+                bodyEl.textContent = '';
+                modal.classList.add('active');
+
+                // タイピングエフェクト
+                if (task.description) {
+                    await this.typeText(task.description, bodyEl);
+                } else {
+                    bodyEl.textContent = '(説明なし)';
+                    bodyEl.style.color = '#16a34a';
+                    bodyEl.style.fontStyle = 'italic';
+                }
+            },
+
+            closeTaskModal() {
+                document.getElementById('viewTaskModal').classList.remove('active');
             },
 
             toggleTask(taskId) {
