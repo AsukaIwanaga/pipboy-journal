@@ -298,6 +298,15 @@
             color: #166534;
         }
 
+        .task-input[type="date"] {
+            color-scheme: dark;
+        }
+
+        .task-input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(0.6) sepia(1) saturate(5) hue-rotate(90deg);
+            cursor: pointer;
+        }
+
         .task-item {
             padding: 12px;
             border: 1px solid #166534;
@@ -357,6 +366,100 @@
         .task-desc {
             font-size: 11px;
             color: #16a34a;
+        }
+
+        .mission-task-item {
+            padding: 10px;
+            border: 1px solid #166534;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .mission-task-item.completed {
+            opacity: 0.6;
+        }
+
+        .mission-task-order {
+            width: 24px;
+            height: 24px;
+            border: 2px solid #22c55e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .mission-task-content {
+            flex: 1;
+        }
+
+        .mission-task-title {
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+
+        .mission-task-desc {
+            font-size: 11px;
+            color: #16a34a;
+        }
+
+        .mission-task-remove {
+            padding: 4px 8px;
+            border: 1px solid #dc2626;
+            background: transparent;
+            color: #dc2626;
+            font-family: inherit;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mission-task-remove:hover {
+            background: #dc2626;
+            color: #000;
+        }
+
+        .mission-item {
+            padding: 12px;
+            border: 1px solid #166534;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mission-item:hover {
+            border-color: #22c55e;
+        }
+
+        .mission-item.selected {
+            border-color: #86efac;
+            background: rgba(34, 197, 94, 0.2);
+        }
+
+        .mission-title {
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+
+        .mission-progress {
+            font-size: 11px;
+            color: #16a34a;
+            margin-bottom: 3px;
+        }
+
+        .mission-deadline {
+            font-size: 10px;
+            color: #22c55e;
+        }
+
+        .mission-deadline.overdue {
+            color: #dc2626;
         }
 
         .editor-textarea:focus {
@@ -596,6 +699,7 @@
                 <div class="subtitle">
                     <button class="tab-btn active" onclick="app.switchTab('journal')">&gt;&gt;&gt; JOURNAL &lt;&lt;&lt;</button>
                     <button class="tab-btn" onclick="app.switchTab('tasks')">&gt;&gt;&gt; TASKS &lt;&lt;&lt;</button>
+                    <button class="tab-btn" onclick="app.switchTab('missions')">&gt;&gt;&gt; MISSIONS &lt;&lt;&lt;</button>
                 </div>
             </div>
 
@@ -659,6 +763,74 @@
                 </div>
             </div>
 
+            <!-- Mission Content -->
+            <div class="main-content" id="missionContent" style="display:none;">
+                <!-- Mission List -->
+                <div class="entries-panel">
+                    <div class="entries-header">
+                        <span class="entries-title">MISSIONS [<span id="missionCount">0</span>]</span>
+                        <button class="btn-new" onclick="app.newMission()">+ NEW</button>
+                    </div>
+                    <div class="entries-list" id="missionsList"></div>
+                </div>
+
+                <!-- Mission Editor -->
+                <div class="editor-panel" id="missionEditor" style="display:flex;">
+                    <div class="editor-header" id="missionEditorHeader">NEW MISSION</div>
+                    <input 
+                        type="text"
+                        class="task-input" 
+                        id="missionTitle" 
+                        placeholder="Mission title..."
+                    />
+                    <textarea 
+                        class="editor-textarea" 
+                        id="missionDescription" 
+                        placeholder="Mission description..."
+                        style="flex: 0 0 80px;"
+                    ></textarea>
+                    <div style="margin: 10px 0;">
+                        <label style="font-size: 12px; margin-bottom: 5px; display: block;">DEADLINE:</label>
+                        <input 
+                            type="date"
+                            class="task-input" 
+                            id="missionDeadline"
+                            style="margin-bottom: 0;"
+                        />
+                    </div>
+                    <div style="flex: 1; border: 1px solid #166534; padding: 10px; margin: 10px 0; overflow-y: auto;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #16a34a;">
+                            <span style="font-size: 12px; font-weight: bold;">WORKFLOW TASKS</span>
+                            <button class="btn-new" onclick="app.addMissionTask()">+ ADD</button>
+                        </div>
+                        <div id="missionTasksList"></div>
+                    </div>
+                    <div class="editor-buttons">
+                        <button class="btn" onclick="app.saveMission()" id="btnSaveMission">SAVE</button>
+                        <button class="btn btn-delete" onclick="app.deleteMission()" id="btnDeleteMission" style="display:none;">DEL</button>
+                    </div>
+                </div>
+
+                <!-- Mission Viewer -->
+                <div class="editor-panel" id="missionViewer" style="display:none;">
+                    <div class="editor-header" id="missionViewerHeader"></div>
+                    <div style="padding: 15px; border: 1px solid #166534; background: rgba(0,0,0,0.3); margin-bottom: 10px;">
+                        <div style="font-size: 13px; margin-bottom: 10px; line-height: 1.6;" id="missionViewDescription"></div>
+                        <div style="font-size: 12px; color: #16a34a;" id="missionViewDeadline"></div>
+                    </div>
+                    <div style="flex: 1; border: 1px solid #166534; padding: 15px; overflow-y: auto;">
+                        <div style="font-size: 12px; font-weight: bold; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #16a34a;">
+                            WORKFLOW TASKS (<span id="missionProgress">0/0</span>)
+                        </div>
+                        <div id="missionViewTasksList"></div>
+                    </div>
+                    <div class="editor-buttons">
+                        <button class="btn" onclick="app.editMissionFromViewer()">EDIT</button>
+                        <button class="btn btn-delete" onclick="app.closeMissionViewer()">CLOSE</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Footer -->
             <div class="footer">
                 VAULT-TEC APPROVED | RADIATION LEVEL: SAFE | SYSTEM STATUS: OPERATIONAL
@@ -688,7 +860,10 @@
                 <div style="font-size: 18px; font-weight: bold; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #22c55e;" id="taskModalTitle"></div>
                 <div id="taskModalBody"></div>
             </div>
-            <button class="modal-close" onclick="app.closeTaskModal()">[ CLOSE ]</button>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="modal-close" style="flex: 1;" onclick="app.editTaskFromModal()">[ EDIT ]</button>
+                <button class="modal-close" style="flex: 1;" onclick="app.closeTaskModal()">[ CLOSE ]</button>
+            </div>
         </div>
     </div>
 
@@ -727,8 +902,11 @@
         const app = {
             entries: [],
             tasks: [],
+            missions: [],
             currentEntry: null,
             currentTask: null,
+            currentMission: null,
+            currentViewedTask: null,
             currentTab: 'journal',
             githubToken: localStorage.getItem('githubToken') || '',
             gistId: localStorage.getItem('gistId') || '',
@@ -786,12 +964,16 @@
                 event.target.classList.add('active');
 
                 // コンテンツの表示切り替え
+                document.getElementById('journalContent').style.display = 'none';
+                document.getElementById('taskContent').style.display = 'none';
+                document.getElementById('missionContent').style.display = 'none';
+                
                 if (tab === 'journal') {
                     document.getElementById('journalContent').style.display = 'flex';
-                    document.getElementById('taskContent').style.display = 'none';
-                } else {
-                    document.getElementById('journalContent').style.display = 'none';
+                } else if (tab === 'tasks') {
                     document.getElementById('taskContent').style.display = 'flex';
+                } else if (tab === 'missions') {
+                    document.getElementById('missionContent').style.display = 'flex';
                 }
             },
 
@@ -815,16 +997,24 @@
                     this.tasks = JSON.parse(savedTasks);
                     this.tasks.sort((a, b) => a.completed - b.completed || b.timestamp - a.timestamp);
                 }
+
+                const savedMissions = localStorage.getItem('missions');
+                if (savedMissions) {
+                    this.missions = JSON.parse(savedMissions);
+                    this.missions.sort((a, b) => b.timestamp - a.timestamp);
+                }
             },
 
             saveLocalData() {
                 localStorage.setItem('journalEntries', JSON.stringify(this.entries));
                 localStorage.setItem('tasks', JSON.stringify(this.tasks));
+                localStorage.setItem('missions', JSON.stringify(this.missions));
             },
 
             render() {
                 this.renderEntries();
                 this.renderTasks();
+                this.renderMissions();
             },
 
             renderEntries() {
@@ -1021,6 +1211,8 @@
                 const titleEl = document.getElementById('taskModalTitle');
                 const bodyEl = document.getElementById('taskModalBody');
 
+                this.currentViewedTask = task; // 表示中のタスクを保存
+
                 titleEl.textContent = task.title;
                 bodyEl.textContent = '';
                 modal.classList.add('active');
@@ -1035,8 +1227,16 @@
                 }
             },
 
+            editTaskFromModal() {
+                this.closeTaskModal();
+                if (this.currentViewedTask) {
+                    this.editTask(this.currentViewedTask);
+                }
+            },
+
             closeTaskModal() {
                 document.getElementById('viewTaskModal').classList.remove('active');
+                this.currentViewedTask = null;
             },
 
             toggleTask(taskId) {
@@ -1050,6 +1250,250 @@
                     if (this.githubToken && this.gistId) {
                         this.syncData();
                     }
+                }
+            },
+
+            // ========== Mission Management ==========
+
+            renderMissions() {
+                const list = document.getElementById('missionsList');
+                list.innerHTML = '';
+                
+                this.missions.forEach(mission => {
+                    const div = document.createElement('div');
+                    div.className = 'mission-item' + (this.currentMission === mission ? ' selected' : '');
+                    div.onclick = () => this.viewMission(mission);
+                    
+                    const completedCount = mission.tasks.filter(t => t.completed).length;
+                    const totalCount = mission.tasks.length;
+                    
+                    const title = document.createElement('div');
+                    title.className = 'mission-title';
+                    title.textContent = mission.title;
+                    
+                    const progress = document.createElement('div');
+                    progress.className = 'mission-progress';
+                    progress.textContent = `Progress: ${completedCount}/${totalCount} tasks`;
+                    
+                    const deadline = document.createElement('div');
+                    const deadlineDate = new Date(mission.deadline);
+                    const today = new Date();
+                    const isOverdue = deadlineDate < today && completedCount < totalCount;
+                    deadline.className = 'mission-deadline' + (isOverdue ? ' overdue' : '');
+                    deadline.textContent = `Deadline: ${mission.deadline}`;
+                    
+                    div.appendChild(title);
+                    div.appendChild(progress);
+                    div.appendChild(deadline);
+                    list.appendChild(div);
+                });
+
+                document.getElementById('missionCount').textContent = this.missions.length;
+            },
+
+            newMission() {
+                this.currentMission = null;
+                document.getElementById('missionTitle').value = '';
+                document.getElementById('missionDescription').value = '';
+                document.getElementById('missionDeadline').value = '';
+                document.getElementById('missionTasksList').innerHTML = '';
+                document.getElementById('missionEditorHeader').textContent = 'NEW MISSION';
+                document.getElementById('btnDeleteMission').style.display = 'none';
+                document.getElementById('missionEditor').style.display = 'flex';
+                document.getElementById('missionViewer').style.display = 'none';
+                this.renderMissions();
+            },
+
+            addMissionTask() {
+                const tasksList = document.getElementById('missionTasksList');
+                const order = tasksList.children.length + 1;
+                
+                const div = document.createElement('div');
+                div.className = 'mission-task-item';
+                div.innerHTML = `
+                    <div class="mission-task-order">${order}</div>
+                    <div class="mission-task-content" style="flex: 1;">
+                        <input type="text" class="task-input" placeholder="Task title..." style="margin-bottom: 5px;" />
+                        <textarea class="editor-textarea" placeholder="Description (optional)..." style="height: 60px; font-size: 12px; padding: 8px;"></textarea>
+                    </div>
+                    <button class="mission-task-remove" onclick="this.parentElement.remove(); app.reorderMissionTasks();">×</button>
+                `;
+                tasksList.appendChild(div);
+            },
+
+            reorderMissionTasks() {
+                const tasksList = document.getElementById('missionTasksList');
+                Array.from(tasksList.children).forEach((item, index) => {
+                    const orderDiv = item.querySelector('.mission-task-order');
+                    if (orderDiv) orderDiv.textContent = index + 1;
+                });
+            },
+
+            saveMission() {
+                const title = document.getElementById('missionTitle').value.trim();
+                const description = document.getElementById('missionDescription').value.trim();
+                const deadline = document.getElementById('missionDeadline').value;
+                
+                if (!title || !deadline) {
+                    alert('タイトルと期日は必須です');
+                    return;
+                }
+
+                const tasksList = document.getElementById('missionTasksList');
+                const tasks = [];
+                Array.from(tasksList.children).forEach((item, index) => {
+                    const titleInput = item.querySelector('input[type="text"]');
+                    const descTextarea = item.querySelector('textarea');
+                    const taskTitle = titleInput?.value.trim();
+                    
+                    if (taskTitle) {
+                        tasks.push({
+                            id: Date.now().toString() + '_' + index,
+                            title: taskTitle,
+                            description: descTextarea?.value.trim() || '',
+                            order: index + 1,
+                            completed: false
+                        });
+                    }
+                });
+
+                if (this.currentMission) {
+                    // 編集
+                    this.currentMission.title = title;
+                    this.currentMission.description = description;
+                    this.currentMission.deadline = deadline;
+                    this.currentMission.tasks = tasks;
+                } else {
+                    // 新規作成
+                    const mission = {
+                        id: Date.now().toString(),
+                        title: title,
+                        description: description,
+                        deadline: deadline,
+                        tasks: tasks,
+                        timestamp: Date.now()
+                    };
+                    this.missions.push(mission);
+                }
+
+                this.saveLocalData();
+                this.newMission();
+                this.renderMissions();
+
+                // 自動同期
+                if (this.githubToken && this.gistId) {
+                    this.syncData();
+                }
+            },
+
+            viewMission(mission) {
+                this.currentMission = mission;
+                document.getElementById('missionViewerHeader').textContent = mission.title;
+                document.getElementById('missionViewDescription').textContent = mission.description || '(説明なし)';
+                document.getElementById('missionViewDeadline').textContent = `Deadline: ${mission.deadline}`;
+                
+                const completedCount = mission.tasks.filter(t => t.completed).length;
+                document.getElementById('missionProgress').textContent = `${completedCount}/${mission.tasks.length}`;
+                
+                const tasksList = document.getElementById('missionViewTasksList');
+                tasksList.innerHTML = '';
+                
+                mission.tasks.forEach(task => {
+                    const div = document.createElement('div');
+                    div.className = 'mission-task-item' + (task.completed ? ' completed' : '');
+                    
+                    const order = document.createElement('div');
+                    order.className = 'mission-task-order';
+                    order.textContent = task.order;
+                    
+                    const checkbox = document.createElement('div');
+                    checkbox.className = 'task-checkbox' + (task.completed ? ' checked' : '');
+                    checkbox.style.marginLeft = '10px';
+                    checkbox.onclick = () => {
+                        task.completed = !task.completed;
+                        this.saveLocalData();
+                        this.viewMission(mission);
+                        this.renderMissions();
+                        if (this.githubToken && this.gistId) {
+                            this.syncData();
+                        }
+                    };
+                    
+                    const content = document.createElement('div');
+                    content.className = 'mission-task-content';
+                    content.style.flex = '1';
+                    
+                    const title = document.createElement('div');
+                    title.className = 'mission-task-title';
+                    title.textContent = task.title;
+                    title.style.textDecoration = task.completed ? 'line-through' : 'none';
+                    
+                    content.appendChild(title);
+                    
+                    if (task.description) {
+                        const desc = document.createElement('div');
+                        desc.className = 'mission-task-desc';
+                        desc.textContent = task.description;
+                        content.appendChild(desc);
+                    }
+                    
+                    div.appendChild(order);
+                    div.appendChild(checkbox);
+                    div.appendChild(content);
+                    tasksList.appendChild(div);
+                });
+                
+                document.getElementById('missionEditor').style.display = 'none';
+                document.getElementById('missionViewer').style.display = 'flex';
+                this.renderMissions();
+            },
+
+            editMissionFromViewer() {
+                if (!this.currentMission) return;
+                
+                document.getElementById('missionTitle').value = this.currentMission.title;
+                document.getElementById('missionDescription').value = this.currentMission.description || '';
+                document.getElementById('missionDeadline').value = this.currentMission.deadline;
+                document.getElementById('missionEditorHeader').textContent = 'EDIT MISSION';
+                document.getElementById('btnDeleteMission').style.display = 'block';
+                
+                const tasksList = document.getElementById('missionTasksList');
+                tasksList.innerHTML = '';
+                
+                this.currentMission.tasks.forEach((task, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'mission-task-item';
+                    div.innerHTML = `
+                        <div class="mission-task-order">${task.order}</div>
+                        <div class="mission-task-content" style="flex: 1;">
+                            <input type="text" class="task-input" value="${task.title}" placeholder="Task title..." style="margin-bottom: 5px;" />
+                            <textarea class="editor-textarea" placeholder="Description (optional)..." style="height: 60px; font-size: 12px; padding: 8px;">${task.description || ''}</textarea>
+                        </div>
+                        <button class="mission-task-remove" onclick="this.parentElement.remove(); app.reorderMissionTasks();">×</button>
+                    `;
+                    tasksList.appendChild(div);
+                });
+                
+                document.getElementById('missionEditor').style.display = 'flex';
+                document.getElementById('missionViewer').style.display = 'none';
+            },
+
+            closeMissionViewer() {
+                this.newMission();
+            },
+
+            deleteMission() {
+                if (!this.currentMission) return;
+                if (!confirm('このミッションを削除しますか？')) return;
+
+                this.missions = this.missions.filter(m => m.id !== this.currentMission.id);
+                this.saveLocalData();
+                this.newMission();
+                this.renderMissions();
+
+                // 自動同期
+                if (this.githubToken && this.gistId) {
+                    this.syncData();
                 }
             },
 
@@ -1175,7 +1619,6 @@
                         if (!local) {
                             mergedTasks.push(remote);
                         } else {
-                            // より新しいタイムスタンプのものを優先
                             if (remote.timestamp > local.timestamp) {
                                 Object.assign(local, remote);
                             }
@@ -1184,13 +1627,31 @@
                     this.tasks = mergedTasks.sort((a, b) => a.completed - b.completed || b.timestamp - a.timestamp);
                 }
 
+                // ミッションの同期
+                const missionsContent = gist.files['missions.json']?.content;
+                if (missionsContent) {
+                    const remoteMissions = JSON.parse(missionsContent);
+                    const mergedMissions = [...this.missions];
+                    remoteMissions.forEach(remote => {
+                        const local = mergedMissions.find(l => l.id === remote.id);
+                        if (!local) {
+                            mergedMissions.push(remote);
+                        } else {
+                            if (remote.timestamp > local.timestamp) {
+                                Object.assign(local, remote);
+                            }
+                        }
+                    });
+                    this.missions = mergedMissions.sort((a, b) => b.timestamp - a.timestamp);
+                }
+
                 this.saveLocalData();
                 this.render();
             },
 
             async pushToGist() {
                 const data = {
-                    description: 'PIP-BOY Journal & Tasks Data',
+                    description: 'PIP-BOY Journal, Tasks & Missions Data',
                     public: false,
                     files: {
                         'journal.json': {
@@ -1198,6 +1659,9 @@
                         },
                         'tasks.json': {
                             content: JSON.stringify(this.tasks, null, 2)
+                        },
+                        'missions.json': {
+                            content: JSON.stringify(this.missions, null, 2)
                         }
                     }
                 };
