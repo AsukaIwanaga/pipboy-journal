@@ -1063,19 +1063,24 @@
                 event.target.classList.add('active');
 
                 // コンテンツの表示切り替え
-                document.getElementById('journalContent').style.display = 'none';
-                document.getElementById('taskContent').style.display = 'none';
-                document.getElementById('missionContent').style.display = 'none';
-                document.getElementById('budgetContent').style.display = 'none';
+                const journalContent = document.getElementById('journalContent');
+                const taskContent = document.getElementById('taskContent');
+                const missionContent = document.getElementById('missionContent');
+                const budgetContent = document.getElementById('budgetContent');
                 
-                if (tab === 'journal') {
-                    document.getElementById('journalContent').style.display = 'flex';
-                } else if (tab === 'tasks') {
-                    document.getElementById('taskContent').style.display = 'flex';
-                } else if (tab === 'missions') {
-                    document.getElementById('missionContent').style.display = 'flex';
-                } else if (tab === 'budget') {
-                    document.getElementById('budgetContent').style.display = 'flex';
+                if (journalContent) journalContent.style.display = 'none';
+                if (taskContent) taskContent.style.display = 'none';
+                if (missionContent) missionContent.style.display = 'none';
+                if (budgetContent) budgetContent.style.display = 'none';
+                
+                if (tab === 'journal' && journalContent) {
+                    journalContent.style.display = 'flex';
+                } else if (tab === 'tasks' && taskContent) {
+                    taskContent.style.display = 'flex';
+                } else if (tab === 'missions' && missionContent) {
+                    missionContent.style.display = 'flex';
+                } else if (tab === 'budget' && budgetContent) {
+                    budgetContent.style.display = 'flex';
                 }
             },
 
@@ -1291,10 +1296,15 @@
 
             newEntry() {
                 this.currentEntry = null;
-                document.getElementById('editorText').value = '';
-                document.getElementById('editorHeader').textContent = 'NEW ENTRY';
-                document.getElementById('btnDelete').style.display = 'none';
-                document.getElementById('btnSave').disabled = false;
+                const editorText = document.getElementById('editorText');
+                const editorHeader = document.getElementById('editorHeader');
+                const btnDelete = document.getElementById('btnDelete');
+                const btnSave = document.getElementById('btnSave');
+                
+                if (editorText) editorText.value = '';
+                if (editorHeader) editorHeader.textContent = 'NEW ENTRY';
+                if (btnDelete) btnDelete.style.display = 'none';
+                if (btnSave) btnSave.disabled = false;
                 this.render();
             },
 
@@ -1368,10 +1378,15 @@
 
             newTask() {
                 this.currentTask = null;
-                document.getElementById('taskTitle').value = '';
-                document.getElementById('taskDescription').value = '';
-                document.getElementById('taskEditorHeader').textContent = 'NEW TASK';
-                document.getElementById('btnDeleteTask').style.display = 'none';
+                const taskTitle = document.getElementById('taskTitle');
+                const taskDescription = document.getElementById('taskDescription');
+                const taskEditorHeader = document.getElementById('taskEditorHeader');
+                const btnDeleteTask = document.getElementById('btnDeleteTask');
+                
+                if (taskTitle) taskTitle.value = '';
+                if (taskDescription) taskDescription.value = '';
+                if (taskEditorHeader) taskEditorHeader.textContent = 'NEW TASK';
+                if (btnDeleteTask) btnDeleteTask.style.display = 'none';
                 this.renderTasks();
             },
 
