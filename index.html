@@ -572,7 +572,7 @@
             currentEntry: null,
             githubToken: localStorage.getItem('githubToken') || '',
             gistId: localStorage.getItem('gistId') || '',
-            typingSpeed: 30, // ミリ秒（速度調整可能）
+            typingSpeed: 15, // ミリ秒（速度調整可能）
 
             init() {
                 this.updateDateTime();
@@ -679,7 +679,18 @@
                 for (let i = 0; i < text.length; i++) {
                     element.textContent += text[i];
                     if (i < text.length - 1) {
-                        await new Promise(resolve => setTimeout(resolve, this.typingSpeed));
+                        let delay = this.typingSpeed;
+                        
+                        // 句点やピリオドの後は長めの間
+                        if (text[i] === '。' || text[i] === '.' || text[i] === '!' || text[i] === '?') {
+                            delay = this.typingSpeed * 15; // 15倍の間
+                        }
+                        // 読点、カンマ、中点の後は短めの間
+                        else if (text[i] === '、' || text[i] === ',' || text[i] === '・') {
+                            delay = this.typingSpeed * 8; // 8倍の間
+                        }
+                        
+                        await new Promise(resolve => setTimeout(resolve, delay));
                     }
                 }
             },
