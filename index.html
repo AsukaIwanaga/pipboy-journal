@@ -371,10 +371,11 @@
         .mission-task-item {
             padding: 10px;
             border: 1px solid #166534;
-            margin-bottom: 8px;
+            margin-bottom: 12px;
             display: flex;
             align-items: center;
             gap: 10px;
+            background: rgba(0,0,0,0.3);
         }
 
         .mission-task-item.completed {
@@ -409,14 +410,15 @@
         }
 
         .mission-task-remove {
-            padding: 4px 8px;
+            padding: 6px 12px;
             border: 1px solid #dc2626;
             background: transparent;
             color: #dc2626;
             font-family: inherit;
-            font-size: 10px;
+            font-size: 11px;
             cursor: pointer;
             transition: all 0.2s;
+            white-space: nowrap;
         }
 
         .mission-task-remove:hover {
@@ -1310,13 +1312,15 @@
                 
                 const div = document.createElement('div');
                 div.className = 'mission-task-item';
+                div.style.display = 'block';
+                div.style.padding = '15px';
                 div.innerHTML = `
-                    <div class="mission-task-order">${order}</div>
-                    <div class="mission-task-content" style="flex: 1;">
-                        <input type="text" class="task-input" placeholder="Task title..." style="margin-bottom: 5px;" />
-                        <textarea class="editor-textarea" placeholder="Description (optional)..." style="height: 60px; font-size: 12px; padding: 8px;"></textarea>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <div class="mission-task-order">${order}</div>
+                        <button class="mission-task-remove" onclick="this.parentElement.parentElement.remove(); app.reorderMissionTasks();">REMOVE</button>
                     </div>
-                    <button class="mission-task-remove" onclick="this.parentElement.remove(); app.reorderMissionTasks();">×</button>
+                    <input type="text" class="task-input" placeholder="Task title..." style="margin-bottom: 8px; width: 100%;" />
+                    <textarea class="editor-textarea" placeholder="Description (optional)..." style="height: 80px; font-size: 13px; padding: 10px; width: 100%; resize: vertical;"></textarea>
                 `;
                 tasksList.appendChild(div);
             },
@@ -1463,13 +1467,15 @@
                 this.currentMission.tasks.forEach((task, index) => {
                     const div = document.createElement('div');
                     div.className = 'mission-task-item';
+                    div.style.display = 'block';
+                    div.style.padding = '15px';
                     div.innerHTML = `
-                        <div class="mission-task-order">${task.order}</div>
-                        <div class="mission-task-content" style="flex: 1;">
-                            <input type="text" class="task-input" value="${task.title}" placeholder="Task title..." style="margin-bottom: 5px;" />
-                            <textarea class="editor-textarea" placeholder="Description (optional)..." style="height: 60px; font-size: 12px; padding: 8px;">${task.description || ''}</textarea>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <div class="mission-task-order">${task.order}</div>
+                            <button class="mission-task-remove" onclick="this.parentElement.parentElement.remove(); app.reorderMissionTasks();">REMOVE</button>
                         </div>
-                        <button class="mission-task-remove" onclick="this.parentElement.remove(); app.reorderMissionTasks();">×</button>
+                        <input type="text" class="task-input" value="${task.title}" placeholder="Task title..." style="margin-bottom: 8px; width: 100%;" />
+                        <textarea class="editor-textarea" placeholder="Description (optional)..." style="height: 80px; font-size: 13px; padding: 10px; width: 100%; resize: vertical;">${task.description || ''}</textarea>
                     `;
                     tasksList.appendChild(div);
                 });
