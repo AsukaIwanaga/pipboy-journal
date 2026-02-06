@@ -330,6 +330,26 @@
             cursor: pointer;
         }
 
+        select.task-input {
+            cursor: pointer;
+            background-image: linear-gradient(45deg, transparent 50%, #22c55e 50%), linear-gradient(135deg, #22c55e 50%, transparent 50%);
+            background-position: calc(100% - 20px) calc(1em), calc(100% - 15px) calc(1em);
+            background-size: 5px 5px, 5px 5px;
+            background-repeat: no-repeat;
+            padding-right: 35px;
+        }
+
+        select.task-input option {
+            background: #000;
+            color: #22c55e;
+        }
+
+        select.task-input optgroup {
+            background: #064e3b;
+            color: #86efac;
+            font-weight: bold;
+        }
+
         .task-item {
             padding: 12px;
             border: 1px solid #166534;
@@ -734,6 +754,7 @@
                     <button class="tab-btn active" onclick="app.switchTab('journal')">&gt;&gt;&gt; JOURNAL &lt;&lt;&lt;</button>
                     <button class="tab-btn" onclick="app.switchTab('tasks')">&gt;&gt;&gt; TASKS &lt;&lt;&lt;</button>
                     <button class="tab-btn" onclick="app.switchTab('missions')">&gt;&gt;&gt; MISSIONS &lt;&lt;&lt;</button>
+                    <button class="tab-btn" onclick="app.switchTab('budget')">&gt;&gt;&gt; BUDGET &lt;&lt;&lt;</button>
                 </div>
             </div>
 
@@ -870,6 +891,95 @@
                 </div>
             </div>
 
+            <!-- Budget Content -->
+            <div class="main-content" id="budgetContent" style="display:none;">
+                <!-- View Toggle & Transactions List -->
+                <div class="entries-panel">
+                    <div class="entries-header">
+                        <span class="entries-title">TRANSACTIONS [<span id="transactionCount">0</span>]</span>
+                        <button class="btn-new" onclick="app.newTransaction()">+ NEW</button>
+                    </div>
+                    <div style="display: flex; gap: 5px; padding: 8px; border-bottom: 1px solid #166534; font-size: 10px;">
+                        <button class="filter-btn active" onclick="app.setBudgetView('list')">LIST</button>
+                        <button class="filter-btn" onclick="app.setBudgetView('summary')">SUMMARY</button>
+                    </div>
+                    <!-- List View -->
+                    <div class="entries-list" id="transactionsList"></div>
+                    <!-- Summary View -->
+                    <div id="summaryView" style="display:none; padding: 15px; overflow-y: auto; height: 100%;"></div>
+                </div>
+
+                <!-- Transaction Editor -->
+                <div class="editor-panel">
+                    <div class="editor-header" id="budgetEditorHeader">NEW TRANSACTION</div>
+                    
+                    <div style="margin-bottom: 10px;">
+                        <label style="font-size: 11px; margin-bottom: 5px; display: block;">TYPE:</label>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="filter-btn active" id="typeIncome" onclick="app.setTransactionType('income')" style="flex: 1;">INCOME</button>
+                            <button class="filter-btn" id="typeExpense" onclick="app.setTransactionType('expense')" style="flex: 1;">EXPENSE</button>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 10px;">
+                        <label style="font-size: 11px; margin-bottom: 5px; display: block;">DATE:</label>
+                        <input 
+                            type="date"
+                            class="task-input" 
+                            id="transactionDate"
+                            style="margin-bottom: 0;"
+                        />
+                    </div>
+
+                    <div style="margin-bottom: 10px;">
+                        <label style="font-size: 11px; margin-bottom: 5px; display: block;">CATEGORY:</label>
+                        <select class="task-input" id="transactionCategory" style="margin-bottom: 0;">
+                            <optgroup label="Income">
+                                <option value="給与">給与</option>
+                                <option value="副業">副業</option>
+                                <option value="その他収入">その他収入</option>
+                            </optgroup>
+                            <optgroup label="Expense">
+                                <option value="食費">食費</option>
+                                <option value="交通費">交通費</option>
+                                <option value="住居費">住居費</option>
+                                <option value="光熱費">光熱費</option>
+                                <option value="通信費">通信費</option>
+                                <option value="娯楽費">娯楽費</option>
+                                <option value="医療費">医療費</option>
+                                <option value="その他支出">その他支出</option>
+                            </optgroup>
+                        </select>
+                    </div>
+
+                    <div style="margin-bottom: 10px;">
+                        <label style="font-size: 11px; margin-bottom: 5px; display: block;">AMOUNT:</label>
+                        <input 
+                            type="number"
+                            class="task-input" 
+                            id="transactionAmount"
+                            placeholder="0"
+                            style="margin-bottom: 0; font-size: 20px; font-weight: bold;"
+                        />
+                    </div>
+
+                    <div style="flex: 1; display: flex; flex-direction: column;">
+                        <label style="font-size: 11px; margin-bottom: 5px; display: block;">MEMO:</label>
+                        <textarea 
+                            class="editor-textarea" 
+                            id="transactionMemo" 
+                            placeholder="Memo (optional)..."
+                            style="flex: 1;"
+                        ></textarea>
+                    </div>
+
+                    <div class="editor-buttons">
+                        <button class="btn" onclick="app.saveTransaction()" id="btnSaveTransaction">SAVE</button>
+                        <button class="btn btn-delete" onclick="app.deleteTransaction()" id="btnDeleteTransaction" style="display:none;">DEL</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Footer -->
             <div class="footer">
                 VAULT-TEC APPROVED | RADIATION LEVEL: SAFE | SYSTEM STATUS: OPERATIONAL
@@ -942,12 +1052,16 @@
             entries: [],
             tasks: [],
             missions: [],
+            transactions: [],
             currentEntry: null,
             currentTask: null,
             currentMission: null,
+            currentTransaction: null,
             currentViewedTask: null,
             currentTab: 'journal',
             taskFilter: 'all', // all, standalone, mission
+            budgetView: 'list', // list, summary
+            transactionType: 'expense', // income, expense
             githubToken: localStorage.getItem('githubToken') || '',
             gistId: localStorage.getItem('gistId') || '',
             typingSpeed: 30, // ミリ秒（速度調整可能）
@@ -1007,6 +1121,7 @@
                 document.getElementById('journalContent').style.display = 'none';
                 document.getElementById('taskContent').style.display = 'none';
                 document.getElementById('missionContent').style.display = 'none';
+                document.getElementById('budgetContent').style.display = 'none';
                 
                 if (tab === 'journal') {
                     document.getElementById('journalContent').style.display = 'flex';
@@ -1014,6 +1129,8 @@
                     document.getElementById('taskContent').style.display = 'flex';
                 } else if (tab === 'missions') {
                     document.getElementById('missionContent').style.display = 'flex';
+                } else if (tab === 'budget') {
+                    document.getElementById('budgetContent').style.display = 'flex';
                 }
             },
 
@@ -1043,18 +1160,26 @@
                     this.missions = JSON.parse(savedMissions);
                     this.missions.sort((a, b) => b.timestamp - a.timestamp);
                 }
+
+                const savedTransactions = localStorage.getItem('transactions');
+                if (savedTransactions) {
+                    this.transactions = JSON.parse(savedTransactions);
+                    this.transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+                }
             },
 
             saveLocalData() {
                 localStorage.setItem('journalEntries', JSON.stringify(this.entries));
                 localStorage.setItem('tasks', JSON.stringify(this.tasks));
                 localStorage.setItem('missions', JSON.stringify(this.missions));
+                localStorage.setItem('transactions', JSON.stringify(this.transactions));
             },
 
             render() {
                 this.renderEntries();
                 this.renderTasks();
                 this.renderMissions();
+                this.renderTransactions();
             },
 
             renderEntries() {
@@ -1672,6 +1797,243 @@
                 }
             },
 
+            // ========== Budget Management ==========
+
+            renderTransactions() {
+                if (this.budgetView === 'list') {
+                    this.renderTransactionsList();
+                } else {
+                    this.renderSummary();
+                }
+            },
+
+            renderTransactionsList() {
+                const list = document.getElementById('transactionsList');
+                list.style.display = 'block';
+                document.getElementById('summaryView').style.display = 'none';
+                list.innerHTML = '';
+                
+                this.transactions.forEach(transaction => {
+                    const div = document.createElement('div');
+                    div.className = 'entry-item' + (this.currentTransaction === transaction ? ' selected' : '');
+                    div.onclick = () => this.editTransaction(transaction);
+                    
+                    const typeColor = transaction.type === 'income' ? '#22c55e' : '#dc2626';
+                    const sign = transaction.type === 'income' ? '+' : '-';
+                    
+                    div.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                            <div style="font-size: 11px;">${transaction.date}</div>
+                            <div style="font-size: 14px; font-weight: bold; color: ${typeColor};">${sign}¥${transaction.amount.toLocaleString()}</div>
+                        </div>
+                        <div style="font-size: 12px; margin-bottom: 3px;">${transaction.category}</div>
+                        <div style="font-size: 10px; color: #16a34a;">${transaction.memo || '(メモなし)'}</div>
+                    `;
+                    list.appendChild(div);
+                });
+
+                document.getElementById('transactionCount').textContent = this.transactions.length;
+            },
+
+            renderSummary() {
+                const list = document.getElementById('transactionsList');
+                const summary = document.getElementById('summaryView');
+                list.style.display = 'none';
+                summary.style.display = 'block';
+                
+                // 月別でグループ化
+                const monthlyData = {};
+                this.transactions.forEach(t => {
+                    const month = t.date.substring(0, 7); // YYYY-MM
+                    if (!monthlyData[month]) {
+                        monthlyData[month] = { income: 0, expense: 0, categories: {} };
+                    }
+                    
+                    if (t.type === 'income') {
+                        monthlyData[month].income += t.amount;
+                    } else {
+                        monthlyData[month].expense += t.amount;
+                        if (!monthlyData[month].categories[t.category]) {
+                            monthlyData[month].categories[t.category] = 0;
+                        }
+                        monthlyData[month].categories[t.category] += t.amount;
+                    }
+                });
+                
+                // 残高計算
+                let balance = 0;
+                this.transactions.forEach(t => {
+                    balance += t.type === 'income' ? t.amount : -t.amount;
+                });
+                
+                summary.innerHTML = `
+                    <div style="border: 2px solid #22c55e; padding: 15px; margin-bottom: 15px; background: rgba(34, 197, 94, 0.1);">
+                        <div style="font-size: 12px; margin-bottom: 5px;">CURRENT BALANCE:</div>
+                        <div style="font-size: 24px; font-weight: bold; color: ${balance >= 0 ? '#22c55e' : '#dc2626'};">¥${balance.toLocaleString()}</div>
+                    </div>
+                `;
+                
+                // 月別サマリー
+                const months = Object.keys(monthlyData).sort().reverse();
+                months.forEach(month => {
+                    const data = monthlyData[month];
+                    const net = data.income - data.expense;
+                    
+                    let categoryHtml = '';
+                    Object.entries(data.categories).sort((a, b) => b[1] - a[1]).forEach(([cat, amount]) => {
+                        categoryHtml += `
+                            <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 3px;">
+                                <span>${cat}</span>
+                                <span>¥${amount.toLocaleString()}</span>
+                            </div>
+                        `;
+                    });
+                    
+                    summary.innerHTML += `
+                        <div style="border: 1px solid #166534; padding: 12px; margin-bottom: 10px;">
+                            <div style="font-size: 14px; font-weight: bold; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #16a34a;">${month}</div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                <span style="color: #22c55e;">Income:</span>
+                                <span style="color: #22c55e;">¥${data.income.toLocaleString()}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                <span style="color: #dc2626;">Expense:</span>
+                                <span style="color: #dc2626;">¥${data.expense.toLocaleString()}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #16a34a;">
+                                <span style="font-weight: bold;">Net:</span>
+                                <span style="font-weight: bold; color: ${net >= 0 ? '#22c55e' : '#dc2626'};">¥${net.toLocaleString()}</span>
+                            </div>
+                            <div style="font-size: 11px; color: #16a34a; margin-bottom: 5px;">Category Breakdown:</div>
+                            ${categoryHtml}
+                        </div>
+                    `;
+                });
+                
+                document.getElementById('transactionCount').textContent = this.transactions.length;
+            },
+
+            setBudgetView(view) {
+                this.budgetView = view;
+                
+                // ボタンのアクティブ状態を更新
+                document.querySelectorAll('#budgetContent .filter-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                event.target.classList.add('active');
+                
+                this.renderTransactions();
+            },
+
+            setTransactionType(type) {
+                this.transactionType = type;
+                
+                document.getElementById('typeIncome').classList.remove('active');
+                document.getElementById('typeExpense').classList.remove('active');
+                
+                if (type === 'income') {
+                    document.getElementById('typeIncome').classList.add('active');
+                } else {
+                    document.getElementById('typeExpense').classList.add('active');
+                }
+            },
+
+            newTransaction() {
+                this.currentTransaction = null;
+                this.transactionType = 'expense';
+                document.getElementById('transactionDate').value = new Date().toISOString().split('T')[0];
+                document.getElementById('transactionCategory').value = '食費';
+                document.getElementById('transactionAmount').value = '';
+                document.getElementById('transactionMemo').value = '';
+                document.getElementById('budgetEditorHeader').textContent = 'NEW TRANSACTION';
+                document.getElementById('btnDeleteTransaction').style.display = 'none';
+                
+                document.getElementById('typeIncome').classList.remove('active');
+                document.getElementById('typeExpense').classList.add('active');
+                
+                this.renderTransactions();
+            },
+
+            saveTransaction() {
+                const date = document.getElementById('transactionDate').value;
+                const category = document.getElementById('transactionCategory').value;
+                const amount = parseFloat(document.getElementById('transactionAmount').value);
+                const memo = document.getElementById('transactionMemo').value.trim();
+                
+                if (!date || !amount || amount <= 0) {
+                    alert('日付と金額は必須です');
+                    return;
+                }
+
+                if (this.currentTransaction) {
+                    // 編集
+                    this.currentTransaction.type = this.transactionType;
+                    this.currentTransaction.date = date;
+                    this.currentTransaction.category = category;
+                    this.currentTransaction.amount = amount;
+                    this.currentTransaction.memo = memo;
+                } else {
+                    // 新規作成
+                    const transaction = {
+                        id: Date.now().toString(),
+                        type: this.transactionType,
+                        date: date,
+                        category: category,
+                        amount: amount,
+                        memo: memo,
+                        timestamp: Date.now()
+                    };
+                    this.transactions.push(transaction);
+                }
+
+                this.transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+                this.saveLocalData();
+                this.newTransaction();
+                this.renderTransactions();
+
+                // 自動同期
+                if (this.githubToken && this.gistId) {
+                    this.syncData();
+                }
+            },
+
+            editTransaction(transaction) {
+                this.currentTransaction = transaction;
+                this.transactionType = transaction.type;
+                document.getElementById('transactionDate').value = transaction.date;
+                document.getElementById('transactionCategory').value = transaction.category;
+                document.getElementById('transactionAmount').value = transaction.amount;
+                document.getElementById('transactionMemo').value = transaction.memo || '';
+                document.getElementById('budgetEditorHeader').textContent = 'EDIT TRANSACTION';
+                document.getElementById('btnDeleteTransaction').style.display = 'block';
+                
+                document.getElementById('typeIncome').classList.remove('active');
+                document.getElementById('typeExpense').classList.remove('active');
+                
+                if (transaction.type === 'income') {
+                    document.getElementById('typeIncome').classList.add('active');
+                } else {
+                    document.getElementById('typeExpense').classList.add('active');
+                }
+                
+                this.renderTransactions();
+            },
+
+            deleteTransaction() {
+                if (!this.currentTransaction) return;
+                if (!confirm('この取引を削除しますか？')) return;
+
+                this.transactions = this.transactions.filter(t => t.id !== this.currentTransaction.id);
+                this.saveLocalData();
+                this.newTransaction();
+                this.renderTransactions();
+
+                // 自動同期
+                if (this.githubToken && this.gistId) {
+                    this.syncData();
+                }
+            },
+
             deleteEntry() {
                 if (!this.currentEntry) return;
                 if (!confirm('このエントリーを削除しますか？')) return;
@@ -1805,13 +2167,31 @@
                     this.missions = mergedMissions.sort((a, b) => b.timestamp - a.timestamp);
                 }
 
+                // 家計簿の同期
+                const transactionsContent = gist.files['transactions.json']?.content;
+                if (transactionsContent) {
+                    const remoteTransactions = JSON.parse(transactionsContent);
+                    const mergedTransactions = [...this.transactions];
+                    remoteTransactions.forEach(remote => {
+                        const local = mergedTransactions.find(l => l.id === remote.id);
+                        if (!local) {
+                            mergedTransactions.push(remote);
+                        } else {
+                            if (remote.timestamp > local.timestamp) {
+                                Object.assign(local, remote);
+                            }
+                        }
+                    });
+                    this.transactions = mergedTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+                }
+
                 this.saveLocalData();
                 this.render();
             },
 
             async pushToGist() {
                 const data = {
-                    description: 'PIP-BOY Journal, Tasks & Missions Data',
+                    description: 'PIP-BOY Journal, Tasks, Missions & Budget Data',
                     public: false,
                     files: {
                         'journal.json': {
@@ -1822,6 +2202,9 @@
                         },
                         'missions.json': {
                             content: JSON.stringify(this.missions, null, 2)
+                        },
+                        'transactions.json': {
+                            content: JSON.stringify(this.transactions, null, 2)
                         }
                     }
                 };
