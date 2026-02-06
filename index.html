@@ -197,6 +197,29 @@
             color: #000;
         }
 
+        .filter-btn {
+            flex: 1;
+            padding: 4px 8px;
+            border: 1px solid #166534;
+            background: transparent;
+            color: #16a34a;
+            font-family: inherit;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-btn:hover {
+            border-color: #22c55e;
+            color: #22c55e;
+        }
+
+        .filter-btn.active {
+            border-color: #22c55e;
+            color: #22c55e;
+            background: rgba(34, 197, 94, 0.1);
+        }
+
         .entries-list {
             flex: 1;
             overflow-y: auto;
@@ -366,6 +389,15 @@
         .task-desc {
             font-size: 11px;
             color: #16a34a;
+        }
+
+        .task-mission-badge {
+            font-size: 9px;
+            color: #3b82f6;
+            border: 1px solid #3b82f6;
+            padding: 2px 6px;
+            margin-top: 4px;
+            display: inline-block;
         }
 
         .mission-task-item {
@@ -740,6 +772,11 @@
                         <span class="entries-title">TASKS [<span id="taskCount">0</span>]</span>
                         <button class="btn-new" onclick="app.newTask()">+ NEW</button>
                     </div>
+                    <div style="display: flex; gap: 5px; padding: 8px; border-bottom: 1px solid #166534; font-size: 10px;">
+                        <button class="filter-btn active" onclick="app.setTaskFilter('all')">ALL</button>
+                        <button class="filter-btn" onclick="app.setTaskFilter('standalone')">STANDALONE</button>
+                        <button class="filter-btn" onclick="app.setTaskFilter('mission')">MISSION</button>
+                    </div>
                     <div class="entries-list" id="tasksList"></div>
                 </div>
 
@@ -910,6 +947,7 @@
             currentMission: null,
             currentViewedTask: null,
             currentTab: 'journal',
+            taskFilter: 'all', // all, standalone, mission
             githubToken: localStorage.getItem('githubToken') || '',
             gistId: localStorage.getItem('gistId') || '',
             typingSpeed: 30, // ミリ秒（速度調整可能）
@@ -1045,20 +1083,61 @@
                 const list = document.getElementById('tasksList');
                 list.innerHTML = '';
                 
-                this.tasks.forEach((task, index) => {
+                // スタンドアロンタスクを収集
+                const standaloneTasks = this.tasks.map(task => ({
+                    ...task,
+                    isMissionTask: false,
+                    missionTitle: null
+                }));
+                
+                // ミッション付随タスクを収集
+                const missionTasks = [];
+                this.missions.forEach(mission => {
+                    mission.tasks.forEach(task => {
+                        missionTasks.push({
+                            ...task,
+                            isMissionTask: true,
+                            missionTitle: mission.title,
+                            missionId: mission.id
+                        });
+                    });
+                });
+                
+                // フィルター適用
+                let allTasks = [...standaloneTasks, ...missionTasks];
+                if (this.taskFilter === 'standalone') {
+                    allTasks = standaloneTasks;
+                } else if (this.taskFilter === 'mission') {
+                    allTasks = missionTasks;
+                }
+                
+                // ソート（未完了 → 完了）
+                allTasks.sort((a, b) => a.completed - b.completed);
+                
+                allTasks.forEach((task) => {
                     const div = document.createElement('div');
-                    div.className = 'task-item' + (task.completed ? ' completed' : '') + (this.currentTask === task ? ' selected' : '');
+                    div.className = 'task-item' + (task.completed ? ' completed' : '');
                     
                     const checkbox = document.createElement('div');
                     checkbox.className = 'task-checkbox' + (task.completed ? ' checked' : '');
                     checkbox.onclick = (e) => {
                         e.stopPropagation();
-                        this.toggleTask(task.id);
+                        if (task.isMissionTask) {
+                            this.toggleMissionTask(task.missionId, task.id);
+                        } else {
+                            this.toggleTask(task.id);
+                        }
                     };
                     
                     const content = document.createElement('div');
                     content.className = 'task-content';
-                    content.onclick = () => this.viewTask(task);
+                    content.onclick = () => {
+                        if (task.isMissionTask) {
+                            this.viewMissionTask(task);
+                        } else {
+                            this.viewTask(task);
+                        }
+                    };
                     
                     const title = document.createElement('div');
                     title.className = 'task-title';
@@ -1073,12 +1152,71 @@
                         content.appendChild(desc);
                     }
                     
+                    if (task.isMissionTask) {
+                        const badge = document.createElement('div');
+                        badge.className = 'task-mission-badge';
+                        badge.textContent = `MISSION: ${task.missionTitle}`;
+                        content.appendChild(badge);
+                    }
+                    
                     div.appendChild(checkbox);
                     div.appendChild(content);
                     list.appendChild(div);
                 });
 
-                document.getElementById('taskCount').textContent = this.tasks.length;
+                // カウント表示（フィルターに応じて）
+                document.getElementById('taskCount').textContent = allTasks.length;
+            },
+
+            setTaskFilter(filter) {
+                this.taskFilter = filter;
+                
+                // ボタンのアクティブ状態を更新
+                document.querySelectorAll('.filter-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                event.target.classList.add('active');
+                
+                this.renderTasks();
+            },
+
+            toggleMissionTask(missionId, taskId) {
+                const mission = this.missions.find(m => m.id === missionId);
+                if (mission) {
+                    const task = mission.tasks.find(t => t.id === taskId);
+                    if (task) {
+                        task.completed = !task.completed;
+                        this.saveLocalData();
+                        this.renderTasks();
+                        this.renderMissions();
+
+                        // 自動同期
+                        if (this.githubToken && this.gistId) {
+                            this.syncData();
+                        }
+                    }
+                }
+            },
+
+            viewMissionTask(task) {
+                const modal = document.getElementById('viewTaskModal');
+                const titleEl = document.getElementById('taskModalTitle');
+                const bodyEl = document.getElementById('taskModalBody');
+
+                this.currentViewedMissionTask = task; // ミッションタスクを保存
+
+                titleEl.textContent = task.title + ` [${task.missionTitle}]`;
+                bodyEl.textContent = '';
+                modal.classList.add('active');
+
+                // タイピングエフェクト
+                if (task.description) {
+                    this.typeText(task.description, bodyEl);
+                } else {
+                    bodyEl.textContent = '(説明なし)';
+                    bodyEl.style.color = '#16a34a';
+                    bodyEl.style.fontStyle = 'italic';
+                }
             },
 
             newEntry() {
@@ -1231,7 +1369,22 @@
 
             editTaskFromModal() {
                 this.closeTaskModal();
-                if (this.currentViewedTask) {
+                
+                // ミッションタスクの場合はミッション編集画面へ
+                if (this.currentViewedMissionTask) {
+                    const mission = this.missions.find(m => m.id === this.currentViewedMissionTask.missionId);
+                    if (mission) {
+                        // MISSIONSタブに切り替え
+                        this.switchTab('missions');
+                        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+                        document.querySelectorAll('.tab-btn')[2].classList.add('active');
+                        
+                        // ミッションを編集モードで開く
+                        this.currentMission = mission;
+                        this.editMissionFromViewer();
+                    }
+                } else if (this.currentViewedTask) {
+                    // 通常のタスク編集
                     this.editTask(this.currentViewedTask);
                 }
             },
@@ -1239,6 +1392,7 @@
             closeTaskModal() {
                 document.getElementById('viewTaskModal').classList.remove('active');
                 this.currentViewedTask = null;
+                this.currentViewedMissionTask = null;
             },
 
             toggleTask(taskId) {
