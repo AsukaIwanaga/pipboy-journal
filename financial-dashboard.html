@@ -518,7 +518,7 @@
                         </div>
                         <div class="panel-body">
                             <!-- Summary boxes -->
-                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
+                            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
                                 <div class="summary-box">
                                     <div class="summary-label">今月の純利益</div>
                                     <div class="summary-value" id="monthlyProfit">¥0</div>
@@ -530,6 +530,11 @@
                                 <div class="summary-box">
                                     <div class="summary-label">クレジット未払金</div>
                                     <div class="summary-value" id="creditBalance">¥0</div>
+                                </div>
+                                <div class="summary-box">
+                                    <div class="summary-label">今月支払予定</div>
+                                    <div class="summary-value" id="currentPaymentSchedule">¥0</div>
+                                    <div style="font-size: 10px; color: #16a34a; margin-top: 5px;" id="paymentScheduleDate">-</div>
                                 </div>
                             </div>
 
@@ -1162,9 +1167,33 @@
                 
                 document.getElementById('cashBalance').textContent = `¥${cash.toLocaleString()}`;
                 
-                // Calculate unpaid credit (概要画面用)
-                const unpaidCredit = this.entries.filter(e => e.isCredit && !e.creditPaid).reduce((sum, e) => sum + e.amount, 0);
-                document.getElementById('creditBalance').textContent = `¥${unpaidCredit.toLocaleString()}`;
+                // Calculate unpaid credit (概要画面用) - renderCreditListと同じロジック
+                const today = new Date();
+                const currentYear = today.getFullYear();
+                const currentMonth = today.getMonth();
+                
+                const unpaidCredits = this.entries.filter(e => e.isCredit && !e.creditPaid);
+                const unpaidTotal = unpaidCredits.reduce((sum, e) => sum + e.amount, 0);
+                
+                // 締め日と引落日
+                const { closingDay, paymentDay } = this.creditSettings;
+                
+                // 今月の引落対象期間（先月の締め日翌日〜今月の締め日）
+                const currentPeriodStart = new Date(currentYear, currentMonth - 1, closingDay + 1);
+                const currentPeriodEnd = new Date(currentYear, currentMonth, closingDay);
+                
+                const currentMonthPayment = unpaidCredits.filter(e => {
+                    const date = new Date(e.date);
+                    return date >= currentPeriodStart && date <= currentPeriodEnd;
+                }).reduce((sum, e) => sum + e.amount, 0);
+                
+                // 引落日の表示
+                const paymentDate = new Date(currentYear, currentMonth, paymentDay);
+                const paymentDateStr = `${paymentDate.getMonth() + 1}/${paymentDate.getDate()}`;
+                
+                document.getElementById('creditBalance').textContent = `¥${unpaidTotal.toLocaleString()}`;
+                document.getElementById('currentPaymentSchedule').textContent = `¥${currentMonthPayment.toLocaleString()}`;
+                document.getElementById('paymentScheduleDate').textContent = `引落: ${paymentDateStr}`;
             },
 
             renderPL() {
