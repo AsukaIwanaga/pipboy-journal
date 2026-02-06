@@ -458,7 +458,14 @@
 
             <!-- Header -->
             <div class="header">
-                <div class="title">&gt;&gt;&gt; 財務管理システム &lt;&lt;&lt;</div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                    <div class="title">&gt;&gt;&gt; 財務管理システム &lt;&lt;&lt;</div>
+                    <div style="text-align: right; font-size: 12px;">
+                        <div style="margin-bottom: 3px; color: #16a34a;">v1.0.0</div>
+                        <div style="font-size: 10px; margin-bottom: 2px;" id="dashboardDate"></div>
+                        <div style="font-size: 16px; font-weight: bold;" id="dashboardTime"></div>
+                    </div>
+                </div>
                 <div class="subtitle">
                     <button class="tab-btn active" onclick="app.switchTab('overview')">概要</button>
                     <button class="tab-btn" onclick="app.switchTab('pl')">損益計算書</button>
@@ -656,7 +663,45 @@
                             <span class="panel-title">定期支払い管理</span>
                         </div>
                         <div class="panel-body">
-                            <p style="text-align: center; padding: 40px; color: #16a34a;">定期支払い機能は準備中です...</p>
+                            <!-- Add New Recurring Payment Form -->
+                            <div style="max-width: 600px; margin: 0 auto 30px;">
+                                <div class="form-group">
+                                    <label class="form-label">名称:</label>
+                                    <input type="text" class="form-input" id="recurringName" placeholder="例: Netflix月額">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">カテゴリ:</label>
+                                    <select class="form-input" id="recurringCategory">
+                                        <option value="食費">食費</option>
+                                        <option value="住居費">住居費</option>
+                                        <option value="水道光熱費">水道光熱費</option>
+                                        <option value="通信費">通信費</option>
+                                        <option value="交通費">交通費</option>
+                                        <option value="娯楽費">娯楽費</option>
+                                        <option value="医療費">医療費</option>
+                                        <option value="その他支出">その他支出</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">金額:</label>
+                                    <input type="number" class="form-input" id="recurringAmount" placeholder="0" style="font-size: 18px; font-weight: bold;">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">支払日（毎月）:</label>
+                                    <input type="number" class="form-input" id="recurringDay" placeholder="1-31" min="1" max="31">
+                                </div>
+                                <div class="form-group">
+                                    <label style="display: flex; align-items: center; cursor: pointer;">
+                                        <input type="checkbox" id="recurringCredit" style="margin-right: 8px;">
+                                        <span style="font-size: 11px;">クレジットカード支払い</span>
+                                    </label>
+                                </div>
+                                <button class="btn" onclick="app.saveRecurring()">&gt;&gt;&gt; 登録 &lt;&lt;&lt;</button>
+                            </div>
+
+                            <!-- Recurring Payments List -->
+                            <div class="section-header">登録済み定期支払い [<span id="recurringCount">0</span>]</div>
+                            <div id="recurringList"></div>
                         </div>
                     </div>
                 </div>
@@ -670,18 +715,33 @@
             currentInputType: 'expense',
             entries: [],
             financeEntries: [],
+            recurringPayments: [],
 
             init() {
                 this.loadData();
+                this.generateRecurringPayments(); // 定期支払いを自動生成
                 this.render();
                 document.getElementById('inputDate').value = new Date().toISOString().split('T')[0];
                 document.getElementById('financeDate').value = new Date().toISOString().split('T')[0];
                 this.setInputType('expense'); // 初期表示で支出を選択し、クレジットオプションを表示
+                
+                // 日時表示を開始
+                this.updateDateTime();
+                setInterval(() => this.updateDateTime(), 1000);
+            },
+
+            updateDateTime() {
+                const now = new Date();
+                const date = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}`;
+                const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+                document.getElementById('dashboardDate').textContent = date;
+                document.getElementById('dashboardTime').textContent = time;
             },
 
             loadData() {
                 this.entries = JSON.parse(localStorage.getItem('financialEntries') || '[]');
                 this.financeEntries = JSON.parse(localStorage.getItem('financeEntries') || '[]');
+                this.recurringPayments = JSON.parse(localStorage.getItem('recurringPayments') || '[]');
                 
                 // 既存データに creditPaid フィールドを追加（互換性対応）
                 this.entries = this.entries.map(entry => {
@@ -695,6 +755,7 @@
             saveData() {
                 localStorage.setItem('financialEntries', JSON.stringify(this.entries));
                 localStorage.setItem('financeEntries', JSON.stringify(this.financeEntries));
+                localStorage.setItem('recurringPayments', JSON.stringify(this.recurringPayments));
             },
 
             switchTab(tab) {
@@ -796,6 +857,7 @@
                 this.renderEntryList();
                 this.renderCreditList();
                 this.renderFinanceList();
+                this.renderRecurringList();
                 this.renderSummary();
                 this.renderPL();
                 this.renderBS();
@@ -1357,6 +1419,126 @@
                     this.saveData();
                     this.render();
                 }
+            },
+
+            // 定期支払い管理
+            saveRecurring() {
+                const name = document.getElementById('recurringName').value.trim();
+                const category = document.getElementById('recurringCategory').value;
+                const amount = parseFloat(document.getElementById('recurringAmount').value);
+                const day = parseInt(document.getElementById('recurringDay').value);
+                const isCredit = document.getElementById('recurringCredit').checked;
+
+                if (!name || !amount || !day) {
+                    alert('すべての項目を入力してください');
+                    return;
+                }
+
+                if (day < 1 || day > 31) {
+                    alert('支払日は1-31の範囲で入力してください');
+                    return;
+                }
+
+                this.recurringPayments.push({
+                    name,
+                    category,
+                    amount,
+                    day,
+                    isCredit,
+                    timestamp: Date.now()
+                });
+
+                this.saveData();
+                this.render();
+
+                // Clear form
+                document.getElementById('recurringName').value = '';
+                document.getElementById('recurringAmount').value = '';
+                document.getElementById('recurringDay').value = '';
+                document.getElementById('recurringCredit').checked = false;
+
+                alert('定期支払いを登録しました');
+            },
+
+            renderRecurringList() {
+                const list = document.getElementById('recurringList');
+                const sorted = [...this.recurringPayments].sort((a, b) => a.day - b.day);
+                
+                document.getElementById('recurringCount').textContent = sorted.length;
+                
+                list.innerHTML = '';
+                
+                if (sorted.length === 0) {
+                    list.innerHTML = '<div style="text-align: center; padding: 20px; color: #16a34a;">登録された定期支払いはありません</div>';
+                    return;
+                }
+
+                sorted.forEach((payment, i) => {
+                    const div = document.createElement('div');
+                    div.className = 'list-item';
+                    div.innerHTML = `
+                        <div class="list-item-info">
+                            <div style="font-weight: bold; margin-bottom: 5px;">${payment.name}</div>
+                            <div class="list-item-category">
+                                ${payment.category}
+                                ${payment.isCredit ? '<span class="badge">CREDIT</span>' : ''}
+                            </div>
+                            <div class="list-item-memo">毎月${payment.day}日に自動追加</div>
+                        </div>
+                        <div class="list-item-amount">¥${payment.amount.toLocaleString()}</div>
+                        <button class="btn btn-small" onclick="app.deleteRecurring(${i})">削除</button>
+                    `;
+                    list.appendChild(div);
+                });
+            },
+
+            deleteRecurring(index) {
+                if (confirm('この定期支払いを削除しますか？')) {
+                    this.recurringPayments.splice(index, 1);
+                    this.saveData();
+                    this.render();
+                }
+            },
+
+            generateRecurringPayments() {
+                const today = new Date();
+                const currentYear = today.getFullYear();
+                const currentMonth = today.getMonth();
+                const currentDay = today.getDate();
+
+                this.recurringPayments.forEach(payment => {
+                    // 今月の支払日
+                    const paymentDate = new Date(currentYear, currentMonth, payment.day);
+                    
+                    // 支払日が今日以前で、まだ今月の支払いが登録されていない場合
+                    if (payment.day <= currentDay) {
+                        const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(payment.day).padStart(2, '0')}`;
+                        
+                        // 重複チェック（同じ日付・カテゴリ・金額の支払いがないか）
+                        const exists = this.entries.some(entry => 
+                            entry.date === dateStr && 
+                            entry.category === payment.category && 
+                            entry.amount === payment.amount &&
+                            entry.memo && entry.memo.includes(payment.name)
+                        );
+
+                        if (!exists) {
+                            // 自動的に収支入力に追加
+                            this.entries.push({
+                                date: dateStr,
+                                type: 'expense',
+                                category: payment.category,
+                                amount: payment.amount,
+                                memo: `【${payment.name}】（定期支払い）`,
+                                isCredit: payment.isCredit,
+                                creditPaid: false,
+                                timestamp: Date.now()
+                            });
+                        }
+                    }
+                });
+
+                this.saveData();
             },
 
             markAsPaid(index) {
