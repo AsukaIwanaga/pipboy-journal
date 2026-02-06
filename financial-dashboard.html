@@ -12,27 +12,66 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #1a2332 0%, #0f1419 100%);
-            color: #fff;
+            font-family: 'Courier New', monospace;
+            background: #000;
+            color: #22c55e;
             min-height: 100vh;
             padding: 20px;
+            text-shadow: 0 0 8px #22c55e;
+            position: relative;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                repeating-linear-gradient(
+                    0deg,
+                    rgba(0, 0, 0, 0.15),
+                    rgba(0, 0, 0, 0.15) 1px,
+                    transparent 1px,
+                    transparent 2px
+                );
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at center, transparent 0%, rgba(0, 0, 0, 0.7) 100%);
+            pointer-events: none;
+            z-index: 999;
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
+            position: relative;
+            z-index: 1;
         }
 
         .header {
             text-align: center;
             margin-bottom: 20px;
             padding: 20px;
+            border: 2px solid #22c55e;
+            background: rgba(34, 197, 94, 0.05);
         }
 
         .company-name {
             font-size: 24px;
             font-weight: bold;
+            letter-spacing: 2px;
+            color: #22c55e;
         }
 
         .close-btn {
@@ -63,28 +102,34 @@
 
         .period-btn {
             padding: 10px 20px;
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 8px;
-            color: #fff;
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid #22c55e;
+            border-radius: 0;
+            color: #22c55e;
             cursor: pointer;
             transition: all 0.2s;
+            text-shadow: 0 0 8px #22c55e;
+            font-weight: bold;
         }
 
         .period-btn.active {
-            background: rgba(74, 144, 226, 0.3);
-            border-color: #4a90e2;
+            background: rgba(34, 197, 94, 0.3);
+            border-color: #22c55e;
+            box-shadow: 0 0 15px #22c55e;
         }
 
         .period-btn:hover {
-            background: rgba(255,255,255,0.15);
+            background: rgba(34, 197, 94, 0.2);
+            box-shadow: 0 0 10px #22c55e;
         }
 
         .chart-container {
-            background: rgba(255,255,255,0.05);
-            border-radius: 15px;
+            background: rgba(0, 20, 0, 0.8);
+            border: 2px solid #22c55e;
+            border-radius: 0;
             padding: 30px;
             margin-bottom: 30px;
+            box-shadow: inset 0 0 30px rgba(34, 197, 94, 0.15), 0 0 20px rgba(34, 197, 94, 0.2);
         }
 
         .chart-header {
@@ -133,14 +178,16 @@
 
         .bar {
             width: 30px;
-            background: linear-gradient(to top, #ff8a65, #ff6b6b);
-            border-radius: 4px 4px 0 0;
+            background: linear-gradient(to top, #22c55e, #16a34a);
+            border-radius: 0;
             transition: all 0.3s;
             position: relative;
+            box-shadow: 0 0 10px #22c55e;
         }
 
         .bar.primary {
-            background: linear-gradient(to top, #e0e0e0, #fff);
+            background: linear-gradient(to top, #22c55e, #00ff88);
+            box-shadow: 0 0 15px #22c55e;
         }
 
         .bar-label {
@@ -158,22 +205,24 @@
 
         .tab-btn {
             padding: 12px 30px;
-            background: rgba(255,255,255,0.08);
-            border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 10px;
-            color: #fff;
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid #22c55e;
+            border-radius: 0;
+            color: #22c55e;
             cursor: pointer;
             transition: all 0.2s;
             font-size: 14px;
+            text-shadow: 0 0 5px #22c55e;
         }
 
         .tab-btn.active {
-            background: rgba(74, 144, 226, 0.25);
-            border-color: #4a90e2;
+            background: rgba(34, 197, 94, 0.25);
+            border-color: #22c55e;
+            box-shadow: 0 0 10px #22c55e;
         }
 
         .tab-btn:hover {
-            background: rgba(255,255,255,0.12);
+            background: rgba(34, 197, 94, 0.2);
         }
 
         .statement-content {
@@ -192,15 +241,15 @@
             display: flex;
             justify-content: space-between;
             padding: 12px 20px;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
+            border-bottom: 1px solid rgba(34, 197, 94, 0.2);
         }
 
         .data-row:hover {
-            background: rgba(255,255,255,0.03);
+            background: rgba(34, 197, 94, 0.1);
         }
 
         .data-label {
-            color: #ccc;
+            color: #22c55e;
             font-size: 14px;
         }
 
@@ -213,38 +262,43 @@
             width: 120px;
             text-align: right;
             font-size: 14px;
+            color: #22c55e;
         }
 
         .section-header {
-            background: rgba(255,255,255,0.1);
+            background: rgba(34, 197, 94, 0.2);
             padding: 15px 20px;
             font-weight: bold;
             margin-top: 20px;
-            border-radius: 8px;
+            border-radius: 0;
+            border: 1px solid #22c55e;
         }
 
         .section-total {
-            background: rgba(74, 144, 226, 0.15);
+            background: rgba(34, 197, 94, 0.25);
             font-weight: bold;
             font-size: 15px;
+            box-shadow: 0 0 10px rgba(34, 197, 94, 0.3);
         }
 
         .edit-btn {
             padding: 12px 30px;
-            background: #ff8a65;
-            border: none;
-            border-radius: 10px;
-            color: #fff;
+            background: rgba(34, 197, 94, 0.2);
+            border: 2px solid #22c55e;
+            border-radius: 0;
+            color: #22c55e;
             font-size: 14px;
             font-weight: bold;
             cursor: pointer;
             transition: all 0.2s;
             margin: 20px auto;
             display: block;
+            text-shadow: 0 0 5px #22c55e;
         }
 
         .edit-btn:hover {
-            background: #ff6b6b;
+            background: rgba(34, 197, 94, 0.3);
+            box-shadow: 0 0 15px #22c55e;
             transform: translateY(-2px);
         }
 
@@ -253,7 +307,7 @@
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0, 0, 0, 0.9);
             z-index: 1000;
             align-items: center;
             justify-content: center;
@@ -264,13 +318,34 @@
         }
 
         .modal-content {
-            background: #1a2332;
-            border-radius: 15px;
+            background: #000;
+            border: 2px solid #22c55e;
+            border-radius: 0;
             padding: 30px;
             max-width: 600px;
             width: 90%;
             max-height: 80vh;
             overflow-y: auto;
+            box-shadow: 0 0 30px rgba(34, 197, 94, 0.5), inset 0 0 20px rgba(34, 197, 94, 0.1);
+            position: relative;
+        }
+
+        .modal-content::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                repeating-linear-gradient(
+                    0deg,
+                    rgba(0, 0, 0, 0.15),
+                    rgba(0, 0, 0, 0.15) 1px,
+                    transparent 1px,
+                    transparent 2px
+                );
+            pointer-events: none;
         }
 
         .modal-header {
@@ -278,7 +353,8 @@
             font-weight: bold;
             margin-bottom: 20px;
             padding-bottom: 15px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            border-bottom: 1px solid #22c55e;
+            text-shadow: 0 0 10px #22c55e;
         }
 
         .input-group {
@@ -289,22 +365,24 @@
             display: block;
             margin-bottom: 5px;
             font-size: 12px;
-            color: #999;
+            color: #22c55e;
         }
 
         .input-field {
             width: 100%;
             padding: 10px 15px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 8px;
-            color: #fff;
+            background: rgba(34, 197, 94, 0.05);
+            border: 1px solid #22c55e;
+            border-radius: 0;
+            color: #22c55e;
             font-size: 14px;
+            font-family: 'Courier New', monospace;
         }
 
         .input-field:focus {
             outline: none;
-            border-color: #4a90e2;
+            border-color: #22c55e;
+            box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
         }
 
         select.input-field {
@@ -333,8 +411,9 @@
             justify-content: space-between;
             align-items: center;
             padding: 10px;
-            background: rgba(255,255,255,0.03);
-            border-radius: 8px;
+            background: rgba(34, 197, 94, 0.05);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            border-radius: 0;
             margin-bottom: 8px;
         }
 
@@ -344,39 +423,65 @@
 
         .detail-item-date {
             font-size: 11px;
-            color: #999;
+            color: #16a34a;
         }
 
         .detail-item-category {
             font-size: 13px;
-            margin: 3px 0;
+            color: #22c55e;
         }
 
         .detail-item-memo {
             font-size: 11px;
-            color: #777;
+            color: #16a34a;
         }
 
         .detail-item-amount {
             font-size: 16px;
             font-weight: bold;
             margin: 0 15px;
+            color: #22c55e;
+            text-shadow: 0 0 5px #22c55e;
         }
 
         .detail-item-delete {
             padding: 5px 10px;
-            background: rgba(255,107,107,0.2);
-            border: 1px solid #ff6b6b;
-            border-radius: 5px;
-            color: #ff6b6b;
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid #22c55e;
+            border-radius: 0;
+            color: #22c55e;
             cursor: pointer;
             font-size: 11px;
             transition: all 0.2s;
+            font-family: 'Courier New', monospace;
         }
 
         .detail-item-delete:hover {
-            background: #ff6b6b;
-            color: #fff;
+            background: rgba(34, 197, 94, 0.3);
+            box-shadow: 0 0 10px #22c55e;
+        }
+
+        @keyframes flicker {
+            0% { opacity: 0.95; }
+            50% { opacity: 1; }
+            100% { opacity: 0.95; }
+        }
+
+        .container {
+            animation: flicker 0.15s infinite;
+        }
+
+        .chart-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #22c55e;
+            text-shadow: 0 0 10px #22c55e, 0 0 20px #22c55e;
+        }
+
+        .bar-label {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #16a34a;
         }
 
         .modal-buttons {
@@ -388,30 +493,33 @@
         .btn {
             flex: 1;
             padding: 12px;
-            border: none;
-            border-radius: 8px;
+            border: 2px solid #22c55e;
+            border-radius: 0;
             font-size: 14px;
             font-weight: bold;
             cursor: pointer;
             transition: all 0.2s;
+            font-family: 'Courier New', monospace;
+            text-shadow: 0 0 5px #22c55e;
         }
 
         .btn-primary {
-            background: #4a90e2;
-            color: #fff;
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
         }
 
         .btn-primary:hover {
-            background: #357abd;
+            background: rgba(34, 197, 94, 0.3);
+            box-shadow: 0 0 15px #22c55e;
         }
 
         .btn-secondary {
-            background: rgba(255,255,255,0.1);
-            color: #fff;
+            background: rgba(34, 197, 94, 0.05);
+            color: #22c55e;
         }
 
         .btn-secondary:hover {
-            background: rgba(255,255,255,0.15);
+            background: rgba(34, 197, 94, 0.15);
         }
     </style>
 </head>
@@ -428,6 +536,7 @@
             <button class="tab-btn" onclick="app.switchStatement('cf')">キャッシュフロー</button>
             <div style="width: 30px;"></div>
             <button class="tab-btn" style="background: rgba(74, 144, 226, 0.3); border-color: #4a90e2;" onclick="app.openDetailEntry()">収支入力</button>
+            <button class="tab-btn" style="background: rgba(156, 39, 176, 0.3); border-color: #9c27b0;" onclick="app.openRecurringEntry()">定期支払い</button>
         </div>
 
         <div class="period-selector">
@@ -544,6 +653,11 @@
                         <option value="車両コスト">車両コスト</option>
                         <option value="その他">その他</option>
                     </optgroup>
+                    <optgroup label="借入等">
+                        <option value="借入金">借入金</option>
+                        <option value="返済">返済</option>
+                        <option value="利息支払">利息支払</option>
+                    </optgroup>
                 </select>
             </div>
             <div style="margin-bottom: 20px;">
@@ -553,6 +667,12 @@
             <div style="margin-bottom: 20px;">
                 <label class="input-label">メモ</label>
                 <textarea class="input-field" id="detailMemo" style="min-height: 80px;" placeholder="メモ（任意）"></textarea>
+            </div>
+            <div style="margin-bottom: 20px;" id="creditCardOption" style="display: none;">
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="isCreditCard" style="width: 20px; height: 20px; margin-right: 10px; cursor: pointer;">
+                    <span style="font-size: 14px;">クレジットカード支払い（未払金として記録）</span>
+                </label>
             </div>
             <div style="margin-bottom: 20px;">
                 <div style="font-size: 14px; font-weight: bold; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1);">入力済みデータ</div>
@@ -586,6 +706,9 @@
                     <option value="交際・娯楽費">交際・娯楽費</option>
                     <option value="車両コスト">車両コスト</option>
                     <option value="その他">その他</option>
+                    <option value="借入金">借入金</option>
+                    <option value="返済">返済</option>
+                    <option value="利息支払">利息支払</option>
                 </select>
                 <button class="btn btn-primary" onclick="app.filterTransactionList()">検索</button>
             </div>
@@ -614,6 +737,65 @@
             <div class="modal-buttons">
                 <button class="btn btn-primary" onclick="app.saveSettings()">保存して同期</button>
                 <button class="btn btn-secondary" onclick="app.closeSettings()">キャンセル</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recurring Payments Modal -->
+    <div class="modal" id="recurringModal">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">定期支払い管理</div>
+            
+            <!-- Add New Recurring Payment -->
+            <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                <div style="font-size: 14px; font-weight: bold; margin-bottom: 15px;">新規定期支払いを追加</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <label class="input-label">名称</label>
+                        <input type="text" class="input-field" id="recurringName" placeholder="例: Netflix月額">
+                    </div>
+                    <div>
+                        <label class="input-label">カテゴリ</label>
+                        <select class="input-field" id="recurringCategory">
+                            <option value="住居費">住居費</option>
+                            <option value="食費">食費</option>
+                            <option value="水道光熱費">水道光熱費</option>
+                            <option value="通信費">通信費</option>
+                            <option value="生命保険料">生命保険料</option>
+                            <option value="日用品費">日用品費</option>
+                            <option value="教育費">教育費</option>
+                            <option value="被服費">被服費</option>
+                            <option value="交際・娯楽費">交際・娯楽費</option>
+                            <option value="車両コスト">車両コスト</option>
+                            <option value="その他">その他</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="input-label">金額</label>
+                        <input type="number" class="input-field" id="recurringAmount" placeholder="0">
+                    </div>
+                    <div>
+                        <label class="input-label">支払日（毎月）</label>
+                        <input type="number" class="input-field" id="recurringDay" placeholder="1-31" min="1" max="31">
+                    </div>
+                </div>
+                <div style="margin-top: 15px;">
+                    <label style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="checkbox" id="recurringIsCredit" style="width: 20px; height: 20px; margin-right: 10px; cursor: pointer;">
+                        <span style="font-size: 14px;">クレジットカード支払い</span>
+                    </label>
+                </div>
+                <button class="btn btn-primary" style="margin-top: 15px; width: 100%;" onclick="app.addRecurringPayment()">追加</button>
+            </div>
+
+            <!-- Recurring Payments List -->
+            <div style="margin-bottom: 20px;">
+                <div style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">登録済み定期支払い</div>
+                <div id="recurringList" style="max-height: 300px; overflow-y: auto;"></div>
+            </div>
+
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="app.closeRecurringModal()">閉じる</button>
             </div>
         </div>
     </div>
@@ -724,6 +906,7 @@
 
             init() {
                 this.loadData();
+                this.generateRecurringPayments(); // 定期支払いを自動生成
                 this.calculateFromTransactions();
                 this.render();
             },
@@ -750,6 +933,7 @@
 
                     const amount = entry.amount;
                     const category = entry.category;
+                    const isCreditCard = entry.isCreditCard || false;
 
                     // 収入
                     if (category === '給与') {
@@ -780,6 +964,14 @@
                         this.data.pl.carCost[periodIndex] += amount;
                     } else if (category === 'その他') {
                         this.data.pl.other[periodIndex] += amount;
+                    }
+                    // 借入等
+                    else if (category === '借入金') {
+                        this.data.cf.debtBorrowing[periodIndex] += amount;
+                    } else if (category === '返済') {
+                        this.data.cf.debtRepayment[periodIndex] -= amount; // マイナスで記録
+                    } else if (category === '利息支払') {
+                        this.data.cf.dividendPayment[periodIndex] -= amount; // マイナスで記録
                     }
                 });
 
@@ -866,8 +1058,25 @@
                     // 総資産
                     this.data.bs.totalAssets[i] = this.data.bs.totalCurrentAssets[i] + this.data.bs.totalFixedAssets[i];
                     
+                    // クレジットカード未払金を計算（当期分のクレジット支払い）
+                    let creditCardPayables = 0;
+                    details.forEach(entry => {
+                        const periodIndex = this.getPeriodIndex(entry.date);
+                        if (periodIndex === i && entry.isCreditCard) {
+                            creditCardPayables += entry.amount;
+                        }
+                    });
+                    
                     // 負債
-                    this.data.bs.shortTermDebt[i] = this.data.pl.totalExpenses[i]; // 当期費用を短期負債とする
+                    this.data.bs.shortTermDebt[i] = creditCardPayables; // クレジットカード未払金
+                    
+                    // 長期借入金（累積）
+                    if (i === 0) {
+                        this.data.bs.longTermDebt[i] = this.data.cf.debtBorrowing[i] + this.data.cf.debtRepayment[i]; // 返済はマイナス
+                    } else {
+                        this.data.bs.longTermDebt[i] = this.data.bs.longTermDebt[i - 1] + this.data.cf.debtBorrowing[i] + this.data.cf.debtRepayment[i];
+                    }
+                    
                     this.data.bs.totalLiabilities[i] = this.data.bs.shortTermDebt[i] + this.data.bs.longTermDebt[i];
                     
                     // 純資産（累積利益）
@@ -1240,7 +1449,30 @@
                 document.getElementById('detailCategory').value = '食費';
                 document.getElementById('detailAmount').value = '';
                 document.getElementById('detailMemo').value = '';
+                document.getElementById('isCreditCard').checked = false;
+                
+                // カテゴリ変更時にクレジットカードオプションの表示/非表示を切り替え
+                document.getElementById('detailCategory').onchange = () => {
+                    this.toggleCreditCardOption();
+                };
+                
+                this.toggleCreditCardOption();
                 this.renderDetailList();
+            },
+
+            toggleCreditCardOption() {
+                const category = document.getElementById('detailCategory').value;
+                const creditCardOption = document.getElementById('creditCardOption');
+                
+                // 支出カテゴリの場合のみクレジットカードオプションを表示
+                const expenseCategories = ['住居費', '食費', '水道光熱費', '通信費', '生命保険料', '日用品費', '教育費', '被服費', '交際・娯楽費', '車両コスト', 'その他'];
+                
+                if (expenseCategories.includes(category)) {
+                    creditCardOption.style.display = 'block';
+                } else {
+                    creditCardOption.style.display = 'none';
+                    document.getElementById('isCreditCard').checked = false;
+                }
             },
 
             renderDetailList() {
@@ -1254,7 +1486,7 @@
                     div.innerHTML = `
                         <div class="detail-item-info">
                             <div class="detail-item-date">${entry.date}</div>
-                            <div class="detail-item-category">${entry.category}</div>
+                            <div class="detail-item-category">${entry.category}${entry.isCreditCard ? ' <span style="color: #ff8a65; font-size: 10px;">[クレジット]</span>' : ''}</div>
                             ${entry.memo ? `<div class="detail-item-memo">${entry.memo}</div>` : ''}
                         </div>
                         <div class="detail-item-amount">¥${entry.amount.toLocaleString()}</div>
@@ -1269,6 +1501,7 @@
                 const category = document.getElementById('detailCategory').value;
                 const amount = parseFloat(document.getElementById('detailAmount').value);
                 const memo = document.getElementById('detailMemo').value.trim();
+                const isCreditCard = document.getElementById('isCreditCard').checked;
 
                 if (!date || !amount) {
                     alert('日付と金額は必須です');
@@ -1276,7 +1509,14 @@
                 }
 
                 const details = JSON.parse(localStorage.getItem('detailEntries') || '[]');
-                details.push({ date, category, amount, memo, timestamp: Date.now() });
+                details.push({ 
+                    date, 
+                    category, 
+                    amount, 
+                    memo, 
+                    isCreditCard,
+                    timestamp: Date.now() 
+                });
                 localStorage.setItem('detailEntries', JSON.stringify(details));
 
                 // 財務諸表を再計算
@@ -1285,6 +1525,7 @@
 
                 document.getElementById('detailAmount').value = '';
                 document.getElementById('detailMemo').value = '';
+                document.getElementById('isCreditCard').checked = false;
                 this.renderDetailList();
 
                 // 自動同期
@@ -1362,7 +1603,7 @@
                     div.innerHTML = `
                         <div class="detail-item-info">
                             <div class="detail-item-date">${entry.date}</div>
-                            <div class="detail-item-category">${entry.category}</div>
+                            <div class="detail-item-category">${entry.category}${entry.isCreditCard ? ' <span style="color: #ff8a65; font-size: 10px;">[クレジット]</span>' : ''}</div>
                             ${entry.memo ? `<div class="detail-item-memo">${entry.memo}</div>` : ''}
                         </div>
                         <div class="detail-item-amount">¥${entry.amount.toLocaleString()}</div>
@@ -1425,6 +1666,121 @@
                 document.getElementById('settingsModal').classList.remove('active');
             },
 
+            openRecurringPayments() {
+                document.getElementById('recurringModal').classList.add('active');
+                this.renderRecurringList();
+            },
+
+            renderRecurringList() {
+                const list = document.getElementById('recurringList');
+                const recurring = JSON.parse(localStorage.getItem('recurringPayments') || '[]');
+
+                list.innerHTML = '';
+
+                if (recurring.length === 0) {
+                    list.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">登録されている定期支払いはありません</div>';
+                    return;
+                }
+
+                recurring.forEach((item, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'detail-item';
+                    div.innerHTML = `
+                        <div class="detail-item-info">
+                            <div class="detail-item-category">${item.name}${item.isCreditCard ? ' <span style="color: #ff8a65; font-size: 10px;">[クレジット]</span>' : ''}</div>
+                            <div class="detail-item-memo">${item.category} - 毎月${item.day}日</div>
+                        </div>
+                        <div class="detail-item-amount">¥${item.amount.toLocaleString()}</div>
+                        <button class="detail-item-delete" onclick="app.deleteRecurringPayment(${index})">削除</button>
+                    `;
+                    list.appendChild(div);
+                });
+            },
+
+            addRecurringPayment() {
+                const name = document.getElementById('recurringName').value.trim();
+                const category = document.getElementById('recurringCategory').value;
+                const amount = parseFloat(document.getElementById('recurringAmount').value);
+                const day = parseInt(document.getElementById('recurringDay').value);
+                const isCreditCard = document.getElementById('recurringIsCredit').checked;
+
+                if (!name || !amount || !day || day < 1 || day > 31) {
+                    alert('すべての項目を正しく入力してください');
+                    return;
+                }
+
+                const recurring = JSON.parse(localStorage.getItem('recurringPayments') || '[]');
+                recurring.push({ name, category, amount, day, isCreditCard, timestamp: Date.now() });
+                localStorage.setItem('recurringPayments', JSON.stringify(recurring));
+
+                // フォームクリア
+                document.getElementById('recurringName').value = '';
+                document.getElementById('recurringAmount').value = '';
+                document.getElementById('recurringDay').value = '';
+                document.getElementById('recurringIsCredit').checked = false;
+
+                this.renderRecurringList();
+
+                // 自動同期
+                if (this.githubToken && this.gistId) {
+                    this.syncData();
+                }
+            },
+
+            deleteRecurringPayment(index) {
+                const recurring = JSON.parse(localStorage.getItem('recurringPayments') || '[]');
+                recurring.splice(index, 1);
+                localStorage.setItem('recurringPayments', JSON.stringify(recurring));
+                this.renderRecurringList();
+
+                // 自動同期
+                if (this.githubToken && this.gistId) {
+                    this.syncData();
+                }
+            },
+
+            closeRecurringModal() {
+                document.getElementById('recurringModal').classList.remove('active');
+            },
+
+            // 定期支払いを自動生成（毎月実行）
+            generateRecurringPayments() {
+                const recurring = JSON.parse(localStorage.getItem('recurringPayments') || '[]');
+                const details = JSON.parse(localStorage.getItem('detailEntries') || '[]');
+                const today = new Date();
+                const currentMonth = today.getMonth();
+                const currentYear = today.getFullYear();
+
+                recurring.forEach(item => {
+                    // 今月分の支払い日を計算
+                    const paymentDate = new Date(currentYear, currentMonth, item.day);
+                    const dateStr = paymentDate.toISOString().split('T')[0];
+
+                    // すでに今月分が登録されているかチェック
+                    const alreadyExists = details.some(entry => 
+                        entry.date === dateStr && 
+                        entry.category === item.category && 
+                        entry.amount === item.amount
+                    );
+
+                    // 未登録の場合のみ追加
+                    if (!alreadyExists && paymentDate <= today) {
+                        details.push({
+                            date: dateStr,
+                            category: item.category,
+                            amount: item.amount,
+                            memo: `${item.name}（定期支払い）`,
+                            isCreditCard: item.isCreditCard,
+                            timestamp: Date.now()
+                        });
+                    }
+                });
+
+                localStorage.setItem('detailEntries', JSON.stringify(details));
+                this.calculateFromTransactions();
+                this.render();
+            },
+
             async syncData() {
                 if (!this.githubToken) {
                     return;
@@ -1471,6 +1827,23 @@
                     localStorage.setItem('detailEntries', JSON.stringify(merged));
                 }
 
+                // 定期支払いの同期
+                const recurringContent = gist.files['recurring-payments.json']?.content;
+                if (recurringContent) {
+                    const remoteRecurring = JSON.parse(recurringContent);
+                    const localRecurring = JSON.parse(localStorage.getItem('recurringPayments') || '[]');
+                    
+                    // マージ（重複排除）
+                    const merged = [...localRecurring];
+                    remoteRecurring.forEach(remote => {
+                        if (!merged.find(local => local.timestamp === remote.timestamp)) {
+                            merged.push(remote);
+                        }
+                    });
+                    
+                    localStorage.setItem('recurringPayments', JSON.stringify(merged));
+                }
+
                 // 財務諸表データの同期
                 const financialContent = gist.files['financial-data.json']?.content;
                 if (financialContent) {
@@ -1484,6 +1857,7 @@
 
             async pushToGist() {
                 const details = JSON.parse(localStorage.getItem('detailEntries') || '[]');
+                const recurring = JSON.parse(localStorage.getItem('recurringPayments') || '[]');
                 
                 const data = {
                     description: '財務ダッシュボード - 収支・経理管理データ',
@@ -1491,6 +1865,9 @@
                     files: {
                         'financial-details.json': {
                             content: JSON.stringify(details, null, 2)
+                        },
+                        'recurring-payments.json': {
+                            content: JSON.stringify(recurring, null, 2)
                         },
                         'financial-data.json': {
                             content: JSON.stringify(this.data, null, 2)
