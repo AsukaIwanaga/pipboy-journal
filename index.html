@@ -718,7 +718,7 @@
             currentTab: 'journal',
             githubToken: localStorage.getItem('githubToken') || '',
             gistId: localStorage.getItem('gistId') || '',
-            typingSpeed: 15, // ミリ秒（速度調整可能）
+            typingSpeed: 30, // ミリ秒（速度調整可能）
 
             init() {
                 this.updateDateTime();
@@ -904,7 +904,7 @@
                         }
                         // 読点、カンマ、中点の後は短めの間
                         else if (text[i] === '、' || text[i] === ',' || text[i] === '・') {
-                            delay = this.typingSpeed * 8; // 8倍の間
+                            delay = this.typingSpeed * 4; // 8倍の間
                         }
                         
                         await new Promise(resolve => setTimeout(resolve, delay));
