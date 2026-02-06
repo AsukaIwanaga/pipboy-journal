@@ -188,11 +188,13 @@
 
         /* Data table */
         .data-row {
-            display: flex;
-            justify-content: space-between;
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 10px;
             padding: 8px 10px;
             border-bottom: 1px solid rgba(22, 101, 52, 0.3);
             font-size: 13px;
+            align-items: center;
         }
 
         .data-row:hover {
@@ -206,6 +208,7 @@
         .data-value {
             color: #22c55e;
             font-weight: bold;
+            text-align: right;
         }
 
         .section-header {
@@ -672,11 +675,20 @@
                 this.render();
                 document.getElementById('inputDate').value = new Date().toISOString().split('T')[0];
                 document.getElementById('financeDate').value = new Date().toISOString().split('T')[0];
+                this.setInputType('expense'); // 初期表示で支出を選択し、クレジットオプションを表示
             },
 
             loadData() {
                 this.entries = JSON.parse(localStorage.getItem('financialEntries') || '[]');
                 this.financeEntries = JSON.parse(localStorage.getItem('financeEntries') || '[]');
+                
+                // 既存データに creditPaid フィールドを追加（互換性対応）
+                this.entries = this.entries.map(entry => {
+                    if (entry.isCredit && entry.creditPaid === undefined) {
+                        entry.creditPaid = false; // デフォルトは未払い
+                    }
+                    return entry;
+                });
             },
 
             saveData() {
@@ -734,6 +746,7 @@
                     amount,
                     memo,
                     isCredit,
+                    creditPaid: false, // 支払済みフラグ（初期値: 未払い）
                     timestamp: Date.now()
                 });
 
@@ -783,6 +796,9 @@
                 this.renderCreditList();
                 this.renderFinanceList();
                 this.renderSummary();
+                this.renderPL();
+                this.renderBS();
+                this.renderCF();
             },
 
             renderRecent() {
@@ -841,25 +857,80 @@
             renderCreditList() {
                 const list = document.getElementById('creditList');
                 const credits = this.entries.filter(e => e.isCredit);
-                const total = credits.reduce((sum, e) => sum + e.amount, 0);
+                const unpaidCredits = credits.filter(e => !e.creditPaid);
+                const paidCredits = credits.filter(e => e.creditPaid);
                 
-                document.getElementById('totalCredit').textContent = `¥${total.toLocaleString()}`;
-                document.getElementById('creditBalance').textContent = `¥${total.toLocaleString()}`;
+                const unpaidTotal = unpaidCredits.reduce((sum, e) => sum + e.amount, 0);
+                const paidTotal = paidCredits.reduce((sum, e) => sum + e.amount, 0);
                 
-                list.innerHTML = '';
-                credits.forEach(entry => {
-                    const div = document.createElement('div');
-                    div.className = 'list-item';
-                    div.innerHTML = `
-                        <div class="list-item-info">
-                            <div class="list-item-date">${entry.date}</div>
-                            <div class="list-item-category">${entry.category}</div>
-                            ${entry.memo ? `<div class="list-item-memo">${entry.memo}</div>` : ''}
+                document.getElementById('totalCredit').textContent = `¥${unpaidTotal.toLocaleString()}`;
+                document.getElementById('creditBalance').textContent = `¥${unpaidTotal.toLocaleString()}`;
+                
+                list.innerHTML = `
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                        <div class="summary-box" style="padding: 15px;">
+                            <div class="summary-label" style="font-size: 11px;">未払い</div>
+                            <div class="summary-value" style="font-size: 24px; color: #ef4444;">¥${unpaidTotal.toLocaleString()}</div>
+                            <div style="font-size: 10px; color: #16a34a; margin-top: 5px;">${unpaidCredits.length}件</div>
                         </div>
-                        <div class="list-item-amount">¥${entry.amount.toLocaleString()}</div>
-                    `;
-                    list.appendChild(div);
-                });
+                        <div class="summary-box" style="padding: 15px;">
+                            <div class="summary-label" style="font-size: 11px;">支払済み</div>
+                            <div class="summary-value" style="font-size: 24px; color: #22c55e;">¥${paidTotal.toLocaleString()}</div>
+                            <div style="font-size: 10px; color: #16a34a; margin-top: 5px;">${paidCredits.length}件</div>
+                        </div>
+                    </div>
+
+                    <div class="section-header">未払い一覧</div>
+                `;
+                
+                if (unpaidCredits.length === 0) {
+                    list.innerHTML += '<div style="text-align: center; padding: 20px; color: #16a34a;">未払いのクレジット支払いはありません</div>';
+                } else {
+                    unpaidCredits.forEach(entry => {
+                        const index = this.entries.indexOf(entry);
+                        const div = document.createElement('div');
+                        div.className = 'list-item';
+                        div.innerHTML = `
+                            <div class="list-item-info">
+                                <div class="list-item-date">${entry.date}</div>
+                                <div class="list-item-category">${entry.category}</div>
+                                ${entry.memo ? `<div class="list-item-memo">${entry.memo}</div>` : ''}
+                            </div>
+                            <div class="list-item-amount" style="color: #ef4444;">¥${entry.amount.toLocaleString()}</div>
+                            <button class="btn btn-small" onclick="app.markAsPaid(${index})" style="background: rgba(34, 197, 94, 0.2);">支払済み</button>
+                        `;
+                        list.appendChild(div);
+                    });
+                }
+
+                // 支払済み一覧
+                const paidSection = document.createElement('div');
+                paidSection.innerHTML = '<div class="section-header" style="margin-top: 20px;">支払済み一覧</div>';
+                list.appendChild(paidSection);
+
+                if (paidCredits.length === 0) {
+                    const empty = document.createElement('div');
+                    empty.style.cssText = 'text-align: center; padding: 20px; color: #16a34a;';
+                    empty.textContent = '支払済みのクレジット支払いはありません';
+                    list.appendChild(empty);
+                } else {
+                    paidCredits.forEach(entry => {
+                        const index = this.entries.indexOf(entry);
+                        const div = document.createElement('div');
+                        div.className = 'list-item';
+                        div.style.opacity = '0.6';
+                        div.innerHTML = `
+                            <div class="list-item-info">
+                                <div class="list-item-date">${entry.date}</div>
+                                <div class="list-item-category">${entry.category} <span class="badge">支払済</span></div>
+                                ${entry.memo ? `<div class="list-item-memo">${entry.memo}</div>` : ''}
+                            </div>
+                            <div class="list-item-amount" style="color: #22c55e;">¥${entry.amount.toLocaleString()}</div>
+                            <button class="btn btn-small" onclick="app.markAsUnpaid(${index})" style="background: rgba(239, 68, 68, 0.2);">未払いに戻す</button>
+                        `;
+                        list.appendChild(div);
+                    });
+                }
             },
 
             renderFinanceList() {
@@ -902,6 +973,373 @@
                 const cash = totalIncome - totalExpense;
                 
                 document.getElementById('cashBalance').textContent = `¥${cash.toLocaleString()}`;
+                
+                // Calculate unpaid credit (概要画面用)
+                const unpaidCredit = this.entries.filter(e => e.isCredit && !e.creditPaid).reduce((sum, e) => sum + e.amount, 0);
+                document.getElementById('creditBalance').textContent = `¥${unpaidCredit.toLocaleString()}`;
+            },
+
+            renderPL() {
+                const content = document.getElementById('plContent');
+                
+                // Get current, last, and next month
+                const now = new Date();
+                const months = [
+                    new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().slice(0, 7),
+                    now.toISOString().slice(0, 7),
+                    new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString().slice(0, 7)
+                ];
+                const monthLabels = ['先月', '今月', '来月'];
+
+                // Calculate data for each month
+                const monthlyData = months.map(month => {
+                    const entries = this.entries.filter(e => e.date.startsWith(month));
+                    
+                    const salary = entries.filter(e => e.category === '給与').reduce((sum, e) => sum + e.amount, 0);
+                    const bonus = entries.filter(e => e.category === 'ボーナス').reduce((sum, e) => sum + e.amount, 0);
+                    const otherIncome = entries.filter(e => e.type === 'income' && !['給与', 'ボーナス'].includes(e.category)).reduce((sum, e) => sum + e.amount, 0);
+                    const totalIncome = salary + bonus + otherIncome;
+
+                    const expenses = {
+                        '食費': 0, '住居費': 0, '水道光熱費': 0, '通信費': 0,
+                        '交通費': 0, '娯楽費': 0, '医療費': 0, 'その他支出': 0
+                    };
+                    entries.filter(e => e.type === 'expense').forEach(e => {
+                        if (expenses.hasOwnProperty(e.category)) {
+                            expenses[e.category] += e.amount;
+                        } else {
+                            expenses['その他支出'] += e.amount;
+                        }
+                    });
+                    const totalExpense = Object.values(expenses).reduce((sum, val) => sum + val, 0);
+                    
+                    return {
+                        salary, bonus, otherIncome, totalIncome,
+                        expenses, totalExpense,
+                        netProfit: totalIncome - totalExpense
+                    };
+                });
+
+                // Generate chart
+                const maxValue = Math.max(...monthlyData.map(d => Math.max(d.totalIncome, d.totalExpense)));
+                const chartBars = monthlyData.map((data, i) => {
+                    const incomeHeight = maxValue > 0 ? (data.totalIncome / maxValue * 100) : 0;
+                    const expenseHeight = maxValue > 0 ? (data.totalExpense / maxValue * 100) : 0;
+                    return `
+                        <div class="bar-group">
+                            <div class="bar-wrapper">
+                                <div class="bar" style="height: ${incomeHeight}%; background: #22c55e;" title="収入: ¥${data.totalIncome.toLocaleString()}"></div>
+                            </div>
+                            <div class="bar-wrapper">
+                                <div class="bar" style="height: ${expenseHeight}%; background: #ef4444;" title="支出: ¥${data.totalExpense.toLocaleString()}"></div>
+                            </div>
+                            <div class="bar-label">${monthLabels[i]}</div>
+                        </div>
+                    `;
+                }).join('');
+
+                content.innerHTML = `
+                    <div class="summary-box">
+                        <div class="summary-label">今月の純利益</div>
+                        <div class="summary-value" style="color: ${monthlyData[1].netProfit >= 0 ? '#22c55e' : '#ef4444'}">¥${monthlyData[1].netProfit.toLocaleString()}</div>
+                    </div>
+
+                    <div class="chart-container">
+                        <div style="text-align: center; font-size: 12px; margin-bottom: 10px; color: #16a34a;">
+                            <span style="color: #22c55e;">■</span> 収入　
+                            <span style="color: #ef4444;">■</span> 支出
+                        </div>
+                        <div class="chart-bars">${chartBars}</div>
+                    </div>
+
+                    <div class="section-header">収入</div>
+                    <div class="data-row">
+                        <span class="data-label">給与</span>
+                        <span class="data-value">¥${monthlyData[0].salary.toLocaleString()}</span>
+                        <span class="data-value">¥${monthlyData[1].salary.toLocaleString()}</span>
+                        <span class="data-value">¥${monthlyData[2].salary.toLocaleString()}</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">ボーナス</span>
+                        <span class="data-value">¥${monthlyData[0].bonus.toLocaleString()}</span>
+                        <span class="data-value">¥${monthlyData[1].bonus.toLocaleString()}</span>
+                        <span class="data-value">¥${monthlyData[2].bonus.toLocaleString()}</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">その他収入</span>
+                        <span class="data-value">¥${monthlyData[0].otherIncome.toLocaleString()}</span>
+                        <span class="data-value">¥${monthlyData[1].otherIncome.toLocaleString()}</span>
+                        <span class="data-value">¥${monthlyData[2].otherIncome.toLocaleString()}</span>
+                    </div>
+                    <div class="data-row section-total">
+                        <span class="data-label">収入合計</span>
+                        <span class="data-value">¥${monthlyData[0].totalIncome.toLocaleString()}</span>
+                        <span class="data-value">¥${monthlyData[1].totalIncome.toLocaleString()}</span>
+                        <span class="data-value">¥${monthlyData[2].totalIncome.toLocaleString()}</span>
+                    </div>
+
+                    <div class="section-header">支出</div>
+                    ${Object.keys(monthlyData[0].expenses).map(cat => `
+                        <div class="data-row">
+                            <span class="data-label">${cat}</span>
+                            <span class="data-value">¥${monthlyData[0].expenses[cat].toLocaleString()}</span>
+                            <span class="data-value">¥${monthlyData[1].expenses[cat].toLocaleString()}</span>
+                            <span class="data-value">¥${monthlyData[2].expenses[cat].toLocaleString()}</span>
+                        </div>
+                    `).join('')}
+                    <div class="data-row section-total">
+                        <span class="data-label">支出合計</span>
+                        <span class="data-value">¥${monthlyData[0].totalExpense.toLocaleString()}</span>
+                        <span class="data-value">¥${monthlyData[1].totalExpense.toLocaleString()}</span>
+                        <span class="data-value">¥${monthlyData[2].totalExpense.toLocaleString()}</span>
+                    </div>
+
+                    <div class="data-row section-total" style="background: rgba(34, 197, 94, 0.25); margin-top: 15px;">
+                        <span class="data-label" style="font-size: 16px;">純利益</span>
+                        <span class="data-value" style="font-size: 16px; color: ${monthlyData[0].netProfit >= 0 ? '#22c55e' : '#ef4444'}">¥${monthlyData[0].netProfit.toLocaleString()}</span>
+                        <span class="data-value" style="font-size: 16px; color: ${monthlyData[1].netProfit >= 0 ? '#22c55e' : '#ef4444'}">¥${monthlyData[1].netProfit.toLocaleString()}</span>
+                        <span class="data-value" style="font-size: 16px; color: ${monthlyData[2].netProfit >= 0 ? '#22c55e' : '#ef4444'}">¥${monthlyData[2].netProfit.toLocaleString()}</span>
+                    </div>
+                `;
+            },
+
+            renderBS() {
+                const content = document.getElementById('bsContent');
+                
+                // Get current, last, and next month
+                const now = new Date();
+                const months = [
+                    new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().slice(0, 7),
+                    now.toISOString().slice(0, 7),
+                    new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString().slice(0, 7)
+                ];
+                const monthLabels = ['先月', '今月', '来月'];
+
+                // Calculate data for each month (cumulative up to that month)
+                const monthlyData = months.map((month, idx) => {
+                    // Get all entries up to this month
+                    const allEntries = this.entries.filter(e => e.date <= month + '-31');
+                    const allFinance = this.financeEntries.filter(e => e.date <= month + '-31');
+                    
+                    const totalIncome = allEntries.filter(e => e.type === 'income').reduce((sum, e) => sum + e.amount, 0);
+                    const cashExpense = allEntries.filter(e => e.type === 'expense' && !e.isCredit).reduce((sum, e) => sum + e.amount, 0);
+                    const cash = totalIncome - cashExpense;
+
+                    // クレジット未払金（支払済みでないもののみ）
+                    const creditDebt = allEntries.filter(e => e.isCredit && !e.creditPaid).reduce((sum, e) => sum + e.amount, 0);
+                    const borrowing = allFinance.filter(e => e.type === '借入').reduce((sum, e) => sum + e.amount, 0);
+                    const repayment = allFinance.filter(e => e.type === '返済' || e.type === 'クレジット返済').reduce((sum, e) => sum + e.amount, 0);
+                    const totalDebt = creditDebt + borrowing - repayment;
+
+                    const totalExpense = allEntries.filter(e => e.type === 'expense').reduce((sum, e) => sum + e.amount, 0);
+                    const netProfit = totalIncome - totalExpense;
+                    const equity = cash - totalDebt;
+
+                    return { cash, creditDebt, borrowing: borrowing - repayment, totalDebt, netProfit, equity };
+                });
+
+                // Generate chart
+                const maxValue = Math.max(...monthlyData.map(d => Math.max(Math.abs(d.cash), Math.abs(d.totalDebt), Math.abs(d.equity))));
+                const chartBars = monthlyData.map((data, i) => {
+                    const assetHeight = maxValue > 0 ? (Math.abs(data.cash) / maxValue * 100) : 0;
+                    const debtHeight = maxValue > 0 ? (Math.abs(data.totalDebt) / maxValue * 100) : 0;
+                    const equityHeight = maxValue > 0 ? (Math.abs(data.equity) / maxValue * 100) : 0;
+                    return `
+                        <div class="bar-group">
+                            <div class="bar-wrapper">
+                                <div class="bar" style="height: ${assetHeight}%; background: #22c55e;" title="資産: ¥${data.cash.toLocaleString()}"></div>
+                            </div>
+                            <div class="bar-wrapper">
+                                <div class="bar" style="height: ${debtHeight}%; background: #ef4444;" title="負債: ¥${data.totalDebt.toLocaleString()}"></div>
+                            </div>
+                            <div class="bar-wrapper">
+                                <div class="bar" style="height: ${equityHeight}%; background: #3b82f6;" title="純資産: ¥${data.equity.toLocaleString()}"></div>
+                            </div>
+                            <div class="bar-label">${monthLabels[i]}</div>
+                        </div>
+                    `;
+                }).join('');
+
+                content.innerHTML = `
+                    <div class="summary-box">
+                        <div class="summary-label">現在の純資産</div>
+                        <div class="summary-value" style="color: ${monthlyData[1].equity >= 0 ? '#22c55e' : '#ef4444'}">¥${monthlyData[1].equity.toLocaleString()}</div>
+                    </div>
+
+                    <div class="chart-container">
+                        <div style="text-align: center; font-size: 12px; margin-bottom: 10px; color: #16a34a;">
+                            <span style="color: #22c55e;">■</span> 資産　
+                            <span style="color: #ef4444;">■</span> 負債　
+                            <span style="color: #3b82f6;">■</span> 純資産
+                        </div>
+                        <div class="chart-bars">${chartBars}</div>
+                    </div>
+
+                    <div class="section-header">資産</div>
+                    <div class="data-row">
+                        <span class="data-label">現金・預金</span>
+                        <span class="data-value">¥${monthlyData[0].cash.toLocaleString()}</span>
+                        <span class="data-value">¥${monthlyData[1].cash.toLocaleString()}</span>
+                        <span class="data-value">¥${monthlyData[2].cash.toLocaleString()}</span>
+                    </div>
+                    <div class="data-row section-total">
+                        <span class="data-label">資産合計</span>
+                        <span class="data-value">¥${monthlyData[0].cash.toLocaleString()}</span>
+                        <span class="data-value">¥${monthlyData[1].cash.toLocaleString()}</span>
+                        <span class="data-value">¥${monthlyData[2].cash.toLocaleString()}</span>
+                    </div>
+
+                    <div class="section-header">負債</div>
+                    <div class="data-row">
+                        <span class="data-label">クレジット未払金</span>
+                        <span class="data-value">¥${monthlyData[0].creditDebt.toLocaleString()}</span>
+                        <span class="data-value">¥${monthlyData[1].creditDebt.toLocaleString()}</span>
+                        <span class="data-value">¥${monthlyData[2].creditDebt.toLocaleString()}</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">借入金（純額）</span>
+                        <span class="data-value">¥${monthlyData[0].borrowing.toLocaleString()}</span>
+                        <span class="data-value">¥${monthlyData[1].borrowing.toLocaleString()}</span>
+                        <span class="data-value">¥${monthlyData[2].borrowing.toLocaleString()}</span>
+                    </div>
+                    <div class="data-row section-total">
+                        <span class="data-label">負債合計</span>
+                        <span class="data-value">¥${monthlyData[0].totalDebt.toLocaleString()}</span>
+                        <span class="data-value">¥${monthlyData[1].totalDebt.toLocaleString()}</span>
+                        <span class="data-value">¥${monthlyData[2].totalDebt.toLocaleString()}</span>
+                    </div>
+
+                    <div class="section-header">純資産</div>
+                    <div class="data-row">
+                        <span class="data-label">資本金</span>
+                        <span class="data-value">¥0</span>
+                        <span class="data-value">¥0</span>
+                        <span class="data-value">¥0</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">利益剰余金</span>
+                        <span class="data-value">¥${monthlyData[0].netProfit.toLocaleString()}</span>
+                        <span class="data-value">¥${monthlyData[1].netProfit.toLocaleString()}</span>
+                        <span class="data-value">¥${monthlyData[2].netProfit.toLocaleString()}</span>
+                    </div>
+                    <div class="data-row section-total" style="background: rgba(34, 197, 94, 0.25);">
+                        <span class="data-label">純資産合計</span>
+                        <span class="data-value" style="color: ${monthlyData[0].equity >= 0 ? '#22c55e' : '#ef4444'}">¥${monthlyData[0].equity.toLocaleString()}</span>
+                        <span class="data-value" style="color: ${monthlyData[1].equity >= 0 ? '#22c55e' : '#ef4444'}">¥${monthlyData[1].equity.toLocaleString()}</span>
+                        <span class="data-value" style="color: ${monthlyData[2].equity >= 0 ? '#22c55e' : '#ef4444'}">¥${monthlyData[2].equity.toLocaleString()}</span>
+                    </div>
+                `;
+            },
+
+            renderCF() {
+                const content = document.getElementById('cfContent');
+                
+                // Get current, last, and next month
+                const now = new Date();
+                const months = [
+                    new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().slice(0, 7),
+                    now.toISOString().slice(0, 7),
+                    new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString().slice(0, 7)
+                ];
+                const monthLabels = ['先月', '今月', '来月'];
+
+                // Calculate data for each month
+                const monthlyData = months.map(month => {
+                    const income = this.entries.filter(e => e.type === 'income' && e.date.startsWith(month)).reduce((sum, e) => sum + e.amount, 0);
+                    const cashExpense = this.entries.filter(e => e.type === 'expense' && !e.isCredit && e.date.startsWith(month)).reduce((sum, e) => sum + e.amount, 0);
+                    const operatingCF = income - cashExpense;
+
+                    const borrowing = this.financeEntries.filter(e => e.type === '借入' && e.date.startsWith(month)).reduce((sum, e) => sum + e.amount, 0);
+                    const repayment = this.financeEntries.filter(e => (e.type === '返済' || e.type === 'クレジット返済') && e.date.startsWith(month)).reduce((sum, e) => sum + e.amount, 0);
+                    const financingCF = borrowing - repayment;
+
+                    const netCF = operatingCF + financingCF;
+
+                    return { income, cashExpense, operatingCF, borrowing, repayment, financingCF, netCF };
+                });
+
+                // Generate chart
+                const maxValue = Math.max(...monthlyData.map(d => Math.max(Math.abs(d.operatingCF), Math.abs(d.financingCF), Math.abs(d.netCF))));
+                const chartBars = monthlyData.map((data, i) => {
+                    const opHeight = maxValue > 0 ? (Math.abs(data.operatingCF) / maxValue * 100) : 0;
+                    const finHeight = maxValue > 0 ? (Math.abs(data.financingCF) / maxValue * 100) : 0;
+                    const netHeight = maxValue > 0 ? (Math.abs(data.netCF) / maxValue * 100) : 0;
+                    return `
+                        <div class="bar-group">
+                            <div class="bar-wrapper">
+                                <div class="bar" style="height: ${opHeight}%; background: ${data.operatingCF >= 0 ? '#22c55e' : '#ef4444'};" title="営業CF: ¥${data.operatingCF.toLocaleString()}"></div>
+                            </div>
+                            <div class="bar-wrapper">
+                                <div class="bar" style="height: ${finHeight}%; background: ${data.financingCF >= 0 ? '#3b82f6' : '#f59e0b'};" title="財務CF: ¥${data.financingCF.toLocaleString()}"></div>
+                            </div>
+                            <div class="bar-wrapper">
+                                <div class="bar" style="height: ${netHeight}%; background: ${data.netCF >= 0 ? '#22c55e' : '#ef4444'};" title="純CF: ¥${data.netCF.toLocaleString()}"></div>
+                            </div>
+                            <div class="bar-label">${monthLabels[i]}</div>
+                        </div>
+                    `;
+                }).join('');
+
+                content.innerHTML = `
+                    <div class="summary-box">
+                        <div class="summary-label">今月の現金増減</div>
+                        <div class="summary-value" style="color: ${monthlyData[1].netCF >= 0 ? '#22c55e' : '#ef4444'}">¥${monthlyData[1].netCF.toLocaleString()}</div>
+                    </div>
+
+                    <div class="chart-container">
+                        <div style="text-align: center; font-size: 12px; margin-bottom: 10px; color: #16a34a;">
+                            営業CF　財務CF　純CF
+                        </div>
+                        <div class="chart-bars">${chartBars}</div>
+                    </div>
+
+                    <div class="section-header">営業活動によるキャッシュフロー</div>
+                    <div class="data-row">
+                        <span class="data-label">収入</span>
+                        <span class="data-value">¥${monthlyData[0].income.toLocaleString()}</span>
+                        <span class="data-value">¥${monthlyData[1].income.toLocaleString()}</span>
+                        <span class="data-value">¥${monthlyData[2].income.toLocaleString()}</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">支出（現金）</span>
+                        <span class="data-value" style="color: #ef4444">-¥${monthlyData[0].cashExpense.toLocaleString()}</span>
+                        <span class="data-value" style="color: #ef4444">-¥${monthlyData[1].cashExpense.toLocaleString()}</span>
+                        <span class="data-value" style="color: #ef4444">-¥${monthlyData[2].cashExpense.toLocaleString()}</span>
+                    </div>
+                    <div class="data-row section-total">
+                        <span class="data-label">営業CF</span>
+                        <span class="data-value" style="color: ${monthlyData[0].operatingCF >= 0 ? '#22c55e' : '#ef4444'}">¥${monthlyData[0].operatingCF.toLocaleString()}</span>
+                        <span class="data-value" style="color: ${monthlyData[1].operatingCF >= 0 ? '#22c55e' : '#ef4444'}">¥${monthlyData[1].operatingCF.toLocaleString()}</span>
+                        <span class="data-value" style="color: ${monthlyData[2].operatingCF >= 0 ? '#22c55e' : '#ef4444'}">¥${monthlyData[2].operatingCF.toLocaleString()}</span>
+                    </div>
+
+                    <div class="section-header">財務活動によるキャッシュフロー</div>
+                    <div class="data-row">
+                        <span class="data-label">借入</span>
+                        <span class="data-value">¥${monthlyData[0].borrowing.toLocaleString()}</span>
+                        <span class="data-value">¥${monthlyData[1].borrowing.toLocaleString()}</span>
+                        <span class="data-value">¥${monthlyData[2].borrowing.toLocaleString()}</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">返済</span>
+                        <span class="data-value" style="color: #ef4444">-¥${monthlyData[0].repayment.toLocaleString()}</span>
+                        <span class="data-value" style="color: #ef4444">-¥${monthlyData[1].repayment.toLocaleString()}</span>
+                        <span class="data-value" style="color: #ef4444">-¥${monthlyData[2].repayment.toLocaleString()}</span>
+                    </div>
+                    <div class="data-row section-total">
+                        <span class="data-label">財務CF</span>
+                        <span class="data-value" style="color: ${monthlyData[0].financingCF >= 0 ? '#22c55e' : '#ef4444'}">¥${monthlyData[0].financingCF.toLocaleString()}</span>
+                        <span class="data-value" style="color: ${monthlyData[1].financingCF >= 0 ? '#22c55e' : '#ef4444'}">¥${monthlyData[1].financingCF.toLocaleString()}</span>
+                        <span class="data-value" style="color: ${monthlyData[2].financingCF >= 0 ? '#22c55e' : '#ef4444'}">¥${monthlyData[2].financingCF.toLocaleString()}</span>
+                    </div>
+
+                    <div class="data-row section-total" style="background: rgba(34, 197, 94, 0.25); margin-top: 15px;">
+                        <span class="data-label" style="font-size: 16px;">現金増減額</span>
+                        <span class="data-value" style="font-size: 16px; color: ${monthlyData[0].netCF >= 0 ? '#22c55e' : '#ef4444'}">¥${monthlyData[0].netCF.toLocaleString()}</span>
+                        <span class="data-value" style="font-size: 16px; color: ${monthlyData[1].netCF >= 0 ? '#22c55e' : '#ef4444'}">¥${monthlyData[1].netCF.toLocaleString()}</span>
+                        <span class="data-value" style="font-size: 16px; color: ${monthlyData[2].netCF >= 0 ? '#22c55e' : '#ef4444'}">¥${monthlyData[2].netCF.toLocaleString()}</span>
+                    </div>
+                `;
             },
 
             deleteEntry(index) {
@@ -915,6 +1353,22 @@
             deleteFinance(index) {
                 if (confirm('削除しますか？')) {
                     this.financeEntries.splice(index, 1);
+                    this.saveData();
+                    this.render();
+                }
+            },
+
+            markAsPaid(index) {
+                if (confirm('この支払いを「支払済み」にしますか？')) {
+                    this.entries[index].creditPaid = true;
+                    this.saveData();
+                    this.render();
+                }
+            },
+
+            markAsUnpaid(index) {
+                if (confirm('この支払いを「未払い」に戻しますか？')) {
+                    this.entries[index].creditPaid = false;
                     this.saveData();
                     this.render();
                 }
