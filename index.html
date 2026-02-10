@@ -1250,7 +1250,11 @@
                 document.querySelectorAll('.filter-btn').forEach(btn => {
                     btn.classList.remove('active');
                 });
-                event.target.classList.add('active');
+                
+                // event.targetが存在する場合のみアクティブ化
+                if (event && event.target) {
+                    event.target.classList.add('active');
+                }
                 
                 this.renderTasks();
             },
