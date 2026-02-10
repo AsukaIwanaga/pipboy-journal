@@ -733,6 +733,119 @@
                 padding: 15px;
             }
         }
+
+        /* Calendar Styles */
+        .calendar-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            height: 100%;
+        }
+
+        .calendar-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            border: 2px solid #166534;
+            background: rgba(0,0,0,0.6);
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+            flex: 1;
+            border: 2px solid #166534;
+            background: rgba(0,0,0,0.6);
+            padding: 10px;
+        }
+
+        .calendar-day-header {
+            text-align: center;
+            font-size: 11px;
+            font-weight: bold;
+            padding: 8px 4px;
+            border-bottom: 1px solid #166534;
+            color: #16a34a;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            border: 1px solid #166534;
+            padding: 5px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .calendar-day:hover {
+            background: rgba(34, 197, 94, 0.1);
+            border-color: #22c55e;
+        }
+
+        .calendar-day.today {
+            background: rgba(34, 197, 94, 0.2);
+            border: 2px solid #22c55e;
+        }
+
+        .calendar-day.other-month {
+            opacity: 0.3;
+        }
+
+        .calendar-day-number {
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .calendar-day-events {
+            margin-top: 4px;
+            font-size: 9px;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .calendar-event-dot {
+            display: inline-block;
+            width: 4px;
+            height: 4px;
+            background: #22c55e;
+            border-radius: 50%;
+            margin-right: 2px;
+        }
+
+        .calendar-events {
+            border: 2px solid #166534;
+            background: rgba(0,0,0,0.6);
+            padding: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .calendar-event-item {
+            padding: 8px;
+            margin-bottom: 8px;
+            border-left: 3px solid #22c55e;
+            background: rgba(34, 197, 94, 0.1);
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .calendar-event-item:hover {
+            background: rgba(34, 197, 94, 0.2);
+        }
+
+        .calendar-event-date {
+            font-weight: bold;
+            color: #22c55e;
+            margin-bottom: 4px;
+        }
+
+        .calendar-event-title {
+            color: #16a34a;
+        }
     </style>
 </head>
 <body>
@@ -754,6 +867,7 @@
                     <button class="tab-btn active" onclick="app.switchTab('journal')">&gt;&gt;&gt; JOURNAL &lt;&lt;&lt;</button>
                     <button class="tab-btn" onclick="app.switchTab('tasks')">&gt;&gt;&gt; TASKS &lt;&lt;&lt;</button>
                     <button class="tab-btn" onclick="app.switchTab('missions')">&gt;&gt;&gt; MISSIONS &lt;&lt;&lt;</button>
+                    <button class="tab-btn" onclick="app.switchTab('calendar')">&gt;&gt;&gt; CALENDAR &lt;&lt;&lt;</button>
                     <button class="tab-btn" onclick="app.switchTab('budget')">&gt;&gt;&gt; BUDGET &lt;&lt;&lt;</button>
                 </div>
             </div>
@@ -891,8 +1005,24 @@
                 </div>
             </div>
 
+            <!-- Calendar Content -->
+            <div class="main-content" id="calendarContent" style="display:none;">
+                <div class="calendar-container">
+                    <div class="calendar-header">
+                        <button class="btn" onclick="app.previousMonth()" style="padding: 8px 15px;">&lt;&lt;</button>
+                        <div id="calendarMonthYear" style="flex: 1; text-align: center; font-size: 18px; font-weight: bold;"></div>
+                        <button class="btn" onclick="app.nextMonth()" style="padding: 8px 15px;">&gt;&gt;</button>
+                    </div>
+                    <div class="calendar-grid" id="calendarGrid"></div>
+                    <div class="calendar-events" id="calendarEvents">
+                        <div style="font-size: 14px; font-weight: bold; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #166534;">EVENTS</div>
+                        <div id="calendarEventsList"></div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Budget Content -->
-            <div class="main-content" id="budgetContent" style="display:none;">
+            <div class="main-content" id="budgetContent" style="display:none;">{
                 <!-- Single centered panel for dashboard link -->
                 <div style="display: flex; justify-content: center; align-items: center; width: 100%; height: 100%;">
                     <div style="text-align: center; max-width: 600px; padding: 40px;">
@@ -1007,6 +1137,7 @@
             taskFilter: 'all', // all, standalone, mission
             budgetView: 'list', // list, summary
             transactionType: 'expense', // income, expense
+            calendarDate: new Date(), // カレンダー表示月
             githubToken: localStorage.getItem('githubToken') || '',
             gistId: localStorage.getItem('gistId') || '',
             typingSpeed: 30, // ミリ秒（速度調整可能）
@@ -1066,11 +1197,13 @@
                 const journalContent = document.getElementById('journalContent');
                 const taskContent = document.getElementById('taskContent');
                 const missionContent = document.getElementById('missionContent');
+                const calendarContent = document.getElementById('calendarContent');
                 const budgetContent = document.getElementById('budgetContent');
                 
                 if (journalContent) journalContent.style.display = 'none';
                 if (taskContent) taskContent.style.display = 'none';
                 if (missionContent) missionContent.style.display = 'none';
+                if (calendarContent) calendarContent.style.display = 'none';
                 if (budgetContent) budgetContent.style.display = 'none';
                 
                 if (tab === 'journal' && journalContent) {
@@ -1079,6 +1212,9 @@
                     taskContent.style.display = 'flex';
                 } else if (tab === 'missions' && missionContent) {
                     missionContent.style.display = 'flex';
+                } else if (tab === 'calendar' && calendarContent) {
+                    calendarContent.style.display = 'flex';
+                    this.renderCalendar();
                 } else if (tab === 'budget' && budgetContent) {
                     budgetContent.style.display = 'flex';
                 }
@@ -2197,6 +2333,216 @@
                     this.gistId = gist.id;
                     localStorage.setItem('gistId', gist.id);
                 }
+            },
+
+            // Calendar methods
+            renderCalendar() {
+                const year = this.calendarDate.getFullYear();
+                const month = this.calendarDate.getMonth();
+                
+                // Update header
+                const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+                document.getElementById('calendarMonthYear').textContent = `${year}年 ${monthNames[month]}`;
+                
+                // Get first and last day of month
+                const firstDay = new Date(year, month, 1);
+                const lastDay = new Date(year, month + 1, 0);
+                const startingDayOfWeek = firstDay.getDay();
+                const daysInMonth = lastDay.getDate();
+                
+                // Get previous month's days to fill
+                const prevMonthLastDay = new Date(year, month, 0).getDate();
+                
+                // Build calendar grid
+                const grid = document.getElementById('calendarGrid');
+                grid.innerHTML = '';
+                
+                // Day headers
+                const dayHeaders = ['日', '月', '火', '水', '木', '金', '土'];
+                dayHeaders.forEach(day => {
+                    const header = document.createElement('div');
+                    header.className = 'calendar-day-header';
+                    header.textContent = day;
+                    grid.appendChild(header);
+                });
+                
+                // Previous month's days
+                for (let i = startingDayOfWeek - 1; i >= 0; i--) {
+                    const day = prevMonthLastDay - i;
+                    const dateStr = new Date(year, month - 1, day).toISOString().split('T')[0];
+                    this.renderCalendarDay(grid, day, dateStr, true);
+                }
+                
+                // Current month's days
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dateStr = new Date(year, month, day).toISOString().split('T')[0];
+                    this.renderCalendarDay(grid, day, dateStr, false);
+                }
+                
+                // Next month's days to complete grid
+                const totalCells = startingDayOfWeek + daysInMonth;
+                const remainingCells = 42 - totalCells; // 6 weeks * 7 days
+                for (let day = 1; day <= remainingCells; day++) {
+                    const dateStr = new Date(year, month + 1, day).toISOString().split('T')[0];
+                    this.renderCalendarDay(grid, day, dateStr, true);
+                }
+                
+                this.renderCalendarEvents();
+            },
+
+            renderCalendarDay(grid, day, dateStr, isOtherMonth) {
+                const today = new Date().toISOString().split('T')[0];
+                const dayEl = document.createElement('div');
+                dayEl.className = 'calendar-day';
+                if (isOtherMonth) dayEl.classList.add('other-month');
+                if (dateStr === today) dayEl.classList.add('today');
+                
+                const number = document.createElement('div');
+                number.className = 'calendar-day-number';
+                number.textContent = day;
+                dayEl.appendChild(number);
+                
+                // Get events for this day
+                const events = this.getEventsForDate(dateStr);
+                if (events.length > 0) {
+                    const eventsEl = document.createElement('div');
+                    eventsEl.className = 'calendar-day-events';
+                    events.slice(0, 3).forEach(() => {
+                        const dot = document.createElement('span');
+                        dot.className = 'calendar-event-dot';
+                        eventsEl.appendChild(dot);
+                    });
+                    dayEl.appendChild(eventsEl);
+                }
+                
+                dayEl.onclick = () => this.showDayEvents(dateStr);
+                grid.appendChild(dayEl);
+            },
+
+            getEventsForDate(dateStr) {
+                const events = [];
+                
+                // Journal entries
+                this.entries.forEach(entry => {
+                    if (entry.date === dateStr) {
+                        events.push({
+                            type: 'journal',
+                            date: entry.date,
+                            title: entry.text.substring(0, 50) + (entry.text.length > 50 ? '...' : ''),
+                            data: entry
+                        });
+                    }
+                });
+                
+                // Tasks with due dates
+                this.tasks.forEach(task => {
+                    if (task.dueDate === dateStr) {
+                        events.push({
+                            type: 'task',
+                            date: task.dueDate,
+                            title: `[TASK] ${task.title}`,
+                            data: task
+                        });
+                    }
+                });
+                
+                // Mission tasks
+                this.missions.forEach(mission => {
+                    if (mission.tasks) {
+                        mission.tasks.forEach(task => {
+                            if (task.dueDate === dateStr) {
+                                events.push({
+                                    type: 'mission-task',
+                                    date: task.dueDate,
+                                    title: `[MISSION] ${mission.title}: ${task.title}`,
+                                    data: { mission, task }
+                                });
+                            }
+                        });
+                    }
+                });
+                
+                return events;
+            },
+
+            showDayEvents(dateStr) {
+                const events = this.getEventsForDate(dateStr);
+                const list = document.getElementById('calendarEventsList');
+                
+                if (events.length === 0) {
+                    list.innerHTML = '<div style="color: #16a34a; font-size: 11px;">この日にイベントはありません</div>';
+                    return;
+                }
+                
+                list.innerHTML = '';
+                events.forEach(event => {
+                    const item = document.createElement('div');
+                    item.className = 'calendar-event-item';
+                    item.innerHTML = `
+                        <div class="calendar-event-date">${event.date}</div>
+                        <div class="calendar-event-title">${event.title}</div>
+                    `;
+                    item.onclick = () => {
+                        if (event.type === 'journal') {
+                            this.viewEntry(event.data);
+                        } else if (event.type === 'task') {
+                            this.viewTask(event.data);
+                        } else if (event.type === 'mission-task') {
+                            this.viewMission(event.data.mission);
+                        }
+                    };
+                    list.appendChild(item);
+                });
+            },
+
+            renderCalendarEvents() {
+                const year = this.calendarDate.getFullYear();
+                const month = this.calendarDate.getMonth();
+                
+                const allEvents = [];
+                
+                // Get all events for the month
+                for (let d = new Date(year, month, 1); d <= new Date(year, month + 1, 0); d.setDate(d.getDate() + 1)) {
+                    const dateStr = d.toISOString().split('T')[0];
+                    const dayEvents = this.getEventsForDate(dateStr);
+                    allEvents.push(...dayEvents);
+                }
+                
+                const list = document.getElementById('calendarEventsList');
+                if (allEvents.length === 0) {
+                    list.innerHTML = '<div style="color: #16a34a; font-size: 11px;">今月のイベントはありません</div>';
+                    return;
+                }
+                
+                list.innerHTML = '';
+                allEvents.sort((a, b) => a.date.localeCompare(b.date)).forEach(event => {
+                    const item = document.createElement('div');
+                    item.className = 'calendar-event-item';
+                    item.innerHTML = `
+                        <div class="calendar-event-date">${event.date}</div>
+                        <div class="calendar-event-title">${event.title}</div>
+                    `;
+                    item.onclick = () => {
+                        if (event.type === 'journal') {
+                            this.viewEntry(event.data);
+                        } else if (event.type === 'task') {
+                            this.viewTask(event.data);
+                        } else if (event.type === 'mission-task') {
+                            this.viewMission(event.data.mission);
+                        }
+                    };
+                    list.appendChild(item);
+                });
+            },
+
+            previousMonth() {
+                this.calendarDate = new Date(this.calendarDate.getFullYear(), this.calendarDate.getMonth() - 1, 1);
+                this.renderCalendar();
+            },
+
+            nextMonth() {
+                this.calendarDate = new Date(this.calendarDate.getFullYear(), this.calendarDate.getMonth() + 1, 1);
+                this.renderCalendar();
             }
         };
 
