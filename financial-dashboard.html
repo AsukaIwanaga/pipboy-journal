@@ -628,12 +628,12 @@
                             <!-- Summary boxes -->
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
                                 <div class="summary-box" style="padding: 15px;">
-                                    <div class="summary-label" style="font-size: 11px;">今月分（引落予定）</div>
+                                    <div class="summary-label" style="font-size: 11px;">今月引落分</div>
                                     <div class="summary-value" style="font-size: 24px; color: #ef4444;" id="currentMonthCredit">¥0</div>
                                     <div style="font-size: 10px; color: #16a34a; margin-top: 5px;">引落日: <span id="creditPaymentDay">-</span></div>
                                 </div>
                                 <div class="summary-box" style="padding: 15px;">
-                                    <div class="summary-label" style="font-size: 11px;">来月分（未確定）</div>
+                                    <div class="summary-label" style="font-size: 11px;">来月引落分</div>
                                     <div class="summary-value" style="font-size: 24px; color: #f59e0b;" id="nextMonthCredit">¥0</div>
                                     <div style="font-size: 10px; color: #16a34a; margin-top: 5px;">対象期間: <span id="creditPeriod">-</span></div>
                                 </div>
@@ -1328,6 +1328,12 @@
                     </div>
 
                     <div class="section-header">収入</div>
+                    <div class="data-row" style="font-weight: bold; border-bottom: 1px solid #166534; padding-bottom: 5px; margin-bottom: 5px;">
+                        <span class="data-label"></span>
+                        <span class="data-value">${monthLabels[0]}</span>
+                        <span class="data-value">${monthLabels[1]}</span>
+                        <span class="data-value">${monthLabels[2]}</span>
+                    </div>
                     <div class="data-row">
                         <span class="data-label">給与</span>
                         <span class="data-value">¥${monthlyData[0].salary.toLocaleString()}</span>
@@ -1354,6 +1360,12 @@
                     </div>
 
                     <div class="section-header">支出</div>
+                    <div class="data-row" style="font-weight: bold; border-bottom: 1px solid #166534; padding-bottom: 5px; margin-bottom: 5px;">
+                        <span class="data-label"></span>
+                        <span class="data-value">${monthLabels[0]}</span>
+                        <span class="data-value">${monthLabels[1]}</span>
+                        <span class="data-value">${monthLabels[2]}</span>
+                    </div>
                     ${Object.keys(monthlyData[0].expenses).map(cat => `
                         <div class="data-row">
                             <span class="data-label">${cat}</span>
@@ -1451,6 +1463,12 @@
                     </div>
 
                     <div class="section-header">資産</div>
+                    <div class="data-row" style="font-weight: bold; border-bottom: 1px solid #166534; padding-bottom: 5px; margin-bottom: 5px;">
+                        <span class="data-label"></span>
+                        <span class="data-value">${monthLabels[0]}</span>
+                        <span class="data-value">${monthLabels[1]}</span>
+                        <span class="data-value">${monthLabels[2]}</span>
+                    </div>
                     <div class="data-row">
                         <span class="data-label">現金・預金</span>
                         <span class="data-value">¥${monthlyData[0].cash.toLocaleString()}</span>
@@ -1465,6 +1483,12 @@
                     </div>
 
                     <div class="section-header">負債</div>
+                    <div class="data-row" style="font-weight: bold; border-bottom: 1px solid #166534; padding-bottom: 5px; margin-bottom: 5px;">
+                        <span class="data-label"></span>
+                        <span class="data-value">${monthLabels[0]}</span>
+                        <span class="data-value">${monthLabels[1]}</span>
+                        <span class="data-value">${monthLabels[2]}</span>
+                    </div>
                     <div class="data-row">
                         <span class="data-label">クレジット未払金</span>
                         <span class="data-value">¥${monthlyData[0].creditDebt.toLocaleString()}</span>
@@ -1485,6 +1509,12 @@
                     </div>
 
                     <div class="section-header">純資産</div>
+                    <div class="data-row" style="font-weight: bold; border-bottom: 1px solid #166534; padding-bottom: 5px; margin-bottom: 5px;">
+                        <span class="data-label"></span>
+                        <span class="data-value">${monthLabels[0]}</span>
+                        <span class="data-value">${monthLabels[1]}</span>
+                        <span class="data-value">${monthLabels[2]}</span>
+                    </div>
                     <div class="data-row">
                         <span class="data-label">資本金</span>
                         <span class="data-value">¥0</span>
@@ -1569,6 +1599,12 @@
                     </div>
 
                     <div class="section-header">営業活動によるキャッシュフロー</div>
+                    <div class="data-row" style="font-weight: bold; border-bottom: 1px solid #166534; padding-bottom: 5px; margin-bottom: 5px;">
+                        <span class="data-label"></span>
+                        <span class="data-value">${monthLabels[0]}</span>
+                        <span class="data-value">${monthLabels[1]}</span>
+                        <span class="data-value">${monthLabels[2]}</span>
+                    </div>
                     <div class="data-row">
                         <span class="data-label">収入</span>
                         <span class="data-value">¥${monthlyData[0].income.toLocaleString()}</span>
@@ -1589,6 +1625,12 @@
                     </div>
 
                     <div class="section-header">財務活動によるキャッシュフロー</div>
+                    <div class="data-row" style="font-weight: bold; border-bottom: 1px solid #166534; padding-bottom: 5px; margin-bottom: 5px;">
+                        <span class="data-label"></span>
+                        <span class="data-value">${monthLabels[0]}</span>
+                        <span class="data-value">${monthLabels[1]}</span>
+                        <span class="data-value">${monthLabels[2]}</span>
+                    </div>
                     <div class="data-row">
                         <span class="data-label">借入</span>
                         <span class="data-value">¥${monthlyData[0].borrowing.toLocaleString()}</span>
