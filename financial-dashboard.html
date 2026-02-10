@@ -524,13 +524,19 @@
                                     <div class="summary-value" id="monthlyProfit">¥0</div>
                                 </div>
                                 <div class="summary-box">
-                                    <div class="summary-label">現金残高</div>
-                                    <div class="summary-value" id="cashBalance">¥0</div>
+                                    <div class="summary-label">現金残高（現在）</div>
+                                    <div class="summary-value" id="cashBalanceCurrent">¥0</div>
+                                </div>
+                                <div class="summary-box">
+                                    <div class="summary-label">現金残高（月末）</div>
+                                    <div class="summary-value" id="cashBalanceEndOfMonth">¥0</div>
                                 </div>
                                 <div class="summary-box">
                                     <div class="summary-label">クレジット未払金</div>
                                     <div class="summary-value" id="creditBalance">¥0</div>
                                 </div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 20px;">
                                 <div class="summary-box">
                                     <div class="summary-label">今月支払予定</div>
                                     <div class="summary-value" id="currentPaymentSchedule">¥0</div>
@@ -571,6 +577,7 @@
                                         <optgroup label="収入" id="incomeGroup" style="display:none;">
                                             <option value="給与">給与</option>
                                             <option value="ボーナス">ボーナス</option>
+                                            <option value="借入金">借入金</option>
                                             <option value="その他収入">その他収入</option>
                                         </optgroup>
                                         <optgroup label="支出" id="expenseGroup">
@@ -591,7 +598,8 @@
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label">メモ:</label>
-                                    <textarea class="form-input" id="inputMemo" placeholder="メモ（任意）"></textarea>
+                                    <input type="text" class="form-input" id="inputMemo" list="memoHistory" placeholder="メモ（任意）">
+                                    <datalist id="memoHistory"></datalist>
                                 </div>
                                 <div class="form-group" id="creditGroup" style="display: none;">
                                     <label style="display: flex; align-items: center; cursor: pointer;">
@@ -750,7 +758,8 @@
                             <div style="max-width: 600px; margin: 0 auto 30px;">
                                 <div class="form-group">
                                     <label class="form-label">名称:</label>
-                                    <input type="text" class="form-input" id="recurringName" placeholder="例: Netflix月額">
+                                    <input type="text" class="form-input" id="recurringName" list="recurringNameHistory" placeholder="例: Netflix月額">
+                                    <datalist id="recurringNameHistory"></datalist>
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label">カテゴリ:</label>
@@ -803,6 +812,7 @@
                 closingDay: 31,    // 締め日（デフォルト: 月末）
                 paymentDay: 27     // 引落日（デフォルト: 27日）
             },
+            lastCreditUsed: false, // 前回のクレジット使用状態を保持
 
             init() {
                 this.loadData();
@@ -830,6 +840,7 @@
                 this.financeEntries = JSON.parse(localStorage.getItem('financeEntries') || '[]');
                 this.recurringPayments = JSON.parse(localStorage.getItem('recurringPayments') || '[]');
                 this.creditSettings = JSON.parse(localStorage.getItem('creditSettings') || '{"closingDay":31,"paymentDay":27}');
+                this.lastCreditUsed = JSON.parse(localStorage.getItem('lastCreditUsed') || 'false');
                 
                 // 既存データに creditPaid フィールドを追加（互換性対応）
                 this.entries = this.entries.map(entry => {
@@ -845,6 +856,7 @@
                 localStorage.setItem('financeEntries', JSON.stringify(this.financeEntries));
                 localStorage.setItem('recurringPayments', JSON.stringify(this.recurringPayments));
                 localStorage.setItem('creditSettings', JSON.stringify(this.creditSettings));
+                localStorage.setItem('lastCreditUsed', JSON.stringify(this.lastCreditUsed));
             },
 
             switchTab(tab) {
@@ -875,7 +887,18 @@
                     expenseGroup.style.display = 'block';
                     creditGroup.style.display = 'block';
                     document.getElementById('inputCategory').value = '食費';
+                    // 前回の状態を復元
+                    document.getElementById('inputCredit').checked = this.lastCreditUsed;
                 }
+                
+                // メモ履歴を更新
+                this.updateMemoHistory();
+            },
+
+            updateMemoHistory() {
+                const memoList = document.getElementById('memoHistory');
+                const memos = [...new Set(this.entries.map(e => e.memo).filter(m => m))];
+                memoList.innerHTML = memos.map(m => `<option value="${m}">`).join('');
             },
 
             saveEntry() {
@@ -905,13 +928,15 @@
                 
                 this.entries.push(entry);
 
+                // クレジット状態を保存
+                this.lastCreditUsed = isCredit;
+
                 this.saveData();
                 this.render();
 
-                // Clear form
+                // Clear form (but keep credit checkbox state)
                 document.getElementById('inputAmount').value = '';
                 document.getElementById('inputMemo').value = '';
-                document.getElementById('inputCredit').checked = false;
 
                 alert('追加しました');
             },
@@ -935,6 +960,20 @@
                     timestamp: Date.now()
                 });
 
+                // 借入の場合、収入としても記録（現金が増えるため）
+                if (type === '借入') {
+                    this.entries.push({
+                        date,
+                        type: 'income',
+                        category: '借入金',
+                        amount,
+                        memo: memo ? `【借入】${memo}` : '【借入】',
+                        isCredit: false,
+                        creditPaid: false,
+                        timestamp: Date.now()
+                    });
+                }
+
                 this.saveData();
                 this.render();
 
@@ -955,6 +994,8 @@
                 this.renderPL();
                 this.renderBS();
                 this.renderCF();
+                this.updateMemoHistory();
+                this.updateRecurringNameHistory();
             },
 
             renderRecent() {
@@ -1151,7 +1192,8 @@
             },
 
             renderSummary() {
-                const thisMonth = new Date().toISOString().slice(0, 7);
+                const today = new Date();
+                const thisMonth = today.toISOString().slice(0, 7);
                 const monthlyEntries = this.entries.filter(e => e.date.startsWith(thisMonth));
                 
                 const income = monthlyEntries.filter(e => e.type === 'income').reduce((sum, e) => sum + e.amount, 0);
@@ -1160,15 +1202,31 @@
                 
                 document.getElementById('monthlyProfit').textContent = `¥${profit.toLocaleString()}`;
                 
-                // Calculate cash (simplified)
-                const totalIncome = this.entries.filter(e => e.type === 'income').reduce((sum, e) => sum + e.amount, 0);
-                const totalExpense = this.entries.filter(e => e.type === 'expense' && !e.isCredit).reduce((sum, e) => sum + e.amount, 0);
-                const cash = totalIncome - totalExpense;
+                // Calculate cash - 現在
+                const todayStr = today.toISOString().split('T')[0];
+                const currentIncome = this.entries.filter(e => e.type === 'income' && e.date <= todayStr).reduce((sum, e) => sum + e.amount, 0);
+                const currentExpense = this.entries.filter(e => e.type === 'expense' && !e.isCredit && e.date <= todayStr).reduce((sum, e) => sum + e.amount, 0);
                 
-                document.getElementById('cashBalance').textContent = `¥${cash.toLocaleString()}`;
+                // 財務活動（借入・返済）を現金に反映
+                const currentBorrowing = this.financeEntries.filter(e => e.type === '借入' && e.date <= todayStr).reduce((sum, e) => sum + e.amount, 0);
+                const currentRepayment = this.financeEntries.filter(e => (e.type === '返済' || e.type === 'クレジット引落') && e.date <= todayStr).reduce((sum, e) => sum + e.amount, 0);
+                
+                const cashCurrent = currentIncome + currentBorrowing - currentExpense - currentRepayment;
+                
+                // Calculate cash - 月末予測
+                const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0];
+                const monthEndIncome = this.entries.filter(e => e.type === 'income' && e.date <= lastDayOfMonth).reduce((sum, e) => sum + e.amount, 0);
+                const monthEndExpense = this.entries.filter(e => e.type === 'expense' && !e.isCredit && e.date <= lastDayOfMonth).reduce((sum, e) => sum + e.amount, 0);
+                
+                const monthEndBorrowing = this.financeEntries.filter(e => e.type === '借入' && e.date <= lastDayOfMonth).reduce((sum, e) => sum + e.amount, 0);
+                const monthEndRepayment = this.financeEntries.filter(e => (e.type === '返済' || e.type === 'クレジット引落') && e.date <= lastDayOfMonth).reduce((sum, e) => sum + e.amount, 0);
+                
+                const cashEndOfMonth = monthEndIncome + monthEndBorrowing - monthEndExpense - monthEndRepayment;
+                
+                document.getElementById('cashBalanceCurrent').textContent = `¥${cashCurrent.toLocaleString()}`;
+                document.getElementById('cashBalanceEndOfMonth').textContent = `¥${cashEndOfMonth.toLocaleString()}`;
                 
                 // Calculate unpaid credit (概要画面用) - renderCreditListと同じロジック
-                const today = new Date();
                 const currentYear = today.getFullYear();
                 const currentMonth = today.getMonth();
                 
@@ -1604,6 +1662,7 @@
 
                 this.saveData();
                 this.render();
+                this.updateRecurringNameHistory();
 
                 // Clear form
                 document.getElementById('recurringName').value = '';
@@ -1612,6 +1671,12 @@
                 document.getElementById('recurringCredit').checked = false;
 
                 alert('定期支払いを登録しました');
+            },
+
+            updateRecurringNameHistory() {
+                const nameList = document.getElementById('recurringNameHistory');
+                const names = [...new Set(this.recurringPayments.map(p => p.name))];
+                nameList.innerHTML = names.map(n => `<option value="${n}">`).join('');
             },
 
             renderRecurringList() {
