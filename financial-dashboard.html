@@ -783,6 +783,19 @@
                                     <input type="number" class="form-input" id="recurringDay" placeholder="1-31" min="1" max="31">
                                 </div>
                                 <div class="form-group">
+                                    <label class="form-label">支払回数:</label>
+                                    <select class="form-input" id="recurringCount">
+                                        <option value="infinite">無限（継続中）</option>
+                                        <option value="1">1回のみ</option>
+                                        <option value="2">2回</option>
+                                        <option value="3">3回</option>
+                                        <option value="6">6回</option>
+                                        <option value="12">12回（1年）</option>
+                                        <option value="24">24回（2年）</option>
+                                        <option value="36">36回（3年）</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
                                     <label style="display: flex; align-items: center; cursor: pointer;">
                                         <input type="checkbox" id="recurringCredit" style="margin-right: 8px;">
                                         <span style="font-size: 11px;">クレジットカード支払い</span>
@@ -1209,7 +1222,7 @@
                 
                 // 財務活動（借入・返済）を現金に反映
                 const currentBorrowing = this.financeEntries.filter(e => e.type === '借入' && e.date <= todayStr).reduce((sum, e) => sum + e.amount, 0);
-                const currentRepayment = this.financeEntries.filter(e => (e.type === '返済' || e.type === 'クレジット引落') && e.date <= todayStr).reduce((sum, e) => sum + e.amount, 0);
+                const currentRepayment = this.financeEntries.filter(e => (e.type === '返済' || e.type === 'クレジット返済' || e.type === 'クレジット引落') && e.date <= todayStr).reduce((sum, e) => sum + e.amount, 0);
                 
                 const cashCurrent = currentIncome + currentBorrowing - currentExpense - currentRepayment;
                 
@@ -1219,7 +1232,7 @@
                 const monthEndExpense = this.entries.filter(e => e.type === 'expense' && !e.isCredit && e.date <= lastDayOfMonth).reduce((sum, e) => sum + e.amount, 0);
                 
                 const monthEndBorrowing = this.financeEntries.filter(e => e.type === '借入' && e.date <= lastDayOfMonth).reduce((sum, e) => sum + e.amount, 0);
-                const monthEndRepayment = this.financeEntries.filter(e => (e.type === '返済' || e.type === 'クレジット引落') && e.date <= lastDayOfMonth).reduce((sum, e) => sum + e.amount, 0);
+                const monthEndRepayment = this.financeEntries.filter(e => (e.type === '返済' || e.type === 'クレジット返済' || e.type === 'クレジット引落') && e.date <= lastDayOfMonth).reduce((sum, e) => sum + e.amount, 0);
                 
                 const cashEndOfMonth = monthEndIncome + monthEndBorrowing - monthEndExpense - monthEndRepayment;
                 
@@ -1415,7 +1428,7 @@
                     // クレジット未払金（支払済みでないもののみ）
                     const creditDebt = allEntries.filter(e => e.isCredit && !e.creditPaid).reduce((sum, e) => sum + e.amount, 0);
                     const borrowing = allFinance.filter(e => e.type === '借入').reduce((sum, e) => sum + e.amount, 0);
-                    const repayment = allFinance.filter(e => e.type === '返済' || e.type === 'クレジット返済').reduce((sum, e) => sum + e.amount, 0);
+                    const repayment = allFinance.filter(e => e.type === '返済' || e.type === 'クレジット返済' || e.type === 'クレジット引落').reduce((sum, e) => sum + e.amount, 0);
                     const totalDebt = creditDebt + borrowing - repayment;
 
                     const totalExpense = allEntries.filter(e => e.type === 'expense').reduce((sum, e) => sum + e.amount, 0);
@@ -1555,7 +1568,7 @@
                     const operatingCF = income - cashExpense;
 
                     const borrowing = this.financeEntries.filter(e => e.type === '借入' && e.date.startsWith(month)).reduce((sum, e) => sum + e.amount, 0);
-                    const repayment = this.financeEntries.filter(e => (e.type === '返済' || e.type === 'クレジット返済') && e.date.startsWith(month)).reduce((sum, e) => sum + e.amount, 0);
+                    const repayment = this.financeEntries.filter(e => (e.type === '返済' || e.type === 'クレジット返済' || e.type === 'クレジット引落') && e.date.startsWith(month)).reduce((sum, e) => sum + e.amount, 0);
                     const financingCF = borrowing - repayment;
 
                     const netCF = operatingCF + financingCF;
@@ -1681,6 +1694,7 @@
                 const category = document.getElementById('recurringCategory').value;
                 const amount = parseFloat(document.getElementById('recurringAmount').value);
                 const day = parseInt(document.getElementById('recurringDay').value);
+                const countValue = document.getElementById('recurringCount').value;
                 const isCredit = document.getElementById('recurringCredit').checked;
 
                 if (!name || !amount || !day) {
@@ -1693,12 +1707,17 @@
                     return;
                 }
 
+                const today = new Date();
+                
                 this.recurringPayments.push({
                     name,
                     category,
                     amount,
                     day,
                     isCredit,
+                    totalCount: countValue === 'infinite' ? 'infinite' : parseInt(countValue),
+                    remainingCount: countValue === 'infinite' ? 'infinite' : parseInt(countValue),
+                    startDate: today.toISOString().split('T')[0],
                     timestamp: Date.now()
                 });
 
@@ -1710,6 +1729,7 @@
                 document.getElementById('recurringName').value = '';
                 document.getElementById('recurringAmount').value = '';
                 document.getElementById('recurringDay').value = '';
+                document.getElementById('recurringCount').value = 'infinite';
                 document.getElementById('recurringCredit').checked = false;
 
                 alert('定期支払いを登録しました');
@@ -1735,6 +1755,10 @@
                 }
 
                 sorted.forEach((payment, i) => {
+                    const countText = payment.remainingCount === 'infinite' 
+                        ? '継続中' 
+                        : `残り${payment.remainingCount}回`;
+                    
                     const div = document.createElement('div');
                     div.className = 'list-item';
                     div.innerHTML = `
@@ -1744,7 +1768,7 @@
                                 ${payment.category}
                                 ${payment.isCredit ? '<span class="badge">CREDIT</span>' : ''}
                             </div>
-                            <div class="list-item-memo">毎月${payment.day}日に自動追加</div>
+                            <div class="list-item-memo">毎月${payment.day}日に自動追加 （${countText}）</div>
                         </div>
                         <div class="list-item-amount">¥${payment.amount.toLocaleString()}</div>
                         <button class="btn btn-small" onclick="app.deleteRecurring(${i})">削除</button>
@@ -1767,7 +1791,12 @@
                 const currentMonth = today.getMonth();
                 const currentDay = today.getDate();
 
-                this.recurringPayments.forEach(payment => {
+                this.recurringPayments.forEach((payment, idx) => {
+                    // 残り回数がゼロなら終了
+                    if (payment.remainingCount !== 'infinite' && payment.remainingCount <= 0) {
+                        return;
+                    }
+                    
                     // 今月の支払日
                     const paymentDate = new Date(currentYear, currentMonth, payment.day);
                     
@@ -1795,6 +1824,11 @@
                                 creditPaid: false,
                                 timestamp: Date.now()
                             });
+                            
+                            // 残り回数を減らす
+                            if (payment.remainingCount !== 'infinite') {
+                                this.recurringPayments[idx].remainingCount -= 1;
+                            }
                         }
                     }
                 });
