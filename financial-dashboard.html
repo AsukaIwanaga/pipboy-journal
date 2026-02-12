@@ -829,6 +829,7 @@
 
             init() {
                 this.loadData();
+                this.migrateFinanceData(); // 既存の財務活動データを移行
                 this.generateRecurringPayments(); // 定期支払いを自動生成
                 this.render();
                 document.getElementById('inputDate').value = new Date().toISOString().split('T')[0];
@@ -838,6 +839,55 @@
                 // 日時表示を開始
                 this.updateDateTime();
                 setInterval(() => this.updateDateTime(), 1000);
+            },
+
+            migrateFinanceData() {
+                // 既存の財務活動エントリーに対応する収支入力エントリーが存在するか確認
+                let migrated = false;
+                
+                this.financeEntries.forEach(financeEntry => {
+                    const financeId = financeEntry.timestamp;
+                    
+                    // 既に対応する収支入力エントリーが存在するかチェック
+                    const existingEntry = this.entries.find(e => e.financeId === financeId);
+                    
+                    if (!existingEntry) {
+                        // 対応するエントリーがない場合、作成する
+                        if (financeEntry.type === '借入') {
+                            this.entries.push({
+                                date: financeEntry.date,
+                                type: 'income',
+                                category: '借入金',
+                                amount: financeEntry.amount,
+                                memo: financeEntry.memo ? `【借入】${financeEntry.memo}` : '【借入】',
+                                isCredit: false,
+                                creditPaid: false,
+                                fromFinance: true,
+                                financeId: financeId,
+                                timestamp: Date.now()
+                            });
+                            migrated = true;
+                        } else if (financeEntry.type === '返済' || financeEntry.type === 'クレジット返済' || financeEntry.type === 'クレジット引落') {
+                            this.entries.push({
+                                date: financeEntry.date,
+                                type: 'expense',
+                                category: 'その他支出',
+                                amount: financeEntry.amount,
+                                memo: financeEntry.memo ? `【${financeEntry.type}】${financeEntry.memo}` : `【${financeEntry.type}】`,
+                                isCredit: false,
+                                creditPaid: false,
+                                fromFinance: true,
+                                financeId: financeId,
+                                timestamp: Date.now()
+                            });
+                            migrated = true;
+                        }
+                    }
+                });
+                
+                if (migrated) {
+                    this.saveData();
+                }
             },
 
             updateDateTime() {
@@ -876,8 +926,17 @@
                 this.currentTab = tab;
                 document.querySelectorAll('.content-section').forEach(el => el.style.display = 'none');
                 document.getElementById(tab + 'Section').style.display = 'block';
-                document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-                event.target.classList.add('active');
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                    // プログラムから呼ばれた場合も対応
+                    if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(`'${tab}'`)) {
+                        btn.classList.add('active');
+                    }
+                });
+                // イベントから呼ばれた場合
+                if (event && event.target) {
+                    event.target.classList.add('active');
+                }
             },
 
             setInputType(type) {
@@ -965,13 +1024,15 @@
                     return;
                 }
 
-                this.financeEntries.push({
+                const financeEntry = {
                     date,
                     type,
                     amount,
                     memo,
                     timestamp: Date.now()
-                });
+                };
+
+                this.financeEntries.push(financeEntry);
 
                 // 借入の場合、収入としても記録（現金が増えるため）
                 if (type === '借入') {
@@ -983,6 +1044,24 @@
                         memo: memo ? `【借入】${memo}` : '【借入】',
                         isCredit: false,
                         creditPaid: false,
+                        fromFinance: true, // 財務活動由来のフラグ
+                        financeId: financeEntry.timestamp, // 紐付け用ID
+                        timestamp: Date.now()
+                    });
+                }
+
+                // 返済の場合、支出としても記録（現金が減るため）
+                if (type === '返済' || type === 'クレジット返済' || type === 'クレジット引落') {
+                    this.entries.push({
+                        date,
+                        type: 'expense',
+                        category: 'その他支出',
+                        amount,
+                        memo: memo ? `【${type}】${memo}` : `【${type}】`,
+                        isCredit: false,
+                        creditPaid: false,
+                        fromFinance: true, // 財務活動由来のフラグ
+                        financeId: financeEntry.timestamp, // 紐付け用ID
                         timestamp: Date.now()
                     });
                 }
@@ -1019,12 +1098,19 @@
                 recent.forEach(entry => {
                     const div = document.createElement('div');
                     div.className = 'list-item';
+                    
+                    // 財務活動由来のエントリーの場合
+                    if (entry.fromFinance) {
+                        div.style.background = 'rgba(34, 197, 94, 0.05)';
+                    }
+                    
                     div.innerHTML = `
                         <div class="list-item-info">
                             <div class="list-item-date">${entry.date}</div>
                             <div class="list-item-category">
                                 ${entry.category}
                                 ${entry.isCredit ? '<span class="badge">CREDIT</span>' : ''}
+                                ${entry.fromFinance ? '<span class="badge" style="background: rgba(34, 197, 94, 0.2);">財務</span>' : ''}
                             </div>
                             ${entry.memo ? `<div class="list-item-memo">${entry.memo}</div>` : ''}
                         </div>
@@ -1046,19 +1132,35 @@
                 sorted.forEach((entry, i) => {
                     const div = document.createElement('div');
                     div.className = 'list-item';
+                    
+                    // 財務活動由来のエントリーの場合
+                    if (entry.fromFinance) {
+                        div.style.background = 'rgba(34, 197, 94, 0.05)';
+                        div.style.cursor = 'pointer';
+                        div.onclick = () => {
+                            if (confirm('このエントリーは財務活動から作成されています。\n財務活動タブに移動して編集しますか？')) {
+                                this.switchTab('finance');
+                            }
+                        };
+                    }
+                    
                     div.innerHTML = `
                         <div class="list-item-info">
                             <div class="list-item-date">${entry.date}</div>
                             <div class="list-item-category">
                                 ${entry.category}
                                 ${entry.isCredit ? '<span class="badge">CREDIT</span>' : ''}
+                                ${entry.fromFinance ? '<span class="badge" style="background: rgba(34, 197, 94, 0.2);">財務</span>' : ''}
                             </div>
                             ${entry.memo ? `<div class="list-item-memo">${entry.memo}</div>` : ''}
                         </div>
                         <div class="list-item-amount" style="color: ${entry.type === 'income' ? '#22c55e' : '#ef4444'}">
                             ${entry.type === 'income' ? '+' : '-'}¥${entry.amount.toLocaleString()}
                         </div>
-                        <button class="btn btn-small" onclick="app.deleteEntry(${i})">削除</button>
+                        ${entry.fromFinance ? 
+                            '<button class="btn btn-small" style="opacity: 0.5; cursor: not-allowed;" disabled>削除不可</button>' :
+                            `<button class="btn btn-small" onclick="app.deleteEntry(${i})">削除</button>`
+                        }
                     `;
                     list.appendChild(div);
                 });
@@ -1711,8 +1813,16 @@
             },
 
             deleteFinance(index) {
-                if (confirm('削除しますか？')) {
+                if (confirm('削除しますか？\n※関連する収支入力のエントリーも削除されます')) {
+                    const financeEntry = this.financeEntries[index];
+                    const financeId = financeEntry.timestamp;
+                    
+                    // 関連する収支入力のエントリーを削除
+                    this.entries = this.entries.filter(e => e.financeId !== financeId);
+                    
+                    // 財務活動エントリーを削除
                     this.financeEntries.splice(index, 1);
+                    
                     this.saveData();
                     this.render();
                 }
