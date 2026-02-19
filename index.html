@@ -115,14 +115,15 @@
             font-weight: bold;
         }
 
-        .subtitle {
+        /* Main tabs */
+        .main-tabs {
             text-align: center;
-            font-size: 14px;
             border-top: 1px solid #16a34a;
             padding-top: 8px;
             display: flex;
             gap: 10px;
             justify-content: center;
+            flex-wrap: wrap;
         }
 
         .tab-btn {
@@ -142,6 +143,39 @@
         }
 
         .tab-btn.active {
+            border-color: #22c55e;
+            color: #22c55e;
+            background: rgba(34, 197, 94, 0.1);
+        }
+
+        /* Sub tabs */
+        .sub-tabs {
+            text-align: center;
+            padding: 8px 0;
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            border-bottom: 1px solid #166534;
+            margin-bottom: 10px;
+        }
+
+        .sub-tab-btn {
+            background: transparent;
+            border: 1px solid #166534;
+            color: #16a34a;
+            font-family: inherit;
+            font-size: 11px;
+            padding: 4px 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .sub-tab-btn:hover {
+            border-color: #22c55e;
+            color: #22c55e;
+        }
+
+        .sub-tab-btn.active {
             border-color: #22c55e;
             color: #22c55e;
             background: rgba(34, 197, 94, 0.1);
@@ -195,29 +229,6 @@
         .btn-new:hover {
             background: #22c55e;
             color: #000;
-        }
-
-        .filter-btn {
-            flex: 1;
-            padding: 4px 8px;
-            border: 1px solid #166534;
-            background: transparent;
-            color: #16a34a;
-            font-family: inherit;
-            font-size: 10px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .filter-btn:hover {
-            border-color: #22c55e;
-            color: #22c55e;
-        }
-
-        .filter-btn.active {
-            border-color: #22c55e;
-            color: #22c55e;
-            background: rgba(34, 197, 94, 0.1);
         }
 
         .entries-list {
@@ -300,6 +311,105 @@
             text-shadow: 0 0 5px rgba(34, 197, 94, 0.5);
         }
 
+        .editor-textarea:focus {
+            border-color: #22c55e;
+        }
+
+        .editor-textarea::placeholder {
+            color: #166534;
+        }
+
+        .editor-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #22c55e;
+            background: transparent;
+            color: #22c55e;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn:hover:not(:disabled) {
+            background: #22c55e;
+            color: #000;
+        }
+
+        .btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .btn-delete {
+            flex: 0 0 auto;
+            padding: 10px 18px;
+            border-color: #dc2626;
+            color: #dc2626;
+        }
+
+        .btn-delete:hover {
+            background: #dc2626;
+            color: #000;
+        }
+
+        .btn-sync {
+            border-color: #3b82f6;
+            color: #3b82f6;
+        }
+
+        .btn-sync:hover {
+            background: #3b82f6;
+            color: #000;
+        }
+
+        /* Quest/Mission item styles */
+        .mission-item {
+            padding: 12px;
+            border: 1px solid #166534;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mission-item:hover {
+            border-color: #22c55e;
+        }
+
+        .mission-item.selected {
+            border-color: #86efac;
+            background: rgba(34, 197, 94, 0.2);
+        }
+
+        .mission-title {
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+
+        .mission-progress {
+            font-size: 11px;
+            color: #16a34a;
+            margin-bottom: 3px;
+        }
+
+        .mission-deadline {
+            font-size: 10px;
+            color: #22c55e;
+        }
+
+        .mission-deadline.overdue {
+            color: #dc2626;
+        }
+
+        /* Task input styles */
         .task-input {
             background: transparent;
             border: 1px solid #166534;
@@ -328,96 +438,6 @@
         .task-input[type="date"]::-webkit-calendar-picker-indicator {
             filter: invert(0.6) sepia(1) saturate(5) hue-rotate(90deg);
             cursor: pointer;
-        }
-
-        select.task-input {
-            cursor: pointer;
-            background-image: linear-gradient(45deg, transparent 50%, #22c55e 50%), linear-gradient(135deg, #22c55e 50%, transparent 50%);
-            background-position: calc(100% - 20px) calc(1em), calc(100% - 15px) calc(1em);
-            background-size: 5px 5px, 5px 5px;
-            background-repeat: no-repeat;
-            padding-right: 35px;
-        }
-
-        select.task-input option {
-            background: #000;
-            color: #22c55e;
-        }
-
-        select.task-input optgroup {
-            background: #064e3b;
-            color: #86efac;
-            font-weight: bold;
-        }
-
-        .task-item {
-            padding: 12px;
-            border: 1px solid #166534;
-            margin-bottom: 10px;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-        }
-
-        .task-item:hover {
-            border-color: #22c55e;
-        }
-
-        .task-item.selected {
-            border-color: #86efac;
-            background: rgba(34, 197, 94, 0.2);
-        }
-
-        .task-item.completed {
-            opacity: 0.6;
-            text-decoration: line-through;
-        }
-
-        .task-checkbox {
-            width: 16px;
-            height: 16px;
-            border: 2px solid #22c55e;
-            background: transparent;
-            cursor: pointer;
-            flex-shrink: 0;
-            margin-top: 2px;
-            position: relative;
-        }
-
-        .task-checkbox.checked::after {
-            content: '✓';
-            position: absolute;
-            top: -4px;
-            left: 1px;
-            color: #22c55e;
-            font-size: 14px;
-            font-weight: bold;
-        }
-
-        .task-content {
-            flex: 1;
-        }
-
-        .task-title {
-            font-size: 13px;
-            font-weight: bold;
-            margin-bottom: 3px;
-        }
-
-        .task-desc {
-            font-size: 11px;
-            color: #16a34a;
-        }
-
-        .task-mission-badge {
-            font-size: 9px;
-            color: #3b82f6;
-            border: 1px solid #3b82f6;
-            padding: 2px 6px;
-            margin-top: 4px;
-            display: inline-block;
         }
 
         .mission-task-item {
@@ -478,101 +498,143 @@
             color: #000;
         }
 
-        .mission-item {
-            padding: 12px;
-            border: 1px solid #166534;
-            margin-bottom: 10px;
+        .task-checkbox {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #22c55e;
+            background: transparent;
             cursor: pointer;
-            transition: all 0.2s;
+            flex-shrink: 0;
+            margin-top: 2px;
+            position: relative;
         }
 
-        .mission-item:hover {
+        .task-checkbox.checked::after {
+            content: '✓';
+            position: absolute;
+            top: -4px;
+            left: 1px;
+            color: #22c55e;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        /* Calendar styles */
+        .calendar-left-panel {
+            flex: 0 0 55%;
+            height: 100%;
+        }
+
+        .calendar-right-panel {
+            flex: 1;
+            height: 100%;
+        }
+
+        .calendar-controls {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+
+        #calendarViewContainer {
+            border: 1px solid #166534;
+            background: rgba(0,0,0,0.3);
+            padding: 10px;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 3px;
+        }
+
+        .calendar-day-header {
+            text-align: center;
+            font-size: 11px;
+            font-weight: bold;
+            padding: 8px 4px;
+            border-bottom: 2px solid #166534;
+            color: #22c55e;
+        }
+
+        .calendar-day {
+            min-height: 60px;
+            border: 1px solid #166534;
+            padding: 6px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s;
+            background: rgba(0,0,0,0.3);
+        }
+
+        .calendar-day:hover {
+            background: rgba(34, 197, 94, 0.15);
             border-color: #22c55e;
         }
 
-        .mission-item.selected {
-            border-color: #86efac;
+        .calendar-day.today {
+            background: rgba(34, 197, 94, 0.25);
+            border: 2px solid #22c55e;
+        }
+
+        .calendar-day.other-month {
+            opacity: 0.4;
+        }
+
+        .calendar-day.selected {
+            background: rgba(34, 197, 94, 0.3);
+            border: 2px solid #22c55e;
+        }
+
+        .calendar-day-number {
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .calendar-day-events {
+            font-size: 9px;
+            line-height: 1.3;
+        }
+
+        .calendar-event-item-mini {
+            padding: 2px 3px;
+            margin-bottom: 2px;
+            background: rgba(34, 197, 94, 0.2);
+            border-left: 2px solid #22c55e;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .schedule-item {
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #166534;
+            background: rgba(34, 197, 94, 0.1);
+            cursor: pointer;
+        }
+
+        .schedule-item:hover {
             background: rgba(34, 197, 94, 0.2);
         }
 
-        .mission-title {
-            font-size: 13px;
-            font-weight: bold;
-            margin-bottom: 3px;
-        }
-
-        .mission-progress {
+        .schedule-item-date {
             font-size: 11px;
-            color: #16a34a;
-            margin-bottom: 3px;
-        }
-
-        .mission-deadline {
-            font-size: 10px;
             color: #22c55e;
-        }
-
-        .mission-deadline.overdue {
-            color: #dc2626;
-        }
-
-        .editor-textarea:focus {
-            border-color: #22c55e;
-        }
-
-        .editor-textarea::placeholder {
-            color: #166534;
-        }
-
-        .editor-buttons {
-            display: flex;
-            gap: 8px;
-            margin-top: 10px;
-        }
-
-        .btn {
-            flex: 1;
-            padding: 10px;
-            border: 2px solid #22c55e;
-            background: transparent;
-            color: #22c55e;
-            font-family: inherit;
-            font-size: 14px;
             font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s;
+            margin-bottom: 4px;
         }
 
-        .btn:hover:not(:disabled) {
-            background: #22c55e;
-            color: #000;
+        .schedule-item-title {
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 4px;
         }
 
-        .btn:disabled {
-            opacity: 0.3;
-            cursor: not-allowed;
-        }
-
-        .btn-delete {
-            flex: 0 0 auto;
-            padding: 10px 18px;
-            border-color: #dc2626;
-            color: #dc2626;
-        }
-
-        .btn-delete:hover {
-            background: #dc2626;
-            color: #000;
-        }
-
-        .btn-sync {
-            border-color: #3b82f6;
-            color: #3b82f6;
-        }
-
-        .btn-sync:hover {
-            background: #3b82f6;
-            color: #000;
+        .schedule-item-memo {
+            font-size: 10px;
+            color: #16a34a;
         }
 
         /* Footer */
@@ -691,20 +753,6 @@
             line-height: 1.5;
         }
 
-        .typing-cursor {
-            display: inline-block;
-            width: 8px;
-            height: 14px;
-            background: #22c55e;
-            margin-left: 2px;
-            animation: blink 0.7s infinite;
-        }
-
-        @keyframes blink {
-            0%, 49% { opacity: 1; }
-            50%, 100% { opacity: 0; }
-        }
-
         /* Responsive */
         @media (max-width: 768px) {
             .container {
@@ -734,172 +782,42 @@
             }
         }
 
-        /* Calendar Styles */
-        .calendar-left-panel {
-            flex: 0 0 55%;
-            height: 100%;
-        }
-
-        .calendar-right-panel {
-            flex: 1;
-            height: 100%;
-        }
-
-        .calendar-controls {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 10px;
-        }
-
-        #calendarViewContainer {
+        /* Form elements */
+        .form-input {
+            background: transparent;
             border: 1px solid #166534;
-            background: rgba(0,0,0,0.3);
             padding: 10px;
-        }
-
-        .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 3px;
-        }
-
-        .calendar-day-header {
-            text-align: center;
-            font-size: 11px;
-            font-weight: bold;
-            padding: 8px 4px;
-            border-bottom: 2px solid #166534;
             color: #22c55e;
+            font-family: inherit;
+            font-size: 14px;
+            margin-bottom: 10px;
+            width: 100%;
         }
 
-        .calendar-day {
-            min-height: 60px;
-            border: 1px solid #166534;
-            padding: 6px;
-            cursor: pointer;
-            position: relative;
-            transition: all 0.2s;
-            background: rgba(0,0,0,0.3);
-        }
-
-        .calendar-day:hover {
-            background: rgba(34, 197, 94, 0.15);
+        .form-input:focus {
+            outline: none;
             border-color: #22c55e;
         }
 
-        .calendar-day.today {
-            background: rgba(34, 197, 94, 0.25);
-            border: 2px solid #22c55e;
-        }
-
-        .calendar-day.other-month {
-            opacity: 0.4;
-        }
-
-        .calendar-day.selected {
-            background: rgba(34, 197, 94, 0.3);
-            border: 2px solid #22c55e;
-        }
-
-        .calendar-day-number {
-            font-size: 13px;
-            font-weight: bold;
-            margin-bottom: 4px;
-        }
-
-        .calendar-day-events {
-            font-size: 9px;
-            line-height: 1.3;
-        }
-
-        .calendar-event-item-mini {
-            padding: 2px 3px;
-            margin-bottom: 2px;
-            background: rgba(34, 197, 94, 0.2);
-            border-left: 2px solid #22c55e;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .schedule-item {
-            padding: 10px;
-            margin-bottom: 10px;
-            border: 1px solid #166534;
-            background: rgba(34, 197, 94, 0.1);
-            cursor: pointer;
-        }
-
-        .schedule-item:hover {
-            background: rgba(34, 197, 94, 0.2);
-        }
-
-        .schedule-item-date {
-            font-size: 11px;
-            color: #22c55e;
-            font-weight: bold;
-            margin-bottom: 4px;
-        }
-
-        .schedule-item-title {
+        .form-label {
             font-size: 12px;
-            font-weight: bold;
-            margin-bottom: 4px;
-        }
-
-        .schedule-item-memo {
-            font-size: 10px;
             color: #16a34a;
+            margin-bottom: 5px;
+            display: block;
         }
 
-        /* Weekly View */
-        .calendar-weekly {
-            display: grid;
-            grid-template-columns: 80px repeat(7, 1fr);
-            gap: 2px;
+        .form-group {
+            margin-bottom: 15px;
         }
 
-        .calendar-time-slot {
-            border: 1px solid #166534;
-            padding: 8px;
-            min-height: 60px;
-            background: rgba(0,0,0,0.3);
-        }
-
-        .calendar-time-label {
-            text-align: center;
+        .btn-small {
+            padding: 4px 10px;
             font-size: 11px;
-            padding: 8px;
-            font-weight: bold;
-            color: #16a34a;
         }
 
-        /* Daily View */
-        .calendar-daily {
-            padding: 10px;
-        }
-
-        .calendar-event-block {
-            padding: 8px;
-            margin-bottom: 8px;
-            background: rgba(34, 197, 94, 0.2);
-            border-left: 3px solid #22c55e;
-            font-size: 11px;
-            cursor: pointer;
-        }
-
-        .calendar-event-block:hover {
-            background: rgba(34, 197, 94, 0.3);
-        }
-
-        .calendar-event-title {
-            font-weight: bold;
-            margin-bottom: 2px;
-        }
-
-        .calendar-event-time {
-            font-size: 10px;
-            color: #16a34a;
+        .btn-small.active {
+            background: #22c55e;
+            color: #000;
         }
     </style>
 </head>
@@ -918,226 +836,23 @@
                         <div class="datetime-time" id="currentTime"></div>
                     </div>
                 </div>
-                <div class="subtitle">
-                    <button class="tab-btn active" onclick="app.switchTab('journal')">&gt;&gt;&gt; JOURNAL &lt;&lt;&lt;</button>
-                    <button class="tab-btn" onclick="app.switchTab('tasks')">&gt;&gt;&gt; TASKS &lt;&lt;&lt;</button>
-                    <button class="tab-btn" onclick="app.switchTab('missions')">&gt;&gt;&gt; MISSIONS &lt;&lt;&lt;</button>
-                    <button class="tab-btn" onclick="app.switchTab('calendar')">&gt;&gt;&gt; CALENDAR &lt;&lt;&lt;</button>
-                    <button class="tab-btn" onclick="app.switchTab('budget')">&gt;&gt;&gt; BUDGET &lt;&lt;&lt;</button>
+                
+                <!-- Main Tabs -->
+                <div class="main-tabs">
+                    <button class="tab-btn active" onclick="app.switchMainTab('jnl')">&gt;&gt;&gt; JNL &lt;&lt;&lt;</button>
+                    <button class="tab-btn" onclick="app.switchMainTab('data')">&gt;&gt;&gt; DATA &lt;&lt;&lt;</button>
+                    <button class="tab-btn" onclick="app.switchMainTab('smdy')">&gt;&gt;&gt; SMDY &lt;&lt;&lt;</button>
+                    <button class="tab-btn" onclick="app.switchMainTab('sch')">&gt;&gt;&gt; SCH &lt;&lt;&lt;</button>
+                    <button class="tab-btn" onclick="app.switchMainTab('inv')">&gt;&gt;&gt; INV &lt;&lt;&lt;</button>
                 </div>
             </div>
+
+            <!-- Sub Tabs Container -->
+            <div class="sub-tabs" id="subTabsContainer"></div>
 
             <!-- Main Content -->
-            <div class="main-content" id="journalContent">
-                <!-- Entries List -->
-                <div class="entries-panel">
-                    <div class="entries-header">
-                        <span class="entries-title">ENTRIES [<span id="entryCount">0</span>]</span>
-                        <button class="btn-new" onclick="app.newEntry()">+ NEW</button>
-                    </div>
-                    <div class="entries-list" id="entriesList"></div>
-                </div>
-
-                <!-- Editor -->
-                <div class="editor-panel">
-                    <div class="editor-header" id="editorHeader">NEW ENTRY</div>
-                    <textarea 
-                        class="editor-textarea" 
-                        id="editorText" 
-                        placeholder="Enter journal entry..."
-                    ></textarea>
-                    <div class="editor-buttons">
-                        <button class="btn" onclick="app.saveEntry()" id="btnSave">SAVE</button>
-                        <button class="btn btn-sync" onclick="app.syncData()" id="btnSync">SYNC</button>
-                        <button class="btn btn-delete" onclick="app.deleteEntry()" id="btnDelete" style="display:none;">DEL</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Task Content -->
-            <div class="main-content" id="taskContent" style="display:none;">
-                <!-- Task List -->
-                <div class="entries-panel">
-                    <div class="entries-header">
-                        <span class="entries-title">TASKS [<span id="taskCount">0</span>]</span>
-                        <button class="btn-new" onclick="app.newTask()">+ NEW</button>
-                    </div>
-                    <div style="display: flex; gap: 5px; padding: 8px; border-bottom: 1px solid #166534; font-size: 10px;">
-                        <button class="filter-btn active" onclick="app.setTaskFilter('all')">ALL</button>
-                        <button class="filter-btn" onclick="app.setTaskFilter('standalone')">STANDALONE</button>
-                        <button class="filter-btn" onclick="app.setTaskFilter('mission')">MISSION</button>
-                    </div>
-                    <div class="entries-list" id="tasksList"></div>
-                </div>
-
-                <!-- Task Editor -->
-                <div class="editor-panel">
-                    <div class="editor-header" id="taskEditorHeader">NEW TASK</div>
-                    <input 
-                        type="text"
-                        class="task-input" 
-                        id="taskTitle" 
-                        placeholder="Task title..."
-                    />
-                    <textarea 
-                        class="editor-textarea" 
-                        id="taskDescription" 
-                        placeholder="Task description (optional)..."
-                        style="flex: 1;"
-                    ></textarea>
-                    <div class="editor-buttons">
-                        <button class="btn" onclick="app.saveTask()" id="btnSaveTask">SAVE</button>
-                        <button class="btn btn-delete" onclick="app.deleteTask()" id="btnDeleteTask" style="display:none;">DEL</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Mission Content -->
-            <div class="main-content" id="missionContent" style="display:none;">
-                <!-- Mission List -->
-                <div class="entries-panel">
-                    <div class="entries-header">
-                        <span class="entries-title">MISSIONS [<span id="missionCount">0</span>]</span>
-                        <button class="btn-new" onclick="app.newMission()">+ NEW</button>
-                    </div>
-                    <div class="entries-list" id="missionsList"></div>
-                </div>
-
-                <!-- Mission Editor -->
-                <div class="editor-panel" id="missionEditor" style="display:flex;">
-                    <div class="editor-header" id="missionEditorHeader">NEW MISSION</div>
-                    <input 
-                        type="text"
-                        class="task-input" 
-                        id="missionTitle" 
-                        placeholder="Mission title..."
-                    />
-                    <textarea 
-                        class="editor-textarea" 
-                        id="missionDescription" 
-                        placeholder="Mission description..."
-                        style="flex: 0 0 80px;"
-                    ></textarea>
-                    <div style="margin: 10px 0;">
-                        <label style="font-size: 12px; margin-bottom: 5px; display: block;">DEADLINE:</label>
-                        <input 
-                            type="date"
-                            class="task-input" 
-                            id="missionDeadline"
-                            style="margin-bottom: 0;"
-                        />
-                    </div>
-                    <div style="flex: 1; border: 1px solid #166534; padding: 10px; margin: 10px 0; overflow-y: auto;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #16a34a;">
-                            <span style="font-size: 12px; font-weight: bold;">WORKFLOW TASKS</span>
-                            <button class="btn-new" onclick="app.addMissionTask()">+ ADD</button>
-                        </div>
-                        <div id="missionTasksList"></div>
-                    </div>
-                    <div class="editor-buttons">
-                        <button class="btn" onclick="app.saveMission()" id="btnSaveMission">SAVE</button>
-                        <button class="btn btn-delete" onclick="app.deleteMission()" id="btnDeleteMission" style="display:none;">DEL</button>
-                    </div>
-                </div>
-
-                <!-- Mission Viewer -->
-                <div class="editor-panel" id="missionViewer" style="display:none;">
-                    <div class="editor-header" id="missionViewerHeader"></div>
-                    <div style="padding: 15px; border: 1px solid #166534; background: rgba(0,0,0,0.3); margin-bottom: 10px;">
-                        <div style="font-size: 13px; margin-bottom: 10px; line-height: 1.6;" id="missionViewDescription"></div>
-                        <div style="font-size: 12px; color: #16a34a;" id="missionViewDeadline"></div>
-                    </div>
-                    <div style="flex: 1; border: 1px solid #166534; padding: 15px; overflow-y: auto;">
-                        <div style="font-size: 12px; font-weight: bold; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #16a34a;">
-                            WORKFLOW TASKS (<span id="missionProgress">0/0</span>)
-                        </div>
-                        <div id="missionViewTasksList"></div>
-                    </div>
-                    <div class="editor-buttons">
-                        <button class="btn" onclick="app.editMissionFromViewer()">EDIT</button>
-                        <button class="btn btn-delete" onclick="app.closeMissionViewer()">CLOSE</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Calendar Content -->
-            <div class="main-content" id="calendarContent" style="display:none;">
-                <div class="calendar-left-panel">
-                    <div style="border: 2px solid #166534; background: rgba(0,0,0,0.6); padding: 15px; height: 100%;">
-                        <div class="calendar-controls">
-                            <button class="btn" onclick="app.previousPeriod()" style="padding: 8px 15px; margin-right: 10px;">&lt;&lt;</button>
-                            <button class="btn" onclick="app.nextPeriod()" style="padding: 8px 15px;">&gt;&gt;</button>
-                        </div>
-                        <div id="calendarMonthYear" style="font-size: 18px; font-weight: bold; margin: 15px 0; text-align: center;"></div>
-                        <div style="display: flex; gap: 5px; justify-content: center; margin-bottom: 15px;">
-                            <button class="btn btn-small" onclick="app.setCalendarView('daily')" id="viewDaily">DAILY</button>
-                            <button class="btn btn-small" onclick="app.setCalendarView('weekly')" id="viewWeekly">WEEKLY</button>
-                            <button class="btn btn-small active" onclick="app.setCalendarView('monthly')" id="viewMonthly">MONTHLY</button>
-                        </div>
-                        <div id="calendarViewContainer" style="overflow-y: auto; max-height: calc(100% - 150px);"></div>
-                    </div>
-                </div>
-                <div class="calendar-right-panel">
-                    <div style="border: 2px solid #166534; background: rgba(0,0,0,0.6); padding: 15px; height: 100%; overflow-y: auto;">
-                        <div style="font-size: 14px; font-weight: bold; margin-bottom: 15px; padding-bottom: 8px; border-bottom: 1px solid #166534;">
-                            SCHEDULE
-                            <button class="btn btn-small" onclick="app.showAddScheduleForm()" style="float: right; padding: 4px 10px;">+ NEW</button>
-                        </div>
-                        <div id="scheduleForm" style="display: none; margin-bottom: 20px; padding: 15px; border: 1px solid #166534; background: rgba(0,0,0,0.4);">
-                            <div class="form-group">
-                                <label class="form-label">日付:</label>
-                                <input type="date" class="form-input" id="scheduleDate">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">タイトル:</label>
-                                <input type="text" class="form-input" id="scheduleTitle" placeholder="スケジュールのタイトル">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">メモ:</label>
-                                <textarea class="form-input" id="scheduleMemo" rows="3" placeholder="詳細（任意）"></textarea>
-                            </div>
-                            <div style="display: flex; gap: 10px;">
-                                <button class="btn" onclick="app.saveSchedule()" style="flex: 1;">保存</button>
-                                <button class="btn" onclick="app.hideAddScheduleForm()" style="flex: 1; background: rgba(239, 68, 68, 0.2);">キャンセル</button>
-                            </div>
-                        </div>
-                        <div id="scheduleList"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Budget Content -->
-            <div class="main-content" id="budgetContent" style="display:none;">{
-                <!-- Single centered panel for dashboard link -->
-                <div style="display: flex; justify-content: center; align-items: center; width: 100%; height: 100%;">
-                    <div style="text-align: center; max-width: 600px; padding: 40px;">
-                        <div style="font-size: 24px; font-weight: bold; margin-bottom: 20px; letter-spacing: 2px; text-shadow: 0 0 10px #22c55e;">
-                            &gt;&gt;&gt; 財務管理システム &lt;&lt;&lt;
-                        </div>
-                        <div style="font-size: 12px; color: #16a34a; margin-bottom: 30px; line-height: 1.8;">
-                            高度な財務管理機能を利用するには<br>
-                            財務ダッシュボードを開いてください
-                        </div>
-                        <a href="financial-dashboard.html" target="_blank" style="display: block; text-decoration: none;">
-                            <button class="btn" style="width: 100%; padding: 20px; font-size: 16px; background: rgba(34, 197, 94, 0.2); border: 2px solid #22c55e;">
-                                &gt;&gt;&gt; OPEN FINANCIAL DASHBOARD &lt;&lt;&lt;
-                            </button>
-                        </a>
-                        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #166534;">
-                            <div style="font-size: 10px; color: #16a34a; margin-bottom: 10px;">利用可能な機能:</div>
-                            <div style="font-size: 11px; color: #22c55e; line-height: 1.8;">
-                                ✓ 損益計算書 (P/L)<br>
-                                ✓ 貸借対照表 (B/S)<br>
-                                ✓ キャッシュフロー計算書 (C/F)<br>
-                                ✓ 収支入力・管理<br>
-                                ✓ クレジットカード管理<br>
-                                ✓ 借入・返済管理<br>
-                                ✓ 定期支払い自動生成<br>
-                                ✓ GitHub同期
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div class="main-content" id="mainContent">
+                <!-- Content will be dynamically loaded here -->
             </div>
 
             <!-- Footer -->
@@ -1147,7 +862,7 @@
         </div>
     </div>
 
-    <!-- View Entry Modal -->
+    <!-- Modals -->
     <div class="modal" id="viewModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -1159,24 +874,6 @@
         </div>
     </div>
 
-    <!-- View Task Modal -->
-    <div class="modal" id="viewTaskModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div class="modal-title">TASK VIEWER</div>
-            </div>
-            <div class="modal-body">
-                <div style="font-size: 18px; font-weight: bold; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #22c55e;" id="taskModalTitle"></div>
-                <div id="taskModalBody"></div>
-            </div>
-            <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button class="modal-close" style="flex: 1;" onclick="app.editTaskFromModal()">[ EDIT ]</button>
-                <button class="modal-close" style="flex: 1;" onclick="app.closeTaskModal()">[ CLOSE ]</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Settings Modal -->
     <div class="modal" id="settingsModal">
         <div class="modal-content settings-content">
             <div class="modal-header">
@@ -1209,127 +906,93 @@
 
     <script>
         const app = {
+            // Navigation state
+            currentMain: 'jnl',
+            currentSub: 'main',
+            
+            // Navigation structure
+            navStructure: {
+                jnl: {
+                    label: 'JNL',
+                    subs: {
+                        main: 'MAIN',
+                        memo: 'MEMO'
+                    }
+                },
+                data: {
+                    label: 'DATA',
+                    subs: {
+                        quests: 'QUESTS'
+                    }
+                },
+                smdy: {
+                    label: 'SMDY',
+                    subs: {
+                        place: 'PLACE'
+                    }
+                },
+                sch: {
+                    label: 'SCH',
+                    subs: {
+                        calendar: 'CALENDAR'
+                    }
+                },
+                inv: {
+                    label: 'INV',
+                    subs: {
+                        bank: 'BANK ACNT',
+                        budget: 'BUDGET'
+                    }
+                }
+            },
+
+            // Data storage
             entries: [],
-            tasks: [],
+            memo: '',
             missions: [],
-            transactions: [],
-            schedules: [], // カレンダースケジュール
+            places: [],
+            schedules: [],
+            bankBalance: 0,
+            
+            // Other state
             currentEntry: null,
-            currentTask: null,
             currentMission: null,
-            currentTransaction: null,
-            currentViewedTask: null,
-            currentTab: 'journal',
-            taskFilter: 'all', // all, standalone, mission
-            budgetView: 'list', // list, summary
-            transactionType: 'expense', // income, expense
-            calendarDate: new Date(), // カレンダー表示月
-            calendarView: 'monthly', // monthly, weekly, daily
+            currentPlace: null,
+            calendarDate: new Date(),
+            calendarView: 'monthly',
             githubToken: localStorage.getItem('githubToken') || '',
             gistId: localStorage.getItem('gistId') || '',
-            typingSpeed: 30, // ミリ秒（速度調整可能）
+            typingSpeed: 30,
             audioContext: null,
 
             init() {
                 this.updateDateTime();
                 setInterval(() => this.updateDateTime(), 1000);
                 this.loadLocalData();
-                this.render();
+                this.renderSubTabs();
+                this.renderContent();
 
-                // Audio Context初期化（ユーザー操作時）
+                // Audio initialization
                 const initAudio = () => {
                     if (!this.audioContext) {
                         try {
                             this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                            console.log('AudioContext initialized');
                         } catch (e) {
-                            console.warn('AudioContext initialization failed:', e);
+                            console.warn('AudioContext failed:', e);
                         }
                     }
-                    // AudioContextがsuspended状態の場合はresume
                     if (this.audioContext && this.audioContext.state === 'suspended') {
                         this.audioContext.resume();
                     }
                 };
                 
-                // 複数のイベントで初期化を試みる
                 document.addEventListener('click', initAudio, { once: true });
                 document.addEventListener('keydown', initAudio, { once: true });
                 document.addEventListener('touchstart', initAudio, { once: true });
 
-                // 初回起動時に設定モーダルを表示
+                // Show settings if no token
                 if (!this.githubToken) {
                     document.getElementById('settingsModal').classList.add('active');
-                }
-            },
-
-            playPipSound() {
-                // AudioContextを初期化（まだの場合）
-                if (!this.audioContext) {
-                    try {
-                        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    } catch (e) {
-                        console.warn('AudioContext initialization failed:', e);
-                        return;
-                    }
-                }
-
-                try {
-                    const oscillator = this.audioContext.createOscillator();
-                    const gainNode = this.audioContext.createGain();
-
-                    oscillator.connect(gainNode);
-                    gainNode.connect(this.audioContext.destination);
-
-                    // 低めの周波数でPip-Boy風の重厚な音
-                    oscillator.frequency.value = 280; // 280Hz（低め）
-                    oscillator.type = 'square'; // 矩形波でレトロな音質
-
-                    // 音量エンベロープ（短く鋭い音）
-                    const now = this.audioContext.currentTime;
-                    gainNode.gain.setValueAtTime(0.08, now); // 音量を小さめに
-                    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
-
-                    oscillator.start(now);
-                    oscillator.stop(now + 0.05);
-                } catch (e) {
-                    console.warn('Pip sound playback failed:', e);
-                }
-            },
-
-            switchTab(tab) {
-                this.currentTab = tab;
-                
-                // タブボタンの表示切り替え
-                document.querySelectorAll('.tab-btn').forEach(btn => {
-                    btn.classList.remove('active');
-                });
-                event.target.classList.add('active');
-
-                // コンテンツの表示切り替え
-                const journalContent = document.getElementById('journalContent');
-                const taskContent = document.getElementById('taskContent');
-                const missionContent = document.getElementById('missionContent');
-                const calendarContent = document.getElementById('calendarContent');
-                const budgetContent = document.getElementById('budgetContent');
-                
-                if (journalContent) journalContent.style.display = 'none';
-                if (taskContent) taskContent.style.display = 'none';
-                if (missionContent) missionContent.style.display = 'none';
-                if (calendarContent) calendarContent.style.display = 'none';
-                if (budgetContent) budgetContent.style.display = 'none';
-                
-                if (tab === 'journal' && journalContent) {
-                    journalContent.style.display = 'flex';
-                } else if (tab === 'tasks' && taskContent) {
-                    taskContent.style.display = 'flex';
-                } else if (tab === 'missions' && missionContent) {
-                    missionContent.style.display = 'flex';
-                } else if (tab === 'calendar' && calendarContent) {
-                    calendarContent.style.display = 'flex';
-                    this.renderCalendar();
-                } else if (tab === 'budget' && budgetContent) {
-                    budgetContent.style.display = 'flex';
                 }
             },
 
@@ -1341,217 +1004,168 @@
                 document.getElementById('currentTime').textContent = time;
             },
 
+            switchMainTab(mainTab) {
+                this.currentMain = mainTab;
+                this.currentSub = Object.keys(this.navStructure[mainTab].subs)[0];
+                
+                // Update main tab buttons
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                event.target.classList.add('active');
+                
+                this.renderSubTabs();
+                this.renderContent();
+                this.playPipSound();
+            },
+
+            renderSubTabs() {
+                const container = document.getElementById('subTabsContainer');
+                const subs = this.navStructure[this.currentMain].subs;
+                
+                container.innerHTML = '';
+                Object.entries(subs).forEach(([key, label]) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'sub-tab-btn' + (key === this.currentSub ? ' active' : '');
+                    btn.textContent = `>>> ${label} <<<`;
+                    btn.onclick = () => this.switchSubTab(key);
+                    container.appendChild(btn);
+                });
+            },
+
+            switchSubTab(subTab) {
+                this.currentSub = subTab;
+                
+                document.querySelectorAll('.sub-tab-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                event.target.classList.add('active');
+                
+                this.renderContent();
+                this.playPipSound();
+            },
+
+            renderContent() {
+                const key = `${this.currentMain}_${this.currentSub}`;
+                const container = document.getElementById('mainContent');
+                
+                switch(key) {
+                    case 'jnl_main':
+                        this.renderJournalMain(container);
+                        break;
+                    case 'jnl_memo':
+                        this.renderMemo(container);
+                        break;
+                    case 'data_quests':
+                        this.renderQuests(container);
+                        break;
+                    case 'smdy_place':
+                        this.renderPlaces(container);
+                        break;
+                    case 'sch_calendar':
+                        this.renderCalendar(container);
+                        break;
+                    case 'inv_bank':
+                        this.renderBankAccount(container);
+                        break;
+                    case 'inv_budget':
+                        this.renderBudget(container);
+                        break;
+                    default:
+                        container.innerHTML = '<p>Coming soon...</p>';
+                }
+            },
+
+            playPipSound() {
+                if (!this.audioContext) {
+                    try {
+                        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    } catch (e) {
+                        return;
+                    }
+                }
+
+                try {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+
+                    oscillator.connect(gainNode);
+                    gainNode.connect(this.audioContext.destination);
+
+                    oscillator.frequency.value = 280;
+                    oscillator.type = 'square';
+
+                    const now = this.audioContext.currentTime;
+                    gainNode.gain.setValueAtTime(0.08, now);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+
+                    oscillator.start(now);
+                    oscillator.stop(now + 0.05);
+                } catch (e) {
+                    console.warn('Pip sound failed:', e);
+                }
+            },
+
             loadLocalData() {
-                const saved = localStorage.getItem('journalEntries');
-                if (saved) {
-                    this.entries = JSON.parse(saved);
-                    this.entries.sort((a, b) => b.timestamp - a.timestamp);
-                }
-
-                const savedTasks = localStorage.getItem('tasks');
-                if (savedTasks) {
-                    this.tasks = JSON.parse(savedTasks);
-                    this.tasks.sort((a, b) => a.completed - b.completed || b.timestamp - a.timestamp);
-                }
-
-                const savedMissions = localStorage.getItem('missions');
-                if (savedMissions) {
-                    this.missions = JSON.parse(savedMissions);
-                    this.missions.sort((a, b) => b.timestamp - a.timestamp);
-                }
-
-                const savedTransactions = localStorage.getItem('transactions');
-                if (savedTransactions) {
-                    this.transactions = JSON.parse(savedTransactions);
-                    this.transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
-                }
-
-                const savedSchedules = localStorage.getItem('schedules');
-                if (savedSchedules) {
-                    this.schedules = JSON.parse(savedSchedules);
-                    this.schedules.sort((a, b) => new Date(a.date) - new Date(b.date));
-                }
+                this.entries = JSON.parse(localStorage.getItem('journalEntries') || '[]');
+                this.memo = localStorage.getItem('memo') || '';
+                this.missions = JSON.parse(localStorage.getItem('missions') || '[]');
+                this.places = JSON.parse(localStorage.getItem('places') || '[]');
+                this.schedules = JSON.parse(localStorage.getItem('schedules') || '[]');
+                this.bankBalance = parseFloat(localStorage.getItem('bankBalance') || '0');
             },
 
             saveLocalData() {
                 localStorage.setItem('journalEntries', JSON.stringify(this.entries));
-                localStorage.setItem('tasks', JSON.stringify(this.tasks));
+                localStorage.setItem('memo', this.memo);
                 localStorage.setItem('missions', JSON.stringify(this.missions));
-                localStorage.setItem('transactions', JSON.stringify(this.transactions));
+                localStorage.setItem('places', JSON.stringify(this.places));
                 localStorage.setItem('schedules', JSON.stringify(this.schedules));
+                localStorage.setItem('bankBalance', this.bankBalance.toString());
             },
 
-            render() {
-                this.renderEntries();
-                this.renderTasks();
-                this.renderMissions();
-                this.renderTransactions();
+            // Render methods will continue in next part due to length...
+            renderJournalMain(container) {
+                container.innerHTML = `
+                    <div class="entries-panel">
+                        <div class="entries-header">
+                            <span class="entries-title">ENTRIES [${this.entries.length}]</span>
+                            <button class="btn-new" onclick="app.newEntry()">+ NEW</button>
+                        </div>
+                        <div class="entries-list" id="entriesList"></div>
+                    </div>
+                    <div class="editor-panel">
+                        <div class="editor-header" id="editorHeader">NEW ENTRY</div>
+                        <textarea class="editor-textarea" id="editorText" placeholder="Enter journal entry..."></textarea>
+                        <div class="editor-buttons">
+                            <button class="btn" onclick="app.saveEntry()">SAVE</button>
+                            <button class="btn btn-sync" onclick="app.syncData()">SYNC</button>
+                            <button class="btn btn-delete" onclick="app.deleteEntry()" id="btnDelete" style="display:none;">DEL</button>
+                        </div>
+                    </div>
+                `;
+                this.renderEntriesList();
             },
 
-            renderEntries() {
+            renderEntriesList() {
                 const list = document.getElementById('entriesList');
-                list.innerHTML = '';
+                if (!list) return;
                 
-                this.entries.forEach((entry, index) => {
+                list.innerHTML = '';
+                this.entries.forEach(entry => {
                     const div = document.createElement('div');
                     div.className = 'entry-item' + (this.currentEntry === entry ? ' selected' : '');
-                    div.onclick = () => this.viewEntry(entry);
                     
                     const date = new Date(entry.timestamp);
-                    const dateStr = `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+                    const dateStr = `${date.getFullYear()}.${String(date.getMonth()+1).padStart(2,'0')}.${String(date.getDate()).padStart(2,'0')} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
                     
                     div.innerHTML = `
                         <div class="entry-date">${dateStr}</div>
                         <div class="entry-preview">${entry.text.substring(0, 40)}...</div>
                     `;
+                    div.onclick = () => this.viewEntry(entry);
                     list.appendChild(div);
                 });
-
-                document.getElementById('entryCount').textContent = this.entries.length;
-            },
-
-            renderTasks() {
-                const list = document.getElementById('tasksList');
-                list.innerHTML = '';
-                
-                // スタンドアロンタスクを収集
-                const standaloneTasks = this.tasks.map(task => ({
-                    ...task,
-                    isMissionTask: false,
-                    missionTitle: null
-                }));
-                
-                // ミッション付随タスクを収集
-                const missionTasks = [];
-                this.missions.forEach(mission => {
-                    mission.tasks.forEach(task => {
-                        missionTasks.push({
-                            ...task,
-                            isMissionTask: true,
-                            missionTitle: mission.title,
-                            missionId: mission.id
-                        });
-                    });
-                });
-                
-                // フィルター適用
-                let allTasks = [...standaloneTasks, ...missionTasks];
-                if (this.taskFilter === 'standalone') {
-                    allTasks = standaloneTasks;
-                } else if (this.taskFilter === 'mission') {
-                    allTasks = missionTasks;
-                }
-                
-                // ソート（未完了 → 完了）
-                allTasks.sort((a, b) => a.completed - b.completed);
-                
-                allTasks.forEach((task) => {
-                    const div = document.createElement('div');
-                    div.className = 'task-item' + (task.completed ? ' completed' : '');
-                    
-                    const checkbox = document.createElement('div');
-                    checkbox.className = 'task-checkbox' + (task.completed ? ' checked' : '');
-                    checkbox.onclick = (e) => {
-                        e.stopPropagation();
-                        if (task.isMissionTask) {
-                            this.toggleMissionTask(task.missionId, task.id);
-                        } else {
-                            this.toggleTask(task.id);
-                        }
-                    };
-                    
-                    const content = document.createElement('div');
-                    content.className = 'task-content';
-                    content.onclick = () => {
-                        if (task.isMissionTask) {
-                            this.viewMissionTask(task);
-                        } else {
-                            this.viewTask(task);
-                        }
-                    };
-                    
-                    const title = document.createElement('div');
-                    title.className = 'task-title';
-                    title.textContent = task.title;
-                    
-                    content.appendChild(title);
-                    
-                    if (task.description) {
-                        const desc = document.createElement('div');
-                        desc.className = 'task-desc';
-                        desc.textContent = task.description.substring(0, 50) + (task.description.length > 50 ? '...' : '');
-                        content.appendChild(desc);
-                    }
-                    
-                    if (task.isMissionTask) {
-                        const badge = document.createElement('div');
-                        badge.className = 'task-mission-badge';
-                        badge.textContent = `MISSION: ${task.missionTitle}`;
-                        content.appendChild(badge);
-                    }
-                    
-                    div.appendChild(checkbox);
-                    div.appendChild(content);
-                    list.appendChild(div);
-                });
-
-                // カウント表示（フィルターに応じて）
-                document.getElementById('taskCount').textContent = allTasks.length;
-            },
-
-            setTaskFilter(filter) {
-                this.taskFilter = filter;
-                
-                // ボタンのアクティブ状態を更新
-                document.querySelectorAll('.filter-btn').forEach(btn => {
-                    btn.classList.remove('active');
-                });
-                
-                // event.targetが存在する場合のみアクティブ化
-                if (event && event.target) {
-                    event.target.classList.add('active');
-                }
-                
-                this.renderTasks();
-            },
-
-            toggleMissionTask(missionId, taskId) {
-                const mission = this.missions.find(m => m.id === missionId);
-                if (mission) {
-                    const task = mission.tasks.find(t => t.id === taskId);
-                    if (task) {
-                        task.completed = !task.completed;
-                        this.saveLocalData();
-                        this.renderTasks();
-                        this.renderMissions();
-
-                        // 自動同期
-                        if (this.githubToken && this.gistId) {
-                            this.syncData();
-                        }
-                    }
-                }
-            },
-
-            viewMissionTask(task) {
-                const modal = document.getElementById('viewTaskModal');
-                const titleEl = document.getElementById('taskModalTitle');
-                const bodyEl = document.getElementById('taskModalBody');
-
-                this.currentViewedMissionTask = task; // ミッションタスクを保存
-
-                titleEl.textContent = task.title + ` [${task.missionTitle}]`;
-                bodyEl.textContent = '';
-                modal.classList.add('active');
-
-                // タイピングエフェクト
-                if (task.description) {
-                    this.typeText(task.description, bodyEl);
-                } else {
-                    bodyEl.textContent = '(説明なし)';
-                    bodyEl.style.color = '#16a34a';
-                    bodyEl.style.fontStyle = 'italic';
-                }
             },
 
             newEntry() {
@@ -1559,13 +1173,10 @@
                 const editorText = document.getElementById('editorText');
                 const editorHeader = document.getElementById('editorHeader');
                 const btnDelete = document.getElementById('btnDelete');
-                const btnSave = document.getElementById('btnSave');
                 
                 if (editorText) editorText.value = '';
                 if (editorHeader) editorHeader.textContent = 'NEW ENTRY';
                 if (btnDelete) btnDelete.style.display = 'none';
-                if (btnSave) btnSave.disabled = false;
-                this.render();
             },
 
             saveEntry() {
@@ -1581,9 +1192,8 @@
                 this.entries.unshift(entry);
                 this.saveLocalData();
                 this.newEntry();
-                this.render();
+                this.renderEntriesList();
 
-                // 自動同期
                 if (this.githubToken && this.gistId) {
                     this.syncData();
                 }
@@ -1601,7 +1211,6 @@
                 body.textContent = '';
                 modal.classList.add('active');
 
-                // タイピングエフェクト
                 await this.typeText(entry.text, body);
             },
 
@@ -1610,20 +1219,18 @@
                 for (let i = 0; i < text.length; i++) {
                     element.textContent += text[i];
                     
-                    // 文字が表示されたらピッ音を鳴らす（スペースと改行以外）
-                    if (text[i] !== ' ' && text[i] !== '\n' && text[i] !== '\r') {
+                    if (text[i] !== ' ' && text[i] !== '
+' && text[i] !== '
+') {
                         this.playPipSound();
                     }
                     
                     if (i < text.length - 1) {
                         let delay = this.typingSpeed;
                         
-                        // 句点やピリオドの後は15倍の間
                         if (text[i] === '。' || text[i] === '.' || text[i] === '!' || text[i] === '?') {
                             delay = this.typingSpeed * 15;
-                        }
-                        // 読点、カンマ、中点の後は4倍の間
-                        else if (text[i] === '、' || text[i] === ',' || text[i] === '・') {
+                        } else if (text[i] === '、' || text[i] === ',' || text[i] === '・') {
                             delay = this.typingSpeed * 4;
                         }
                         
@@ -1632,181 +1239,113 @@
                 }
             },
 
-            closeModal() {
-                document.getElementById('viewModal').classList.remove('active');
-            },
+            deleteEntry() {
+                if (!this.currentEntry) return;
+                if (!confirm('このエントリーを削除しますか？')) return;
 
-            newTask() {
-                this.currentTask = null;
-                const taskTitle = document.getElementById('taskTitle');
-                const taskDescription = document.getElementById('taskDescription');
-                const taskEditorHeader = document.getElementById('taskEditorHeader');
-                const btnDeleteTask = document.getElementById('btnDeleteTask');
-                
-                if (taskTitle) taskTitle.value = '';
-                if (taskDescription) taskDescription.value = '';
-                if (taskEditorHeader) taskEditorHeader.textContent = 'NEW TASK';
-                if (btnDeleteTask) btnDeleteTask.style.display = 'none';
-                this.renderTasks();
-            },
-
-            saveTask() {
-                const title = document.getElementById('taskTitle').value.trim();
-                const description = document.getElementById('taskDescription').value.trim();
-                
-                if (!title) return;
-
-                if (this.currentTask) {
-                    // 既存タスクの更新
-                    this.currentTask.title = title;
-                    this.currentTask.description = description;
-                } else {
-                    // 新規タスク
-                    const task = {
-                        id: Date.now().toString(),
-                        title: title,
-                        description: description,
-                        completed: false,
-                        timestamp: Date.now()
-                    };
-                    this.tasks.push(task);
-                }
-
+                this.entries = this.entries.filter(e => e.id !== this.currentEntry.id);
                 this.saveLocalData();
-                this.newTask();
-                this.renderTasks();
+                this.newEntry();
+                this.renderEntriesList();
 
-                // 自動同期
                 if (this.githubToken && this.gistId) {
                     this.syncData();
                 }
             },
 
-            editTask(task) {
-                this.currentTask = task;
-                document.getElementById('taskTitle').value = task.title;
-                document.getElementById('taskDescription').value = task.description || '';
-                document.getElementById('taskEditorHeader').textContent = 'EDIT TASK';
-                document.getElementById('btnDeleteTask').style.display = 'block';
-                this.renderTasks();
+            closeModal() {
+                document.getElementById('viewModal').classList.remove('active');
             },
 
-            async viewTask(task) {
-                const modal = document.getElementById('viewTaskModal');
-                const titleEl = document.getElementById('taskModalTitle');
-                const bodyEl = document.getElementById('taskModalBody');
+            renderMemo(container) {
+                container.innerHTML = `
+                    <div style="width: 100%; height: 100%; display: flex; flex-direction: column; border: 2px solid #22c55e; background: rgba(0,0,0,0.6); padding: 15px;">
+                        <div style="font-size: 13px; font-weight: bold; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #16a34a;">MEMO</div>
+                        <textarea class="editor-textarea" id="memoText" placeholder="Free-form memo..." style="flex: 1;">${this.memo}</textarea>
+                        <div class="editor-buttons">
+                            <button class="btn" onclick="app.saveMemo()">SAVE</button>
+                            <button class="btn btn-sync" onclick="app.syncData()">SYNC</button>
+                        </div>
+                    </div>
+                `;
+            },
 
-                this.currentViewedTask = task; // 表示中のタスクを保存
+            saveMemo() {
+                this.memo = document.getElementById('memoText').value;
+                this.saveLocalData();
+                alert('Memo saved!');
 
-                titleEl.textContent = task.title;
-                bodyEl.textContent = '';
-                modal.classList.add('active');
-
-                // タイピングエフェクト
-                if (task.description) {
-                    await this.typeText(task.description, bodyEl);
-                } else {
-                    bodyEl.textContent = '(説明なし)';
-                    bodyEl.style.color = '#16a34a';
-                    bodyEl.style.fontStyle = 'italic';
+                if (this.githubToken && this.gistId) {
+                    this.syncData();
                 }
             },
 
-            editTaskFromModal() {
-                this.closeTaskModal();
+            renderQuests(container) {
+                container.innerHTML = `
+                    <div class="entries-panel">
+                        <div class="entries-header">
+                            <span class="entries-title">QUESTS [${this.missions.length}]</span>
+                            <button class="btn-new" onclick="app.newQuest()">+ NEW</button>
+                        </div>
+                        <div class="entries-list" id="questsList"></div>
+                    </div>
+                    <div class="editor-panel" id="questEditor">
+                        <div class="editor-header">NEW QUEST</div>
+                        <input type="text" class="task-input" id="questTitle" placeholder="Quest title..." />
+                        <textarea class="editor-textarea" id="questDescription" placeholder="Quest description..." style="flex: 0 0 80px;"></textarea>
+                        <div style="margin: 10px 0;">
+                            <label style="font-size: 12px; margin-bottom: 5px; display: block;">DEADLINE:</label>
+                            <input type="date" class="task-input" id="questDeadline" />
+                        </div>
+                        <div style="flex: 1; border: 1px solid #166534; padding: 10px; margin: 10px 0; overflow-y: auto;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <span style="font-size: 12px; font-weight: bold;">WORKFLOW TASKS</span>
+                                <button class="btn-new" onclick="app.addQuestTask()">+ ADD</button>
+                            </div>
+                            <div id="questTasksList"></div>
+                        </div>
+                        <div class="editor-buttons">
+                            <button class="btn" onclick="app.saveQuest()">SAVE</button>
+                            <button class="btn btn-delete" onclick="app.deleteQuest()" id="btnDeleteQuest" style="display:none;">DEL</button>
+                        </div>
+                    </div>
+                `;
+                this.renderQuestsList();
+            },
+
+            renderQuestsList() {
+                const list = document.getElementById('questsList');
+                if (!list) return;
                 
-                // ミッションタスクの場合はミッション編集画面へ
-                if (this.currentViewedMissionTask) {
-                    const mission = this.missions.find(m => m.id === this.currentViewedMissionTask.missionId);
-                    if (mission) {
-                        // MISSIONSタブに切り替え
-                        this.switchTab('missions');
-                        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-                        document.querySelectorAll('.tab-btn')[2].classList.add('active');
-                        
-                        // ミッションを編集モードで開く
-                        this.currentMission = mission;
-                        this.editMissionFromViewer();
-                    }
-                } else if (this.currentViewedTask) {
-                    // 通常のタスク編集
-                    this.editTask(this.currentViewedTask);
-                }
-            },
-
-            closeTaskModal() {
-                document.getElementById('viewTaskModal').classList.remove('active');
-                this.currentViewedTask = null;
-                this.currentViewedMissionTask = null;
-            },
-
-            toggleTask(taskId) {
-                const task = this.tasks.find(t => t.id === taskId);
-                if (task) {
-                    task.completed = !task.completed;
-                    this.saveLocalData();
-                    this.renderTasks();
-
-                    // 自動同期
-                    if (this.githubToken && this.gistId) {
-                        this.syncData();
-                    }
-                }
-            },
-
-            // ========== Mission Management ==========
-
-            renderMissions() {
-                const list = document.getElementById('missionsList');
                 list.innerHTML = '';
-                
                 this.missions.forEach(mission => {
                     const div = document.createElement('div');
-                    div.className = 'mission-item' + (this.currentMission === mission ? ' selected' : '');
-                    div.onclick = () => this.viewMission(mission);
+                    div.className = 'mission-item';
                     
                     const completedCount = mission.tasks.filter(t => t.completed).length;
                     const totalCount = mission.tasks.length;
                     
-                    const title = document.createElement('div');
-                    title.className = 'mission-title';
-                    title.textContent = mission.title;
-                    
-                    const progress = document.createElement('div');
-                    progress.className = 'mission-progress';
-                    progress.textContent = `Progress: ${completedCount}/${totalCount} tasks`;
-                    
-                    const deadline = document.createElement('div');
-                    const deadlineDate = new Date(mission.deadline);
-                    const today = new Date();
-                    const isOverdue = deadlineDate < today && completedCount < totalCount;
-                    deadline.className = 'mission-deadline' + (isOverdue ? ' overdue' : '');
-                    deadline.textContent = `Deadline: ${mission.deadline}`;
-                    
-                    div.appendChild(title);
-                    div.appendChild(progress);
-                    div.appendChild(deadline);
+                    div.innerHTML = `
+                        <div class="mission-title">${mission.title}</div>
+                        <div class="mission-progress">Progress: ${completedCount}/${totalCount} tasks</div>
+                        <div class="mission-deadline">Deadline: ${mission.deadline}</div>
+                    `;
+                    div.onclick = () => this.editQuest(mission);
                     list.appendChild(div);
                 });
-
-                document.getElementById('missionCount').textContent = this.missions.length;
             },
 
-            newMission() {
+            newQuest() {
                 this.currentMission = null;
-                document.getElementById('missionTitle').value = '';
-                document.getElementById('missionDescription').value = '';
-                document.getElementById('missionDeadline').value = '';
-                document.getElementById('missionTasksList').innerHTML = '';
-                document.getElementById('missionEditorHeader').textContent = 'NEW MISSION';
-                document.getElementById('btnDeleteMission').style.display = 'none';
-                document.getElementById('missionEditor').style.display = 'flex';
-                document.getElementById('missionViewer').style.display = 'none';
-                this.renderMissions();
+                document.getElementById('questTitle').value = '';
+                document.getElementById('questDescription').value = '';
+                document.getElementById('questDeadline').value = '';
+                document.getElementById('questTasksList').innerHTML = '';
+                document.getElementById('btnDeleteQuest').style.display = 'none';
             },
 
-            addMissionTask() {
-                const tasksList = document.getElementById('missionTasksList');
+            addQuestTask() {
+                const tasksList = document.getElementById('questTasksList');
                 const order = tasksList.children.length + 1;
                 
                 const div = document.createElement('div');
@@ -1816,33 +1355,33 @@
                 div.innerHTML = `
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                         <div class="mission-task-order">${order}</div>
-                        <button class="mission-task-remove" onclick="this.parentElement.parentElement.remove(); app.reorderMissionTasks();">REMOVE</button>
+                        <button class="mission-task-remove" onclick="this.parentElement.parentElement.remove(); app.reorderQuestTasks();">REMOVE</button>
                     </div>
-                    <input type="text" class="task-input" placeholder="Task title..." style="margin-bottom: 8px; width: 100%;" />
-                    <textarea class="editor-textarea" placeholder="Description (optional)..." style="height: 80px; font-size: 13px; padding: 10px; width: 100%; resize: vertical;"></textarea>
+                    <input type="text" class="task-input" placeholder="Task title..." />
+                    <textarea class="editor-textarea" placeholder="Description (optional)..." style="height: 80px; font-size: 13px; padding: 10px;"></textarea>
                 `;
                 tasksList.appendChild(div);
             },
 
-            reorderMissionTasks() {
-                const tasksList = document.getElementById('missionTasksList');
+            reorderQuestTasks() {
+                const tasksList = document.getElementById('questTasksList');
                 Array.from(tasksList.children).forEach((item, index) => {
                     const orderDiv = item.querySelector('.mission-task-order');
                     if (orderDiv) orderDiv.textContent = index + 1;
                 });
             },
 
-            saveMission() {
-                const title = document.getElementById('missionTitle').value.trim();
-                const description = document.getElementById('missionDescription').value.trim();
-                const deadline = document.getElementById('missionDeadline').value;
+            saveQuest() {
+                const title = document.getElementById('questTitle').value.trim();
+                const description = document.getElementById('questDescription').value.trim();
+                const deadline = document.getElementById('questDeadline').value;
                 
                 if (!title || !deadline) {
                     alert('タイトルと期日は必須です');
                     return;
                 }
 
-                const tasksList = document.getElementById('missionTasksList');
+                const tasksList = document.getElementById('questTasksList');
                 const tasks = [];
                 Array.from(tasksList.children).forEach((item, index) => {
                     const titleInput = item.querySelector('input[type="text"]');
@@ -1861,13 +1400,11 @@
                 });
 
                 if (this.currentMission) {
-                    // 編集
                     this.currentMission.title = title;
                     this.currentMission.description = description;
                     this.currentMission.deadline = deadline;
                     this.currentMission.tasks = tasks;
                 } else {
-                    // 新規作成
                     const mission = {
                         id: Date.now().toString(),
                         title: title,
@@ -1880,90 +1417,25 @@
                 }
 
                 this.saveLocalData();
-                this.newMission();
-                this.renderMissions();
+                this.newQuest();
+                this.renderQuestsList();
 
-                // 自動同期
                 if (this.githubToken && this.gistId) {
                     this.syncData();
                 }
             },
 
-            viewMission(mission) {
+            editQuest(mission) {
                 this.currentMission = mission;
-                document.getElementById('missionViewerHeader').textContent = mission.title;
-                document.getElementById('missionViewDescription').textContent = mission.description || '(説明なし)';
-                document.getElementById('missionViewDeadline').textContent = `Deadline: ${mission.deadline}`;
+                document.getElementById('questTitle').value = mission.title;
+                document.getElementById('questDescription').value = mission.description || '';
+                document.getElementById('questDeadline').value = mission.deadline;
+                document.getElementById('btnDeleteQuest').style.display = 'block';
                 
-                const completedCount = mission.tasks.filter(t => t.completed).length;
-                document.getElementById('missionProgress').textContent = `${completedCount}/${mission.tasks.length}`;
-                
-                const tasksList = document.getElementById('missionViewTasksList');
+                const tasksList = document.getElementById('questTasksList');
                 tasksList.innerHTML = '';
                 
-                mission.tasks.forEach(task => {
-                    const div = document.createElement('div');
-                    div.className = 'mission-task-item' + (task.completed ? ' completed' : '');
-                    
-                    const order = document.createElement('div');
-                    order.className = 'mission-task-order';
-                    order.textContent = task.order;
-                    
-                    const checkbox = document.createElement('div');
-                    checkbox.className = 'task-checkbox' + (task.completed ? ' checked' : '');
-                    checkbox.style.marginLeft = '10px';
-                    checkbox.onclick = () => {
-                        task.completed = !task.completed;
-                        this.saveLocalData();
-                        this.viewMission(mission);
-                        this.renderMissions();
-                        if (this.githubToken && this.gistId) {
-                            this.syncData();
-                        }
-                    };
-                    
-                    const content = document.createElement('div');
-                    content.className = 'mission-task-content';
-                    content.style.flex = '1';
-                    
-                    const title = document.createElement('div');
-                    title.className = 'mission-task-title';
-                    title.textContent = task.title;
-                    title.style.textDecoration = task.completed ? 'line-through' : 'none';
-                    
-                    content.appendChild(title);
-                    
-                    if (task.description) {
-                        const desc = document.createElement('div');
-                        desc.className = 'mission-task-desc';
-                        desc.textContent = task.description;
-                        content.appendChild(desc);
-                    }
-                    
-                    div.appendChild(order);
-                    div.appendChild(checkbox);
-                    div.appendChild(content);
-                    tasksList.appendChild(div);
-                });
-                
-                document.getElementById('missionEditor').style.display = 'none';
-                document.getElementById('missionViewer').style.display = 'flex';
-                this.renderMissions();
-            },
-
-            editMissionFromViewer() {
-                if (!this.currentMission) return;
-                
-                document.getElementById('missionTitle').value = this.currentMission.title;
-                document.getElementById('missionDescription').value = this.currentMission.description || '';
-                document.getElementById('missionDeadline').value = this.currentMission.deadline;
-                document.getElementById('missionEditorHeader').textContent = 'EDIT MISSION';
-                document.getElementById('btnDeleteMission').style.display = 'block';
-                
-                const tasksList = document.getElementById('missionTasksList');
-                tasksList.innerHTML = '';
-                
-                this.currentMission.tasks.forEach((task, index) => {
+                mission.tasks.forEach((task) => {
                     const div = document.createElement('div');
                     div.className = 'mission-task-item';
                     div.style.display = 'block';
@@ -1971,302 +1443,197 @@
                     div.innerHTML = `
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                             <div class="mission-task-order">${task.order}</div>
-                            <button class="mission-task-remove" onclick="this.parentElement.parentElement.remove(); app.reorderMissionTasks();">REMOVE</button>
+                            <button class="mission-task-remove" onclick="this.parentElement.parentElement.remove(); app.reorderQuestTasks();">REMOVE</button>
                         </div>
-                        <input type="text" class="task-input" value="${task.title}" placeholder="Task title..." style="margin-bottom: 8px; width: 100%;" />
-                        <textarea class="editor-textarea" placeholder="Description (optional)..." style="height: 80px; font-size: 13px; padding: 10px; width: 100%; resize: vertical;">${task.description || ''}</textarea>
+                        <input type="text" class="task-input" value="${task.title}" placeholder="Task title..." />
+                        <textarea class="editor-textarea" placeholder="Description (optional)..." style="height: 80px; font-size: 13px; padding: 10px;">${task.description || ''}</textarea>
                     `;
                     tasksList.appendChild(div);
                 });
-                
-                document.getElementById('missionEditor').style.display = 'flex';
-                document.getElementById('missionViewer').style.display = 'none';
             },
 
-            closeMissionViewer() {
-                this.newMission();
-            },
-
-            deleteMission() {
+            deleteQuest() {
                 if (!this.currentMission) return;
-                if (!confirm('このミッションを削除しますか？')) return;
+                if (!confirm('このクエストを削除しますか？')) return;
 
                 this.missions = this.missions.filter(m => m.id !== this.currentMission.id);
                 this.saveLocalData();
-                this.newMission();
-                this.renderMissions();
+                this.newQuest();
+                this.renderQuestsList();
 
-                // 自動同期
                 if (this.githubToken && this.gistId) {
                     this.syncData();
                 }
             },
 
-            deleteTask() {
-                if (!this.currentTask) return;
-                if (!confirm('このタスクを削除しますか？')) return;
-
-                this.tasks = this.tasks.filter(t => t.id !== this.currentTask.id);
-                this.saveLocalData();
-                this.newTask();
-                this.renderTasks();
-
-                // 自動同期
-                if (this.githubToken && this.gistId) {
-                    this.syncData();
-                }
-            },
-
-            // ========== Budget Management ==========
-
-            renderTransactions() {
-                if (this.budgetView === 'list') {
-                    this.renderTransactionsList();
-                } else {
-                    this.renderSummary();
-                }
-            },
-
-            renderTransactionsList() {
-                const list = document.getElementById('transactionsList');
-                list.style.display = 'block';
-                document.getElementById('summaryView').style.display = 'none';
-                list.innerHTML = '';
-                
-                this.transactions.forEach(transaction => {
-                    const div = document.createElement('div');
-                    div.className = 'entry-item' + (this.currentTransaction === transaction ? ' selected' : '');
-                    div.onclick = () => this.editTransaction(transaction);
-                    
-                    const typeColor = transaction.type === 'income' ? '#22c55e' : '#dc2626';
-                    const sign = transaction.type === 'income' ? '+' : '-';
-                    
-                    div.innerHTML = `
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                            <div style="font-size: 11px;">${transaction.date}</div>
-                            <div style="font-size: 14px; font-weight: bold; color: ${typeColor};">${sign}¥${transaction.amount.toLocaleString()}</div>
+            renderPlaces(container) {
+                container.innerHTML = `
+                    <div class="entries-panel">
+                        <div class="entries-header">
+                            <span class="entries-title">PLACES [${this.places.length}]</span>
+                            <button class="btn-new" onclick="app.newPlace()">+ NEW</button>
                         </div>
-                        <div style="font-size: 12px; margin-bottom: 3px;">${transaction.category}</div>
-                        <div style="font-size: 10px; color: #16a34a;">${transaction.memo || '(メモなし)'}</div>
-                    `;
-                    list.appendChild(div);
-                });
-
-                document.getElementById('transactionCount').textContent = this.transactions.length;
-            },
-
-            renderSummary() {
-                const list = document.getElementById('transactionsList');
-                const summary = document.getElementById('summaryView');
-                list.style.display = 'none';
-                summary.style.display = 'block';
-                
-                // 月別でグループ化
-                const monthlyData = {};
-                this.transactions.forEach(t => {
-                    const month = t.date.substring(0, 7); // YYYY-MM
-                    if (!monthlyData[month]) {
-                        monthlyData[month] = { income: 0, expense: 0, categories: {} };
-                    }
-                    
-                    if (t.type === 'income') {
-                        monthlyData[month].income += t.amount;
-                    } else {
-                        monthlyData[month].expense += t.amount;
-                        if (!monthlyData[month].categories[t.category]) {
-                            monthlyData[month].categories[t.category] = 0;
-                        }
-                        monthlyData[month].categories[t.category] += t.amount;
-                    }
-                });
-                
-                // 残高計算
-                let balance = 0;
-                this.transactions.forEach(t => {
-                    balance += t.type === 'income' ? t.amount : -t.amount;
-                });
-                
-                summary.innerHTML = `
-                    <div style="border: 2px solid #22c55e; padding: 15px; margin-bottom: 15px; background: rgba(34, 197, 94, 0.1);">
-                        <div style="font-size: 12px; margin-bottom: 5px;">CURRENT BALANCE:</div>
-                        <div style="font-size: 24px; font-weight: bold; color: ${balance >= 0 ? '#22c55e' : '#dc2626'};">¥${balance.toLocaleString()}</div>
+                        <div class="entries-list" id="placesList"></div>
+                    </div>
+                    <div class="editor-panel">
+                        <div class="editor-header">NEW PLACE</div>
+                        <input type="text" class="task-input" id="placeName" placeholder="Place name..." />
+                        <textarea class="editor-textarea" id="placeNotes" placeholder="Notes (optional)..." style="flex: 1;"></textarea>
+                        <div class="editor-buttons">
+                            <button class="btn" onclick="app.savePlace()">SAVE</button>
+                            <button class="btn btn-delete" onclick="app.deletePlace()" id="btnDeletePlace" style="display:none;">DEL</button>
+                        </div>
                     </div>
                 `;
+                this.renderPlacesList();
+            },
+
+            renderPlacesList() {
+                const list = document.getElementById('placesList');
+                if (!list) return;
                 
-                // 月別サマリー
-                const months = Object.keys(monthlyData).sort().reverse();
-                months.forEach(month => {
-                    const data = monthlyData[month];
-                    const net = data.income - data.expense;
-                    
-                    let categoryHtml = '';
-                    Object.entries(data.categories).sort((a, b) => b[1] - a[1]).forEach(([cat, amount]) => {
-                        categoryHtml += `
-                            <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 3px;">
-                                <span>${cat}</span>
-                                <span>¥${amount.toLocaleString()}</span>
-                            </div>
-                        `;
-                    });
-                    
-                    summary.innerHTML += `
-                        <div style="border: 1px solid #166534; padding: 12px; margin-bottom: 10px;">
-                            <div style="font-size: 14px; font-weight: bold; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #16a34a;">${month}</div>
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                                <span style="color: #22c55e;">Income:</span>
-                                <span style="color: #22c55e;">¥${data.income.toLocaleString()}</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                                <span style="color: #dc2626;">Expense:</span>
-                                <span style="color: #dc2626;">¥${data.expense.toLocaleString()}</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #16a34a;">
-                                <span style="font-weight: bold;">Net:</span>
-                                <span style="font-weight: bold; color: ${net >= 0 ? '#22c55e' : '#dc2626'};">¥${net.toLocaleString()}</span>
-                            </div>
-                            <div style="font-size: 11px; color: #16a34a; margin-bottom: 5px;">Category Breakdown:</div>
-                            ${categoryHtml}
-                        </div>
+                list.innerHTML = '';
+                this.places.forEach(place => {
+                    const div = document.createElement('div');
+                    div.className = 'entry-item';
+                    div.innerHTML = `
+                        <div class="entry-preview">${place.name}</div>
+                        ${place.notes ? `<div class="entry-date">${place.notes.substring(0, 50)}</div>` : ''}
                     `;
+                    div.onclick = () => this.editPlace(place);
+                    list.appendChild(div);
                 });
-                
-                document.getElementById('transactionCount').textContent = this.transactions.length;
             },
 
-            setBudgetView(view) {
-                this.budgetView = view;
-                
-                // ボタンのアクティブ状態を更新
-                document.querySelectorAll('#budgetContent .filter-btn').forEach(btn => {
-                    btn.classList.remove('active');
-                });
-                event.target.classList.add('active');
-                
-                this.renderTransactions();
+            newPlace() {
+                this.currentPlace = null;
+                document.getElementById('placeName').value = '';
+                document.getElementById('placeNotes').value = '';
+                document.getElementById('btnDeletePlace').style.display = 'none';
             },
 
-            setTransactionType(type) {
-                this.transactionType = type;
+            savePlace() {
+                const name = document.getElementById('placeName').value.trim();
+                const notes = document.getElementById('placeNotes').value.trim();
                 
-                document.getElementById('typeIncome').classList.remove('active');
-                document.getElementById('typeExpense').classList.remove('active');
-                
-                if (type === 'income') {
-                    document.getElementById('typeIncome').classList.add('active');
+                if (!name) return;
+
+                if (this.currentPlace) {
+                    this.currentPlace.name = name;
+                    this.currentPlace.notes = notes;
                 } else {
-                    document.getElementById('typeExpense').classList.add('active');
-                }
-            },
-
-            newTransaction() {
-                this.currentTransaction = null;
-                this.transactionType = 'expense';
-                document.getElementById('transactionDate').value = new Date().toISOString().split('T')[0];
-                document.getElementById('transactionCategory').value = '食費';
-                document.getElementById('transactionAmount').value = '';
-                document.getElementById('transactionMemo').value = '';
-                document.getElementById('budgetEditorHeader').textContent = 'NEW TRANSACTION';
-                document.getElementById('btnDeleteTransaction').style.display = 'none';
-                
-                document.getElementById('typeIncome').classList.remove('active');
-                document.getElementById('typeExpense').classList.add('active');
-                
-                this.renderTransactions();
-            },
-
-            saveTransaction() {
-                const date = document.getElementById('transactionDate').value;
-                const category = document.getElementById('transactionCategory').value;
-                const amount = parseFloat(document.getElementById('transactionAmount').value);
-                const memo = document.getElementById('transactionMemo').value.trim();
-                
-                if (!date || !amount || amount <= 0) {
-                    alert('日付と金額は必須です');
-                    return;
-                }
-
-                if (this.currentTransaction) {
-                    // 編集
-                    this.currentTransaction.type = this.transactionType;
-                    this.currentTransaction.date = date;
-                    this.currentTransaction.category = category;
-                    this.currentTransaction.amount = amount;
-                    this.currentTransaction.memo = memo;
-                } else {
-                    // 新規作成
-                    const transaction = {
+                    const place = {
                         id: Date.now().toString(),
-                        type: this.transactionType,
-                        date: date,
-                        category: category,
-                        amount: amount,
-                        memo: memo,
+                        name: name,
+                        notes: notes,
                         timestamp: Date.now()
                     };
-                    this.transactions.push(transaction);
+                    this.places.push(place);
                 }
 
-                this.transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
                 this.saveLocalData();
-                this.newTransaction();
-                this.renderTransactions();
+                this.newPlace();
+                this.renderPlacesList();
 
-                // 自動同期
                 if (this.githubToken && this.gistId) {
                     this.syncData();
                 }
             },
 
-            editTransaction(transaction) {
-                this.currentTransaction = transaction;
-                this.transactionType = transaction.type;
-                document.getElementById('transactionDate').value = transaction.date;
-                document.getElementById('transactionCategory').value = transaction.category;
-                document.getElementById('transactionAmount').value = transaction.amount;
-                document.getElementById('transactionMemo').value = transaction.memo || '';
-                document.getElementById('budgetEditorHeader').textContent = 'EDIT TRANSACTION';
-                document.getElementById('btnDeleteTransaction').style.display = 'block';
-                
-                document.getElementById('typeIncome').classList.remove('active');
-                document.getElementById('typeExpense').classList.remove('active');
-                
-                if (transaction.type === 'income') {
-                    document.getElementById('typeIncome').classList.add('active');
-                } else {
-                    document.getElementById('typeExpense').classList.add('active');
-                }
-                
-                this.renderTransactions();
+            editPlace(place) {
+                this.currentPlace = place;
+                document.getElementById('placeName').value = place.name;
+                document.getElementById('placeNotes').value = place.notes || '';
+                document.getElementById('btnDeletePlace').style.display = 'block';
             },
 
-            deleteTransaction() {
-                if (!this.currentTransaction) return;
-                if (!confirm('この取引を削除しますか？')) return;
+            deletePlace() {
+                if (!this.currentPlace) return;
+                if (!confirm('この場所を削除しますか？')) return;
 
-                this.transactions = this.transactions.filter(t => t.id !== this.currentTransaction.id);
+                this.places = this.places.filter(p => p.id !== this.currentPlace.id);
                 this.saveLocalData();
-                this.newTransaction();
-                this.renderTransactions();
+                this.newPlace();
+                this.renderPlacesList();
 
-                // 自動同期
                 if (this.githubToken && this.gistId) {
                     this.syncData();
                 }
             },
 
-            deleteEntry() {
-                if (!this.currentEntry) return;
-                if (!confirm('このエントリーを削除しますか？')) return;
+            renderCalendar(container) {
+                container.innerHTML = `
+                    <div style="display: flex; gap: 15px; height: 100%;">
+                        <div style="flex: 0 0 55%; border: 2px solid #22c55e; background: rgba(0,0,0,0.6); padding: 15px;">
+                            <div style="text-align: center; font-size: 18px; font-weight: bold; margin-bottom: 15px;" id="calendarTitle">CALENDAR</div>
+                            <div style="text-align: center; color: #16a34a;">Calendar implementation coming soon...</div>
+                        </div>
+                        <div style="flex: 1; border: 2px solid #22c55e; background: rgba(0,0,0,0.6); padding: 15px;">
+                            <div style="font-size: 14px; font-weight: bold; margin-bottom: 15px; padding-bottom: 8px; border-bottom: 1px solid #166534;">SCHEDULE</div>
+                            <div id="scheduleList"></div>
+                        </div>
+                    </div>
+                `;
+            },
 
-                this.entries = this.entries.filter(e => e.id !== this.currentEntry.id);
-                this.saveLocalData();
-                this.newEntry();
-                this.render();
+            renderBankAccount(container) {
+                container.innerHTML = `
+                    <div style="display: flex; justify-content: center; align-items: center; width: 100%; height: 100%;">
+                        <div style="text-align: center; max-width: 500px; padding: 40px; border: 2px solid #22c55e; background: rgba(0,0,0,0.6);">
+                            <div style="font-size: 18px; font-weight: bold; margin-bottom: 20px; color: #16a34a;">BANK ACCOUNT</div>
+                            <div style="font-size: 14px; color: #22c55e; margin-bottom: 10px;">CURRENT BALANCE</div>
+                            <div style="font-size: 48px; font-weight: bold; color: #00ff41; margin: 20px 0; text-shadow: 0 0 20px rgba(0, 255, 65, 0.5);">¥${this.bankBalance.toLocaleString()}</div>
+                            <button class="btn" onclick="app.updateBankBalance()">UPDATE BALANCE</button>
+                        </div>
+                    </div>
+                `;
+            },
 
-                // 自動同期
-                if (this.githubToken && this.gistId) {
-                    this.syncData();
+            updateBankBalance() {
+                const newBalance = prompt('Enter new balance:', this.bankBalance);
+                if (newBalance !== null) {
+                    this.bankBalance = parseFloat(newBalance) || 0;
+                    this.saveLocalData();
+                    this.renderContent();
+
+                    if (this.githubToken && this.gistId) {
+                        this.syncData();
+                    }
                 }
+            },
+
+            renderBudget(container) {
+                container.innerHTML = `
+                    <div style="display: flex; justify-content: center; align-items: center; width: 100%; height: 100%;">
+                        <div style="text-align: center; max-width: 600px; padding: 40px;">
+                            <div style="font-size: 24px; font-weight: bold; margin-bottom: 20px; letter-spacing: 2px; text-shadow: 0 0 10px #22c55e;">
+                                &gt;&gt;&gt; 財務管理システム &lt;&lt;&lt;
+                            </div>
+                            <div style="font-size: 12px; color: #16a34a; margin-bottom: 30px; line-height: 1.8;">
+                                高度な財務管理機能を利用するには<br>
+                                財務ダッシュボードを開いてください
+                            </div>
+                            <a href="financial-dashboard.html" target="_blank" style="display: block; text-decoration: none;">
+                                <button class="btn" style="width: 100%; padding: 20px; font-size: 16px; background: rgba(34, 197, 94, 0.2);">
+                                    &gt;&gt;&gt; OPEN FINANCIAL DASHBOARD &lt;&lt;&lt;
+                                </button>
+                            </a>
+                            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #166534;">
+                                <div style="font-size: 10px; color: #16a34a; margin-bottom: 10px;">利用可能な機能:</div>
+                                <div style="font-size: 11px; color: #22c55e; line-height: 1.8;">
+                                    ✓ 損益計算書 (P/L)<br>
+                                    ✓ 貸借対照表 (B/S)<br>
+                                    ✓ キャッシュフロー計算書 (C/F)<br>
+                                    ✓ 収支入力・管理<br>
+                                    ✓ クレジットカード管理<br>
+                                    ✓ 借入・返済管理<br>
+                                    ✓ 定期支払い自動生成<br>
+                                    ✓ GitHub同期
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
             },
 
             saveSettings() {
@@ -2296,41 +1663,17 @@
                     return;
                 }
 
-                const btnSync = document.getElementById('btnSync');
-                if (!btnSync) return; // Null check
-                
-                const originalText = btnSync.textContent;
-                btnSync.textContent = 'SYNCING...';
-                btnSync.disabled = true;
-
                 try {
                     if (this.gistId) {
-                        // 既存のGistから読み込み
                         await this.pullFromGist();
                     }
                     
-                    // Gistにプッシュ
                     await this.pushToGist();
                     
-                    btnSync.textContent = 'SYNCED!';
-                    setTimeout(() => {
-                        if (btnSync) {
-                            btnSync.textContent = originalText;
-                            btnSync.disabled = false;
-                        }
-                    }, 2000);
+                    alert('Sync完了！');
                 } catch (error) {
                     console.error('Sync error:', error);
                     alert('同期エラー: ' + error.message);
-                    if (btnSync) {
-                        btnSync.textContent = 'ERROR';
-                        setTimeout(() => {
-                            if (btnSync) {
-                                btnSync.textContent = originalText;
-                                btnSync.disabled = false;
-                            }
-                        }, 2000);
-                    }
                 }
             },
 
@@ -2346,10 +1689,8 @@
 
                 const gist = await response.json();
                 
-                // ジャーナルエントリーの同期
-                const journalContent = gist.files['journal.json']?.content;
-                if (journalContent) {
-                    const remoteEntries = JSON.parse(journalContent);
+                if (gist.files['journal.json']) {
+                    const remoteEntries = JSON.parse(gist.files['journal.json'].content);
                     const mergedEntries = [...this.entries];
                     remoteEntries.forEach(remote => {
                         if (!mergedEntries.find(local => local.id === remote.id)) {
@@ -2359,101 +1700,60 @@
                     this.entries = mergedEntries.sort((a, b) => b.timestamp - a.timestamp);
                 }
 
-                // タスクの同期
-                const tasksContent = gist.files['tasks.json']?.content;
-                if (tasksContent) {
-                    const remoteTasks = JSON.parse(tasksContent);
-                    const mergedTasks = [...this.tasks];
-                    remoteTasks.forEach(remote => {
-                        const local = mergedTasks.find(l => l.id === remote.id);
-                        if (!local) {
-                            mergedTasks.push(remote);
-                        } else {
-                            if (remote.timestamp > local.timestamp) {
-                                Object.assign(local, remote);
-                            }
-                        }
-                    });
-                    this.tasks = mergedTasks.sort((a, b) => a.completed - b.completed || b.timestamp - a.timestamp);
+                if (gist.files['memo.txt']) {
+                    this.memo = gist.files['memo.txt'].content;
                 }
 
-                // ミッションの同期
-                const missionsContent = gist.files['missions.json']?.content;
-                if (missionsContent) {
-                    const remoteMissions = JSON.parse(missionsContent);
+                if (gist.files['missions.json']) {
+                    const remoteMissions = JSON.parse(gist.files['missions.json'].content);
                     const mergedMissions = [...this.missions];
                     remoteMissions.forEach(remote => {
                         const local = mergedMissions.find(l => l.id === remote.id);
                         if (!local) {
                             mergedMissions.push(remote);
-                        } else {
-                            if (remote.timestamp > local.timestamp) {
-                                Object.assign(local, remote);
-                            }
                         }
                     });
                     this.missions = mergedMissions.sort((a, b) => b.timestamp - a.timestamp);
                 }
 
-                // 家計簿の同期
-                const transactionsContent = gist.files['transactions.json']?.content;
-                if (transactionsContent) {
-                    const remoteTransactions = JSON.parse(transactionsContent);
-                    const mergedTransactions = [...this.transactions];
-                    remoteTransactions.forEach(remote => {
-                        const local = mergedTransactions.find(l => l.id === remote.id);
-                        if (!local) {
-                            mergedTransactions.push(remote);
-                        } else {
-                            if (remote.timestamp > local.timestamp) {
-                                Object.assign(local, remote);
-                            }
-                        }
-                    });
-                    this.transactions = mergedTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+                if (gist.files['places.json']) {
+                    this.places = JSON.parse(gist.files['places.json'].content);
                 }
 
-                // スケジュールの同期
-                const schedulesContent = gist.files['schedules.json']?.content;
-                if (schedulesContent) {
-                    const remoteSchedules = JSON.parse(schedulesContent);
-                    const mergedSchedules = [...this.schedules];
-                    remoteSchedules.forEach(remote => {
-                        const local = mergedSchedules.find(l => l.id === remote.id);
-                        if (!local) {
-                            mergedSchedules.push(remote);
-                        } else {
-                            if (remote.timestamp > local.timestamp) {
-                                Object.assign(local, remote);
-                            }
-                        }
-                    });
-                    this.schedules = mergedSchedules.sort((a, b) => new Date(a.date) - new Date(b.date));
+                if (gist.files['schedules.json']) {
+                    this.schedules = JSON.parse(gist.files['schedules.json'].content);
+                }
+
+                if (gist.files['bankBalance.txt']) {
+                    this.bankBalance = parseFloat(gist.files['bankBalance.txt'].content) || 0;
                 }
 
                 this.saveLocalData();
-                this.render();
+                this.renderContent();
             },
 
             async pushToGist() {
                 const data = {
-                    description: 'PIP-BOY Journal, Tasks, Missions, Budget & Schedule Data',
+                    description: 'PIP-BOY Journal Data (Hierarchical Structure)',
                     public: false,
                     files: {
                         'journal.json': {
                             content: JSON.stringify(this.entries, null, 2)
                         },
-                        'tasks.json': {
-                            content: JSON.stringify(this.tasks, null, 2)
+                        'memo.txt': {
+                            content: this.memo
                         },
                         'missions.json': {
                             content: JSON.stringify(this.missions, null, 2)
                         },
-                        'transactions.json': {
-                            content: JSON.stringify(this.transactions, null, 2)
+                        'places.json': {
+                            content: JSON.stringify(this.places, null, 2)
                         },
                         'schedules.json': {
                             content: JSON.stringify(this.schedules, null, 2)
+                        },
+                        'bankBalance.txt': {
+                            content: this.bankBalance.toString()
                         }
                     }
                 };
@@ -2482,418 +1782,11 @@
                     this.gistId = gist.id;
                     localStorage.setItem('gistId', gist.id);
                 }
-            },
-
-            // Calendar methods
-            setCalendarView(view) {
-                this.calendarView = view;
-                
-                // Update active button
-                document.querySelectorAll('#calendarContent .btn-small').forEach(btn => {
-                    btn.classList.remove('active');
-                });
-                document.getElementById(`view${view.charAt(0).toUpperCase() + view.slice(1)}`).classList.add('active');
-                
-                this.renderCalendar();
-            },
-
-            renderCalendar() {
-                if (this.calendarView === 'monthly') {
-                    this.renderMonthlyCalendar();
-                } else if (this.calendarView === 'weekly') {
-                    this.renderWeeklyCalendar();
-                } else if (this.calendarView === 'daily') {
-                    this.renderDailyCalendar();
-                }
-                this.renderScheduleList();
-            },
-
-            renderMonthlyCalendar() {
-                const year = this.calendarDate.getFullYear();
-                const month = this.calendarDate.getMonth();
-                
-                // Update header
-                const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
-                document.getElementById('calendarMonthYear').textContent = `${year}年 ${monthNames[month]}`;
-                
-                // Get first and last day of month
-                const firstDay = new Date(year, month, 1);
-                const lastDay = new Date(year, month + 1, 0);
-                const startingDayOfWeek = firstDay.getDay();
-                const daysInMonth = lastDay.getDate();
-                
-                // Get previous month's days to fill
-                const prevMonthLastDay = new Date(year, month, 0).getDate();
-                
-                // Build calendar grid
-                const container = document.getElementById('calendarViewContainer');
-                container.innerHTML = '<div class="calendar-grid" id="calendarGrid"></div>';
-                const grid = document.getElementById('calendarGrid');
-                
-                // Day headers
-                const dayHeaders = ['日', '月', '火', '水', '木', '金', '土'];
-                dayHeaders.forEach(day => {
-                    const header = document.createElement('div');
-                    header.className = 'calendar-day-header';
-                    header.textContent = day;
-                    grid.appendChild(header);
-                });
-                
-                // Previous month's days
-                for (let i = startingDayOfWeek - 1; i >= 0; i--) {
-                    const day = prevMonthLastDay - i;
-                    const dateStr = new Date(year, month - 1, day).toISOString().split('T')[0];
-                    this.renderMonthlyDay(grid, day, dateStr, true);
-                }
-                
-                // Current month's days
-                for (let day = 1; day <= daysInMonth; day++) {
-                    const dateStr = new Date(year, month, day).toISOString().split('T')[0];
-                    this.renderMonthlyDay(grid, day, dateStr, false);
-                }
-                
-                // Next month's days to complete grid
-                const totalCells = startingDayOfWeek + daysInMonth;
-                const remainingCells = 42 - totalCells; // 6 weeks * 7 days
-                for (let day = 1; day <= remainingCells; day++) {
-                    const dateStr = new Date(year, month + 1, day).toISOString().split('T')[0];
-                    this.renderMonthlyDay(grid, day, dateStr, true);
-                }
-            },
-
-            renderMonthlyDay(grid, day, dateStr, isOtherMonth) {
-                const today = new Date().toISOString().split('T')[0];
-                const dayEl = document.createElement('div');
-                dayEl.className = 'calendar-day';
-                if (isOtherMonth) dayEl.classList.add('other-month');
-                if (dateStr === today) dayEl.classList.add('today');
-                
-                const number = document.createElement('div');
-                number.className = 'calendar-day-number';
-                number.textContent = day;
-                dayEl.appendChild(number);
-                
-                // Get events for this day
-                const events = this.getEventsForDate(dateStr);
-                if (events.length > 0) {
-                    const eventsEl = document.createElement('div');
-                    eventsEl.className = 'calendar-day-events';
-                    events.slice(0, 3).forEach(event => {
-                        const item = document.createElement('div');
-                        item.className = 'calendar-event-item-mini';
-                        item.textContent = event.title.substring(0, 20);
-                        item.onclick = (e) => {
-                            e.stopPropagation();
-                            this.openEvent(event);
-                        };
-                        eventsEl.appendChild(item);
-                    });
-                    if (events.length > 3) {
-                        const more = document.createElement('div');
-                        more.style.fontSize = '9px';
-                        more.style.color = '#16a34a';
-                        more.style.marginTop = '2px';
-                        more.textContent = `+${events.length - 3} more`;
-                        eventsEl.appendChild(more);
-                    }
-                    dayEl.appendChild(eventsEl);
-                }
-                
-                grid.appendChild(dayEl);
-            },
-
-            renderWeeklyCalendar() {
-                const startOfWeek = new Date(this.calendarDate);
-                startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
-                
-                const dates = [];
-                for (let i = 0; i < 7; i++) {
-                    const date = new Date(startOfWeek);
-                    date.setDate(date.getDate() + i);
-                    dates.push(date);
-                }
-                
-                // Update header
-                const start = dates[0];
-                const end = dates[6];
-                document.getElementById('calendarMonthYear').textContent = 
-                    `${start.getFullYear()}年 ${start.getMonth() + 1}月${start.getDate()}日 - ${end.getMonth() + 1}月${end.getDate()}日`;
-                
-                // Build weekly view
-                const container = document.getElementById('calendarViewContainer');
-                container.innerHTML = '<div class="calendar-weekly" id="calendarWeekly"></div>';
-                const grid = document.getElementById('calendarWeekly');
-                
-                // Header row
-                grid.appendChild(document.createElement('div')); // empty corner
-                const dayHeaders = ['日', '月', '火', '水', '木', '金', '土'];
-                dates.forEach((date, i) => {
-                    const header = document.createElement('div');
-                    header.className = 'calendar-day-header';
-                    header.textContent = `${dayHeaders[i]} ${date.getDate()}`;
-                    if (date.toISOString().split('T')[0] === new Date().toISOString().split('T')[0]) {
-                        header.style.background = 'rgba(34, 197, 94, 0.2)';
-                    }
-                    grid.appendChild(header);
-                });
-                
-                // Time slots (simplified - morning, afternoon, evening)
-                const timeSlots = [
-                    { label: '朝', start: 6, end: 12 },
-                    { label: '昼', start: 12, end: 18 },
-                    { label: '夜', start: 18, end: 24 }
-                ];
-                
-                timeSlots.forEach(slot => {
-                    const label = document.createElement('div');
-                    label.className = 'calendar-time-label';
-                    label.textContent = slot.label;
-                    grid.appendChild(label);
-                    
-                    dates.forEach(date => {
-                        const dateStr = date.toISOString().split('T')[0];
-                        const events = this.getEventsForDate(dateStr);
-                        
-                        const cell = document.createElement('div');
-                        cell.className = 'calendar-time-slot';
-                        
-                        events.forEach(event => {
-                            const block = document.createElement('div');
-                            block.className = 'calendar-event-block';
-                            block.innerHTML = `<div class="calendar-event-title">${event.title.substring(0, 30)}</div>`;
-                            block.onclick = () => this.openEvent(event);
-                            cell.appendChild(block);
-                        });
-                        
-                        grid.appendChild(cell);
-                    });
-                });
-            },
-
-            renderDailyCalendar() {
-                const date = this.calendarDate;
-                const dateStr = date.toISOString().split('T')[0];
-                
-                // Update header
-                const dayOfWeek = ['日', '月', '火', '水', '木', '金', '土'][date.getDay()];
-                document.getElementById('calendarMonthYear').textContent = 
-                    `${date.getFullYear()}年 ${date.getMonth() + 1}月${date.getDate()}日 (${dayOfWeek})`;
-                
-                const events = this.getEventsForDate(dateStr);
-                
-                // Build daily view
-                const container = document.getElementById('calendarViewContainer');
-                container.innerHTML = '<div class="calendar-daily" id="calendarDaily"></div>';
-                const daily = document.getElementById('calendarDaily');
-                
-                // Show all events for the day
-                if (events.length === 0) {
-                    daily.innerHTML = '<div style="text-align: center; padding: 40px; color: #16a34a;">この日にイベントはありません</div>';
-                    return;
-                }
-                
-                events.forEach(event => {
-                    const block = document.createElement('div');
-                    block.className = 'calendar-event-block';
-                    block.style.marginBottom = '10px';
-                    block.innerHTML = `
-                        <div class="calendar-event-title">${event.title}</div>
-                        <div class="calendar-event-time">${event.date}</div>
-                    `;
-                    block.onclick = () => this.openEvent(event);
-                    daily.appendChild(block);
-                });
-            },
-
-            getEventsForDate(dateStr) {
-                const events = [];
-                
-                // Schedules
-                this.schedules.forEach(schedule => {
-                    if (schedule.date === dateStr) {
-                        events.push({
-                            type: 'schedule',
-                            date: schedule.date,
-                            title: `[予定] ${schedule.title}`,
-                            data: schedule
-                        });
-                    }
-                });
-                
-                // Journal entries
-                this.entries.forEach(entry => {
-                    if (entry.date === dateStr) {
-                        events.push({
-                            type: 'journal',
-                            date: entry.date,
-                            title: entry.text.substring(0, 50) + (entry.text.length > 50 ? '...' : ''),
-                            data: entry
-                        });
-                    }
-                });
-                
-                // Tasks with due dates
-                this.tasks.forEach(task => {
-                    if (task.dueDate === dateStr) {
-                        events.push({
-                            type: 'task',
-                            date: task.dueDate,
-                            title: `[TASK] ${task.title}`,
-                            data: task
-                        });
-                    }
-                });
-                
-                // Mission tasks
-                this.missions.forEach(mission => {
-                    if (mission.tasks) {
-                        mission.tasks.forEach(task => {
-                            if (task.dueDate === dateStr) {
-                                events.push({
-                                    type: 'mission-task',
-                                    date: task.dueDate,
-                                    title: `[MISSION] ${mission.title}: ${task.title}`,
-                                    data: { mission, task }
-                                });
-                            }
-                        });
-                    }
-                });
-                
-                return events;
-            },
-
-            openEvent(event) {
-                if (event.type === 'schedule') {
-                    this.viewSchedule(event.data);
-                } else if (event.type === 'journal') {
-                    this.viewEntry(event.data);
-                } else if (event.type === 'task') {
-                    this.viewTask(event.data);
-                } else if (event.type === 'mission-task') {
-                    this.viewMission(event.data.mission);
-                }
-            },
-
-            previousPeriod() {
-                if (this.calendarView === 'monthly') {
-                    this.calendarDate = new Date(this.calendarDate.getFullYear(), this.calendarDate.getMonth() - 1, 1);
-                } else if (this.calendarView === 'weekly') {
-                    this.calendarDate = new Date(this.calendarDate.getTime() - 7 * 24 * 60 * 60 * 1000);
-                } else if (this.calendarView === 'daily') {
-                    this.calendarDate = new Date(this.calendarDate.getTime() - 24 * 60 * 60 * 1000);
-                }
-                this.renderCalendar();
-            },
-
-            nextPeriod() {
-                if (this.calendarView === 'monthly') {
-                    this.calendarDate = new Date(this.calendarDate.getFullYear(), this.calendarDate.getMonth() + 1, 1);
-                } else if (this.calendarView === 'weekly') {
-                    this.calendarDate = new Date(this.calendarDate.getTime() + 7 * 24 * 60 * 60 * 1000);
-                } else if (this.calendarView === 'daily') {
-                    this.calendarDate = new Date(this.calendarDate.getTime() + 24 * 60 * 60 * 1000);
-                }
-                this.renderCalendar();
-            },
-
-            // Schedule management
-            showAddScheduleForm() {
-                document.getElementById('scheduleForm').style.display = 'block';
-                document.getElementById('scheduleDate').value = new Date().toISOString().split('T')[0];
-                document.getElementById('scheduleTitle').value = '';
-                document.getElementById('scheduleMemo').value = '';
-            },
-
-            hideAddScheduleForm() {
-                document.getElementById('scheduleForm').style.display = 'none';
-            },
-
-            saveSchedule() {
-                const date = document.getElementById('scheduleDate').value;
-                const title = document.getElementById('scheduleTitle').value.trim();
-                const memo = document.getElementById('scheduleMemo').value.trim();
-
-                if (!date || !title) {
-                    alert('日付とタイトルを入力してください');
-                    return;
-                }
-
-                this.schedules.push({
-                    id: Date.now(),
-                    date,
-                    title,
-                    memo,
-                    timestamp: Date.now()
-                });
-
-                this.saveLocalData();
-                this.hideAddScheduleForm();
-                this.renderCalendar();
-            },
-
-            viewSchedule(schedule) {
-                // Show schedule details in modal
-                const modal = document.getElementById('viewModal');
-                const modalDate = document.getElementById('modalDate');
-                const modalBody = document.getElementById('modalBody');
-                
-                modalDate.textContent = schedule.date;
-                modalBody.innerHTML = `
-                    <div style="font-weight: bold; font-size: 16px; margin-bottom: 10px;">${schedule.title}</div>
-                    ${schedule.memo ? `<div style="white-space: pre-wrap; line-height: 1.6;">${schedule.memo}</div>` : ''}
-                    <div style="margin-top: 20px;">
-                        <button class="btn" onclick="app.deleteSchedule(${schedule.id})" style="background: rgba(239, 68, 68, 0.2);">削除</button>
-                    </div>
-                `;
-                
-                modal.classList.add('active');
-            },
-
-            deleteSchedule(id) {
-                if (confirm('このスケジュールを削除しますか？')) {
-                    this.schedules = this.schedules.filter(s => s.id !== id);
-                    this.saveLocalData();
-                    this.closeModal();
-                    this.renderCalendar();
-                }
-            },
-
-            renderScheduleList() {
-                const list = document.getElementById('scheduleList');
-                const year = this.calendarDate.getFullYear();
-                const month = this.calendarDate.getMonth();
-                
-                // Get schedules for current displayed month
-                const monthSchedules = this.schedules.filter(s => {
-                    const scheduleDate = new Date(s.date);
-                    return scheduleDate.getFullYear() === year && scheduleDate.getMonth() === month;
-                });
-                
-                if (monthSchedules.length === 0) {
-                    list.innerHTML = '<div style="text-align: center; padding: 20px; color: #16a34a; font-size: 11px;">今月のスケジュールはありません</div>';
-                    return;
-                }
-                
-                list.innerHTML = '';
-                monthSchedules.forEach(schedule => {
-                    const item = document.createElement('div');
-                    item.className = 'schedule-item';
-                    item.innerHTML = `
-                        <div class="schedule-item-date">${schedule.date}</div>
-                        <div class="schedule-item-title">${schedule.title}</div>
-                        ${schedule.memo ? `<div class="schedule-item-memo">${schedule.memo.substring(0, 50)}${schedule.memo.length > 50 ? '...' : ''}</div>` : ''}
-                    `;
-                    item.onclick = () => this.viewSchedule(schedule);
-                    list.appendChild(item);
-                });
             }
         };
 
-        // 初期化
         window.addEventListener('DOMContentLoaded', () => app.init());
 
-        // 設定モーダルを開くショートカット（Ctrl+K）
         window.addEventListener('keydown', (e) => {
             if (e.ctrlKey && e.key === 'k') {
                 e.preventDefault();
