@@ -139,24 +139,31 @@
 
         .tab-btn {
             background: transparent;
-            border: 1px solid #166534;
+            border: none;
             color: #16a34a;
             font-family: inherit;
             font-size: 13px;
-            padding: 5px 15px;
+            padding: 5px 10px;
             cursor: pointer;
             transition: all 0.2s;
         }
 
         .tab-btn:hover {
-            border-color: #22c55e;
             color: #22c55e;
         }
 
         .tab-btn.active {
-            border-color: #22c55e;
             color: #22c55e;
-            background: rgba(34, 197, 94, 0.1);
+        }
+
+        .tab-btn::before {
+            content: '[';
+            margin-right: 2px;
+        }
+
+        .tab-btn::after {
+            content: ']';
+            margin-left: 2px;
         }
 
         /* Main content */
@@ -584,6 +591,162 @@
                 padding: 15px;
             }
         }
+
+        /* Calendar Styles */
+        .calendar-left-panel {
+            flex: 0 0 55%;
+            height: 100%;
+        }
+
+        .calendar-right-panel {
+            flex: 1;
+            height: 100%;
+        }
+
+        .calendar-controls {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 10px;
+            gap: 10px;
+        }
+
+        .btn-small {
+            padding: 4px 10px;
+            font-size: 11px;
+        }
+
+        .btn-small.active {
+            background: #22c55e;
+            color: #000;
+        }
+
+        #calendarViewContainer {
+            border: 1px solid #166534;
+            background: rgba(0,0,0,0.3);
+            padding: 10px;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 3px;
+        }
+
+        .calendar-day-header {
+            text-align: center;
+            font-size: 11px;
+            font-weight: bold;
+            padding: 8px 4px;
+            border-bottom: 2px solid #166534;
+            color: #22c55e;
+        }
+
+        .calendar-day {
+            min-height: 60px;
+            border: 1px solid #166534;
+            padding: 6px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s;
+            background: rgba(0,0,0,0.3);
+        }
+
+        .calendar-day:hover {
+            background: rgba(34, 197, 94, 0.15);
+            border-color: #22c55e;
+        }
+
+        .calendar-day.today {
+            background: rgba(34, 197, 94, 0.25);
+            border: 2px solid #22c55e;
+        }
+
+        .calendar-day.other-month {
+            opacity: 0.4;
+        }
+
+        .calendar-day.selected {
+            background: rgba(34, 197, 94, 0.3);
+            border: 2px solid #22c55e;
+        }
+
+        .calendar-day-number {
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .calendar-day-events {
+            font-size: 9px;
+            line-height: 1.3;
+        }
+
+        .calendar-event-item-mini {
+            padding: 2px 3px;
+            margin-bottom: 2px;
+            background: rgba(34, 197, 94, 0.2);
+            border-left: 2px solid #22c55e;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .schedule-item {
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #166534;
+            background: rgba(34, 197, 94, 0.1);
+            cursor: pointer;
+        }
+
+        .schedule-item:hover {
+            background: rgba(34, 197, 94, 0.2);
+        }
+
+        .schedule-item-date {
+            font-size: 11px;
+            color: #22c55e;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .schedule-item-title {
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .schedule-item-memo {
+            font-size: 10px;
+            color: #16a34a;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-label {
+            font-size: 12px;
+            color: #16a34a;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .form-input {
+            background: transparent;
+            border: 1px solid #166534;
+            padding: 10px;
+            color: #22c55e;
+            font-family: inherit;
+            font-size: 14px;
+            margin-bottom: 10px;
+            width: 100%;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #22c55e;
+        }
     </style>
 </head>
 <body>
@@ -604,11 +767,11 @@
                 
                 <!-- Main Tabs -->
                 <div class="main-tabs" id="mainTabs">
-                    <button class="tab-btn active" data-main="jnl">&gt;&gt;&gt; JNL &lt;&lt;&lt;</button>
-                    <button class="tab-btn" data-main="data">&gt;&gt;&gt; DATA &lt;&lt;&lt;</button>
-                    <button class="tab-btn" data-main="smdy">&gt;&gt;&gt; SMDY &lt;&lt;&lt;</button>
-                    <button class="tab-btn" data-main="sch">&gt;&gt;&gt; SCH &lt;&lt;&lt;</button>
-                    <button class="tab-btn" data-main="inv">&gt;&gt;&gt; INV &lt;&lt;&lt;</button>
+                    <button class="tab-btn active" data-main="jnl">JNL</button>
+                    <button class="tab-btn" data-main="data">DATA</button>
+                    <button class="tab-btn" data-main="smdy">SMDY</button>
+                    <button class="tab-btn" data-main="sch">SCH</button>
+                    <button class="tab-btn" data-main="inv">INV</button>
                 </div>
 
                 <!-- Sub Tabs -->
@@ -697,15 +860,18 @@
             missions: [],
             places: [],
             schedules: [],
-            bankBalance: 0,
+            bankHistory: [], // [{ date: 'YYYY-MM-DD', balance: number, timestamp: number }]
             
             currentEntry: null,
             currentMission: null,
             currentPlace: null,
+            calendarDate: new Date(),
+            calendarView: 'monthly',
             githubToken: localStorage.getItem('githubToken') || '',
             gistId: localStorage.getItem('gistId') || '',
             typingSpeed: 30,
             audioContext: null,
+            isTyping: false,
 
             init() {
                 this.updateDateTime();
@@ -760,7 +926,7 @@
                 Object.entries(subs).forEach(([key, label]) => {
                     const btn = document.createElement('button');
                     btn.className = 'tab-btn' + (key === this.currentSub ? ' active' : '');
-                    btn.textContent = `>>> ${label} <<<`;
+                    btn.textContent = label;
                     btn.dataset.sub = key;
                     btn.onclick = () => {
                         this.currentSub = key;
@@ -791,7 +957,7 @@
                         this.renderPlaces(container);
                         break;
                     case 'sch_calendar':
-                        container.innerHTML = '<div style="width:100%; text-align:center; padding:40px;">Calendar coming soon...</div>';
+                        this.renderCalendar(container);
                         break;
                     case 'inv_bank':
                         this.renderBankAccount(container);
@@ -927,16 +1093,210 @@
             },
 
             renderBankAccount(container) {
+                const currentBalance = this.bankHistory.length > 0 
+                    ? this.bankHistory[this.bankHistory.length - 1].balance 
+                    : 0;
+
                 container.innerHTML = `
-                    <div style="display:flex; justify-content:center; align-items:center; width:100%; height:100%;">
-                        <div style="text-align:center; max-width:500px; padding:40px; border:2px solid #22c55e; background:rgba(0,0,0,0.6);">
-                            <div style="font-size:18px; font-weight:bold; margin-bottom:20px; color:#16a34a;">BANK ACCOUNT</div>
+                    <div style="width:100%; display:flex; flex-direction:column; border:2px solid #22c55e; background:rgba(0,0,0,0.6); padding:20px;">
+                        <div class="editor-header">BANK ACCOUNT HISTORY</div>
+                        
+                        <div style="text-align:center; margin:20px 0;">
                             <div style="font-size:14px; color:#22c55e; margin-bottom:10px;">CURRENT BALANCE</div>
-                            <div style="font-size:48px; font-weight:bold; color:#00ff41; margin:20px 0; text-shadow:0 0 20px rgba(0,255,65,0.5);">¥${this.bankBalance.toLocaleString()}</div>
-                            <button class="btn" onclick="app.updateBankBalance()">UPDATE BALANCE</button>
+                            <div style="font-size:48px; font-weight:bold; color:#00ff41; text-shadow:0 0 20px rgba(0,255,65,0.5);">¥${currentBalance.toLocaleString()}</div>
+                        </div>
+
+                        <div style="margin:20px 0;">
+                            <label style="font-size:12px; margin-bottom:5px; display:block;">NEW BALANCE ENTRY:</label>
+                            <div style="display:flex; gap:10px;">
+                                <input type="date" id="bankDate" class="task-input" style="flex:1; margin:0;" value="${new Date().toISOString().split('T')[0]}" />
+                                <input type="number" id="bankAmount" class="task-input" style="flex:1; margin:0;" placeholder="金額" />
+                                <button class="btn" onclick="app.addBankRecord()" style="flex:0 0 auto; padding:10px 20px;">ADD</button>
+                            </div>
+                        </div>
+
+                        <div style="flex:1; overflow:hidden; display:flex; flex-direction:column;">
+                            <div style="font-size:12px; font-weight:bold; margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid #16a34a;">BALANCE GRAPH (LAST 12 MONTHS)</div>
+                            <canvas id="bankChart" style="flex:1; max-height:300px;"></canvas>
+                        </div>
+
+                        <div style="margin-top:20px; border:1px solid #166534; padding:15px; max-height:200px; overflow-y:auto;">
+                            <div style="font-size:12px; font-weight:bold; margin-bottom:10px;">HISTORY</div>
+                            <div id="bankHistoryList"></div>
                         </div>
                     </div>
                 `;
+
+                this.renderBankHistory();
+                this.renderBankChart();
+            },
+
+            addBankRecord() {
+                const date = document.getElementById('bankDate').value;
+                const amount = parseFloat(document.getElementById('bankAmount').value);
+
+                if (!date || !amount || isNaN(amount)) {
+                    alert('日付と金額を入力してください');
+                    return;
+                }
+
+                this.bankHistory.push({
+                    date: date,
+                    balance: amount,
+                    timestamp: Date.now()
+                });
+
+                this.bankHistory.sort((a, b) => new Date(a.date) - new Date(b.date));
+                this.saveLocalData();
+                this.renderContent();
+
+                if (this.githubToken && this.gistId) this.syncData();
+            },
+
+            renderBankHistory() {
+                const list = document.getElementById('bankHistoryList');
+                if (!list) return;
+
+                if (this.bankHistory.length === 0) {
+                    list.innerHTML = '<div style="text-align:center; color:#16a34a; font-size:11px;">記録がありません</div>';
+                    return;
+                }
+
+                list.innerHTML = '';
+                const sorted = [...this.bankHistory].reverse();
+                sorted.forEach((record, index) => {
+                    const div = document.createElement('div');
+                    div.style.cssText = 'display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid #166534; font-size:11px;';
+                    div.innerHTML = `
+                        <span>${record.date}</span>
+                        <span style="font-weight:bold; color:#22c55e;">¥${record.balance.toLocaleString()}</span>
+                        <button onclick="app.deleteBankRecord(${sorted.length - 1 - index})" style="color:#dc2626; background:transparent; border:1px solid #dc2626; padding:2px 8px; cursor:pointer; font-family:inherit; font-size:10px;">DEL</button>
+                    `;
+                    list.appendChild(div);
+                });
+            },
+
+            deleteBankRecord(index) {
+                if (!confirm('この記録を削除しますか？')) return;
+                this.bankHistory.splice(index, 1);
+                this.saveLocalData();
+                this.renderContent();
+                if (this.githubToken && this.gistId) this.syncData();
+            },
+
+            renderBankChart() {
+                const canvas = document.getElementById('bankChart');
+                if (!canvas) return;
+
+                const ctx = canvas.getContext('2d');
+                
+                // Get last 12 months of data
+                const now = new Date();
+                const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+                
+                const filteredData = this.bankHistory.filter(record => {
+                    const recordDate = new Date(record.date);
+                    return recordDate >= twelveMonthsAgo;
+                });
+
+                if (filteredData.length === 0) {
+                    ctx.fillStyle = '#16a34a';
+                    ctx.font = '14px Courier New';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('データがありません', canvas.width / 2, canvas.height / 2);
+                    return;
+                }
+
+                // Calculate canvas dimensions
+                const padding = 50;
+                const width = canvas.width = canvas.offsetWidth;
+                const height = canvas.height = canvas.offsetHeight;
+                const graphWidth = width - padding * 2;
+                const graphHeight = height - padding * 2;
+
+                // Find min/max values
+                const balances = filteredData.map(d => d.balance);
+                const minBalance = Math.min(...balances);
+                const maxBalance = Math.max(...balances);
+                const range = maxBalance - minBalance || 1;
+
+                // Clear canvas
+                ctx.clearRect(0, 0, width, height);
+
+                // Draw axes
+                ctx.strokeStyle = '#166534';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(padding, padding);
+                ctx.lineTo(padding, height - padding);
+                ctx.lineTo(width - padding, height - padding);
+                ctx.stroke();
+
+                // Draw grid lines
+                ctx.strokeStyle = '#0a3d2a';
+                ctx.lineWidth = 1;
+                for (let i = 0; i <= 4; i++) {
+                    const y = padding + (graphHeight / 4) * i;
+                    ctx.beginPath();
+                    ctx.moveTo(padding, y);
+                    ctx.lineTo(width - padding, y);
+                    ctx.stroke();
+                }
+
+                // Draw line graph
+                if (filteredData.length > 1) {
+                    ctx.strokeStyle = '#22c55e';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+
+                    filteredData.forEach((record, index) => {
+                        const x = padding + (graphWidth / (filteredData.length - 1)) * index;
+                        const normalizedValue = (record.balance - minBalance) / range;
+                        const y = height - padding - (normalizedValue * graphHeight);
+
+                        if (index === 0) {
+                            ctx.moveTo(x, y);
+                        } else {
+                            ctx.lineTo(x, y);
+                        }
+                    });
+
+                    ctx.stroke();
+
+                    // Draw points
+                    ctx.fillStyle = '#00ff41';
+                    filteredData.forEach((record, index) => {
+                        const x = padding + (graphWidth / (filteredData.length - 1)) * index;
+                        const normalizedValue = (record.balance - minBalance) / range;
+                        const y = height - padding - (normalizedValue * graphHeight);
+
+                        ctx.beginPath();
+                        ctx.arc(x, y, 5, 0, Math.PI * 2);
+                        ctx.fill();
+                    });
+                }
+
+                // Draw Y-axis labels
+                ctx.fillStyle = '#16a34a';
+                ctx.font = '11px Courier New';
+                ctx.textAlign = 'right';
+                for (let i = 0; i <= 4; i++) {
+                    const value = minBalance + (range / 4) * (4 - i);
+                    const y = padding + (graphHeight / 4) * i;
+                    ctx.fillText('¥' + Math.round(value).toLocaleString(), padding - 10, y + 5);
+                }
+
+                // Draw X-axis labels (dates)
+                ctx.textAlign = 'center';
+                const labelStep = Math.max(1, Math.floor(filteredData.length / 6));
+                filteredData.forEach((record, index) => {
+                    if (index % labelStep === 0 || index === filteredData.length - 1) {
+                        const x = padding + (graphWidth / (filteredData.length - 1)) * index;
+                        const date = new Date(record.date);
+                        const label = `${date.getMonth() + 1}/${date.getDate()}`;
+                        ctx.fillText(label, x, height - padding + 20);
+                    }
+                });
             },
 
             renderBudget(container) {
@@ -989,7 +1349,8 @@
                 this.missions = JSON.parse(localStorage.getItem('missions') || '[]');
                 this.places = JSON.parse(localStorage.getItem('places') || '[]');
                 this.schedules = JSON.parse(localStorage.getItem('schedules') || '[]');
-                this.bankBalance = parseFloat(localStorage.getItem('bankBalance') || '0');
+                this.bankHistory = JSON.parse(localStorage.getItem('bankHistory') || '[]');
+                this.bankHistory.sort((a, b) => new Date(a.date) - new Date(b.date));
             },
 
             saveLocalData() {
@@ -998,7 +1359,7 @@
                 localStorage.setItem('missions', JSON.stringify(this.missions));
                 localStorage.setItem('places', JSON.stringify(this.places));
                 localStorage.setItem('schedules', JSON.stringify(this.schedules));
-                localStorage.setItem('bankBalance', this.bankBalance.toString());
+                localStorage.setItem('bankHistory', JSON.stringify(this.bankHistory));
             },
 
             playPipSound() {
@@ -1055,12 +1416,15 @@
                 dateEl.textContent = dateStr;
                 body.textContent = '';
                 modal.classList.add('active');
+                this.isTyping = true;
                 await this.typeText(entry.text, body);
+                this.isTyping = false;
             },
 
             async typeText(text, element) {
                 element.textContent = '';
                 for (let i = 0; i < text.length; i++) {
+                    if (!this.isTyping) break; // Stop if typing was aborted
                     element.textContent += text[i];
                     if (text[i] !== ' ' && text[i] !== '\n' && text[i] !== '\r') {
                         this.playPipSound();
@@ -1087,6 +1451,7 @@
             },
 
             closeModal() {
+                this.isTyping = false; // Stop typing animation
                 document.getElementById('viewModal').classList.remove('active');
             },
 
@@ -1261,14 +1626,256 @@
                 if (this.githubToken && this.gistId) this.syncData();
             },
 
-            updateBankBalance() {
-                const newBalance = prompt('Enter new balance:', this.bankBalance);
-                if (newBalance !== null) {
-                    this.bankBalance = parseFloat(newBalance) || 0;
-                    this.saveLocalData();
-                    this.renderContent();
-                    if (this.githubToken && this.gistId) this.syncData();
+            // Calendar methods
+            renderCalendar(container) {
+                container.innerHTML = `
+                    <div style="display:flex; gap:15px; height:100%;">
+                        <div style="flex:0 0 55%; border:2px solid #22c55e; background:rgba(0,0,0,0.6); padding:15px; display:flex; flex-direction:column;">
+                            <div style="display:flex; justify-content:center; gap:10px; margin-bottom:10px;">
+                                <button class="btn" onclick="app.previousPeriod()" style="padding:8px 15px;">&lt;&lt;</button>
+                                <button class="btn" onclick="app.nextPeriod()" style="padding:8px 15px;">&gt;&gt;</button>
+                            </div>
+                            <div id="calendarMonthYear" style="font-size:18px; font-weight:bold; margin:15px 0; text-align:center;"></div>
+                            <div style="display:flex; gap:5px; justify-content:center; margin-bottom:15px;">
+                                <button class="btn btn-small${this.calendarView === 'monthly' ? ' active' : ''}" onclick="app.setCalendarView('monthly')">MONTHLY</button>
+                            </div>
+                            <div id="calendarViewContainer" style="flex:1; overflow-y:auto;"></div>
+                        </div>
+                        <div style="flex:1; border:2px solid #22c55e; background:rgba(0,0,0,0.6); padding:15px; display:flex; flex-direction:column;">
+                            <div style="font-size:14px; font-weight:bold; margin-bottom:15px; padding-bottom:8px; border-bottom:1px solid #166534;">
+                                SCHEDULE
+                                <button class="btn btn-small" onclick="app.showAddScheduleForm()" style="float:right; padding:4px 10px;">+ NEW</button>
+                            </div>
+                            <div id="scheduleForm" style="display:none; margin-bottom:20px; padding:15px; border:1px solid #166534; background:rgba(0,0,0,0.4);">
+                                <div class="form-group">
+                                    <label class="form-label">日付:</label>
+                                    <input type="date" class="form-input" id="scheduleDate">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">タイトル:</label>
+                                    <input type="text" class="form-input" id="scheduleTitle" placeholder="スケジュールのタイトル">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">メモ:</label>
+                                    <textarea class="form-input" id="scheduleMemo" rows="3" placeholder="詳細（任意）"></textarea>
+                                </div>
+                                <div style="display:flex; gap:10px;">
+                                    <button class="btn" onclick="app.saveSchedule()" style="flex:1;">保存</button>
+                                    <button class="btn" onclick="app.hideAddScheduleForm()" style="flex:1; border-color:#dc2626; color:#dc2626;">キャンセル</button>
+                                </div>
+                            </div>
+                            <div id="scheduleList" style="flex:1; overflow-y:auto;"></div>
+                        </div>
+                    </div>
+                `;
+                
+                this.renderMonthlyCalendar();
+                this.renderScheduleList();
+            },
+
+            setCalendarView(view) {
+                this.calendarView = view;
+                if (this.currentMain === 'sch' && this.currentSub === 'calendar') {
+                    this.renderMonthlyCalendar();
                 }
+            },
+
+            renderMonthlyCalendar() {
+                const year = this.calendarDate.getFullYear();
+                const month = this.calendarDate.getMonth();
+                
+                const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+                const monthYearEl = document.getElementById('calendarMonthYear');
+                if (monthYearEl) {
+                    monthYearEl.textContent = `${year}年 ${monthNames[month]}`;
+                }
+                
+                const firstDay = new Date(year, month, 1);
+                const lastDay = new Date(year, month + 1, 0);
+                const startingDayOfWeek = firstDay.getDay();
+                const daysInMonth = lastDay.getDate();
+                const prevMonthLastDay = new Date(year, month, 0).getDate();
+                
+                const container = document.getElementById('calendarViewContainer');
+                if (!container) return;
+                
+                container.innerHTML = '<div class="calendar-grid" id="calendarGrid"></div>';
+                const grid = document.getElementById('calendarGrid');
+                
+                const dayHeaders = ['日', '月', '火', '水', '木', '金', '土'];
+                dayHeaders.forEach(day => {
+                    const header = document.createElement('div');
+                    header.className = 'calendar-day-header';
+                    header.textContent = day;
+                    grid.appendChild(header);
+                });
+                
+                for (let i = startingDayOfWeek - 1; i >= 0; i--) {
+                    const day = prevMonthLastDay - i;
+                    const dateStr = new Date(year, month - 1, day).toISOString().split('T')[0];
+                    this.renderMonthlyDay(grid, day, dateStr, true);
+                }
+                
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dateStr = new Date(year, month, day).toISOString().split('T')[0];
+                    this.renderMonthlyDay(grid, day, dateStr, false);
+                }
+                
+                const totalCells = startingDayOfWeek + daysInMonth;
+                const remainingCells = 42 - totalCells;
+                for (let day = 1; day <= remainingCells; day++) {
+                    const dateStr = new Date(year, month + 1, day).toISOString().split('T')[0];
+                    this.renderMonthlyDay(grid, day, dateStr, true);
+                }
+            },
+
+            renderMonthlyDay(grid, day, dateStr, isOtherMonth) {
+                const today = new Date().toISOString().split('T')[0];
+                const dayEl = document.createElement('div');
+                dayEl.className = 'calendar-day';
+                if (isOtherMonth) dayEl.classList.add('other-month');
+                if (dateStr === today) dayEl.classList.add('today');
+                
+                const number = document.createElement('div');
+                number.className = 'calendar-day-number';
+                number.textContent = day;
+                dayEl.appendChild(number);
+                
+                const events = this.getEventsForDate(dateStr);
+                if (events.length > 0) {
+                    const eventsEl = document.createElement('div');
+                    eventsEl.className = 'calendar-day-events';
+                    events.slice(0, 3).forEach(event => {
+                        const item = document.createElement('div');
+                        item.className = 'calendar-event-item-mini';
+                        item.textContent = event.title.substring(0, 20);
+                        eventsEl.appendChild(item);
+                    });
+                    if (events.length > 3) {
+                        const more = document.createElement('div');
+                        more.style.fontSize = '9px';
+                        more.style.color = '#16a34a';
+                        more.style.marginTop = '2px';
+                        more.textContent = `+${events.length - 3} more`;
+                        eventsEl.appendChild(more);
+                    }
+                    dayEl.appendChild(eventsEl);
+                }
+                
+                grid.appendChild(dayEl);
+            },
+
+            getEventsForDate(dateStr) {
+                const events = [];
+                
+                this.schedules.forEach(schedule => {
+                    if (schedule.date === dateStr) {
+                        events.push({
+                            type: 'schedule',
+                            date: schedule.date,
+                            title: `[予定] ${schedule.title}`,
+                            data: schedule
+                        });
+                    }
+                });
+                
+                return events;
+            },
+
+            previousPeriod() {
+                this.calendarDate = new Date(this.calendarDate.getFullYear(), this.calendarDate.getMonth() - 1, 1);
+                this.renderMonthlyCalendar();
+                this.renderScheduleList();
+            },
+
+            nextPeriod() {
+                this.calendarDate = new Date(this.calendarDate.getFullYear(), this.calendarDate.getMonth() + 1, 1);
+                this.renderMonthlyCalendar();
+                this.renderScheduleList();
+            },
+
+            showAddScheduleForm() {
+                const form = document.getElementById('scheduleForm');
+                if (form) {
+                    form.style.display = 'block';
+                    document.getElementById('scheduleDate').value = new Date().toISOString().split('T')[0];
+                    document.getElementById('scheduleTitle').value = '';
+                    document.getElementById('scheduleMemo').value = '';
+                }
+            },
+
+            hideAddScheduleForm() {
+                const form = document.getElementById('scheduleForm');
+                if (form) form.style.display = 'none';
+            },
+
+            saveSchedule() {
+                const date = document.getElementById('scheduleDate').value;
+                const title = document.getElementById('scheduleTitle').value.trim();
+                const memo = document.getElementById('scheduleMemo').value.trim();
+
+                if (!date || !title) {
+                    alert('日付とタイトルを入力してください');
+                    return;
+                }
+
+                this.schedules.push({
+                    id: Date.now().toString(),
+                    date: date,
+                    title: title,
+                    memo: memo,
+                    timestamp: Date.now()
+                });
+
+                this.schedules.sort((a, b) => new Date(a.date) - new Date(b.date));
+                this.saveLocalData();
+                this.hideAddScheduleForm();
+                this.renderMonthlyCalendar();
+                this.renderScheduleList();
+
+                if (this.githubToken && this.gistId) this.syncData();
+            },
+
+            renderScheduleList() {
+                const list = document.getElementById('scheduleList');
+                if (!list) return;
+                
+                const year = this.calendarDate.getFullYear();
+                const month = this.calendarDate.getMonth();
+                
+                const monthSchedules = this.schedules.filter(s => {
+                    const scheduleDate = new Date(s.date);
+                    return scheduleDate.getFullYear() === year && scheduleDate.getMonth() === month;
+                });
+                
+                if (monthSchedules.length === 0) {
+                    list.innerHTML = '<div style="text-align:center; padding:20px; color:#16a34a; font-size:11px;">今月のスケジュールはありません</div>';
+                    return;
+                }
+                
+                list.innerHTML = '';
+                monthSchedules.forEach(schedule => {
+                    const item = document.createElement('div');
+                    item.className = 'schedule-item';
+                    item.innerHTML = `
+                        <div class="schedule-item-date">${schedule.date}</div>
+                        <div class="schedule-item-title">${schedule.title}</div>
+                        ${schedule.memo ? `<div class="schedule-item-memo">${schedule.memo.substring(0, 50)}${schedule.memo.length > 50 ? '...' : ''}</div>` : ''}
+                        <div style="margin-top:8px;">
+                            <button onclick="app.deleteSchedule('${schedule.id}')" style="color:#dc2626; background:transparent; border:1px solid #dc2626; padding:4px 8px; cursor:pointer; font-family:inherit; font-size:10px;">削除</button>
+                        </div>
+                    `;
+                    list.appendChild(item);
+                });
+            },
+
+            deleteSchedule(id) {
+                if (!confirm('このスケジュールを削除しますか？')) return;
+                this.schedules = this.schedules.filter(s => s.id !== id);
+                this.saveLocalData();
+                this.renderMonthlyCalendar();
+                this.renderScheduleList();
+                if (this.githubToken && this.gistId) this.syncData();
             },
 
             // GitHub sync
@@ -1331,7 +1938,11 @@
                 if (gist.files['memo.txt']) this.memo = gist.files['memo.txt'].content;
                 if (gist.files['missions.json']) this.missions = JSON.parse(gist.files['missions.json'].content);
                 if (gist.files['places.json']) this.places = JSON.parse(gist.files['places.json'].content);
-                if (gist.files['bankBalance.txt']) this.bankBalance = parseFloat(gist.files['bankBalance.txt'].content) || 0;
+                if (gist.files['schedules.json']) this.schedules = JSON.parse(gist.files['schedules.json'].content);
+                if (gist.files['bankHistory.json']) {
+                    this.bankHistory = JSON.parse(gist.files['bankHistory.json'].content);
+                    this.bankHistory.sort((a, b) => new Date(a.date) - new Date(b.date));
+                }
 
                 this.saveLocalData();
                 this.renderContent();
@@ -1346,7 +1957,8 @@
                         'memo.txt': { content: this.memo },
                         'missions.json': { content: JSON.stringify(this.missions, null, 2) },
                         'places.json': { content: JSON.stringify(this.places, null, 2) },
-                        'bankBalance.txt': { content: this.bankBalance.toString() }
+                        'schedules.json': { content: JSON.stringify(this.schedules, null, 2) },
+                        'bankHistory.json': { content: JSON.stringify(this.bankHistory, null, 2) }
                     }
                 };
 
