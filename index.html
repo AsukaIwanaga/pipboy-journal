@@ -837,6 +837,76 @@
             font-weight: bold;
             flex-shrink: 0;
         }
+
+        /* Schedule Detail Modal */
+        .schedule-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .schedule-modal.active {
+            display: flex;
+        }
+
+        .schedule-modal-content {
+            width: 100%;
+            max-width: 500px;
+            background: linear-gradient(135deg, #064e3b 0%, #000 100%);
+            border: 8px solid #374151;
+            border-radius: 8px;
+            box-shadow: 0 0 80px rgba(34, 197, 94, 0.5);
+            padding: 30px;
+            position: relative;
+        }
+
+        .schedule-modal-header {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #22c55e;
+            text-shadow: 0 0 10px #22c55e;
+        }
+
+        .schedule-modal-body {
+            padding: 20px;
+            border: 2px solid #22c55e;
+            background: rgba(0,0,0,0.6);
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .schedule-modal-date {
+            font-size: 13px;
+            color: #22c55e;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .schedule-modal-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .schedule-modal-memo {
+            font-size: 13px;
+            color: #16a34a;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .schedule-modal-buttons {
+            display: flex;
+            gap: 10px;
+        }
     </style>
 </head>
 <body>
@@ -921,6 +991,23 @@
         </div>
     </div>
 
+    <!-- Schedule Detail Modal -->
+    <div class="schedule-modal" id="scheduleModal">
+        <div class="schedule-modal-content">
+            <div class="schedule-modal-header">SCHEDULE DETAILS</div>
+            <div class="schedule-modal-body">
+                <div class="schedule-modal-date" id="scheduleModalDate"></div>
+                <div class="schedule-modal-title" id="scheduleModalTitle"></div>
+                <div class="schedule-modal-memo" id="scheduleModalMemo"></div>
+            </div>
+            <div class="schedule-modal-buttons">
+                <button class="btn" onclick="app.editScheduleFromModal()" style="flex:1;">EDIT</button>
+                <button class="btn btn-delete" onclick="app.deleteScheduleFromModal()" style="flex:1;">DELETE</button>
+                <button class="btn" onclick="app.closeScheduleModal()" style="flex:1;">CLOSE</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const app = {
             // Navigation
@@ -955,7 +1042,8 @@
             currentEntry: null,
             currentMission: null,
             currentPlace: null,
-            questViewMode: 'view', // 'view' or 'edit'
+            currentSchedule: null,
+            questViewMode: 'edit', // 'view' or 'edit'
             calendarDate: new Date(),
             calendarView: 'monthly',
             githubToken: localStorage.getItem('githubToken') || '',
@@ -1096,7 +1184,7 @@
 
             renderMemo(container) {
                 container.innerHTML = `
-                    <div style="width:100%; display:flex; flex-direction:column; border:2px solid #22c55e; background:rgba(0,0,0,0.6); padding:15px;">
+                    <div style="width:100%; height:100%; display:flex; flex-direction:column; border:2px solid #22c55e; background:rgba(0,0,0,0.6); padding:15px;">
                         <div class="editor-header">MEMO</div>
                         <textarea class="editor-textarea" id="memoText" placeholder="Free-form memo..." style="flex:1;">${this.memo}</textarea>
                         <div class="editor-buttons">
@@ -1150,7 +1238,7 @@
                             <div class="mission-progress">Progress: ${completed}/${mission.tasks.length} tasks</div>
                             <div class="mission-deadline">Deadline: ${mission.deadline}</div>
                         `;
-                        div.onclick = () => this.editQuest(mission);
+                        div.onclick = () => this.viewQuest(mission);
                         list.appendChild(div);
                     });
 
@@ -1878,48 +1966,41 @@
             // Calendar methods
             renderCalendar(container) {
                 container.innerHTML = `
-                    <div style="display:flex; gap:15px; height:100%;">
-                        <div style="flex:0 0 55%; border:2px solid #22c55e; background:rgba(0,0,0,0.6); padding:15px; display:flex; flex-direction:column;">
-                            <div style="display:flex; justify-content:center; gap:10px; margin-bottom:10px;">
-                                <button class="btn" onclick="app.previousPeriod()" style="padding:8px 15px;">&lt;&lt;</button>
-                                <button class="btn" onclick="app.nextPeriod()" style="padding:8px 15px;">&gt;&gt;</button>
-                            </div>
-                            <div id="calendarMonthYear" style="font-size:18px; font-weight:bold; margin:15px 0; text-align:center;"></div>
-                            <div style="display:flex; gap:5px; justify-content:center; margin-bottom:15px;">
-                                <button class="btn btn-small${this.calendarView === 'monthly' ? ' active' : ''}" onclick="app.setCalendarView('monthly')">MONTHLY</button>
-                            </div>
-                            <div id="calendarViewContainer" style="flex:1; overflow-y:auto;"></div>
+                    <div style="width:100%; height:100%; display:flex; flex-direction:column; border:2px solid #22c55e; background:rgba(0,0,0,0.6); padding:20px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                            <button class="btn" onclick="app.previousPeriod()" style="padding:8px 15px;">&lt;&lt; PREV</button>
+                            <div id="calendarMonthYear" style="font-size:20px; font-weight:bold; text-shadow:0 0 10px #22c55e;"></div>
+                            <button class="btn" onclick="app.nextPeriod()" style="padding:8px 15px;">NEXT &gt;&gt;</button>
                         </div>
-                        <div style="flex:1; border:2px solid #22c55e; background:rgba(0,0,0,0.6); padding:15px; display:flex; flex-direction:column;">
-                            <div style="font-size:14px; font-weight:bold; margin-bottom:15px; padding-bottom:8px; border-bottom:1px solid #166534;">
-                                SCHEDULE
-                                <button class="btn btn-small" onclick="app.showAddScheduleForm()" style="float:right; padding:4px 10px;">+ NEW</button>
-                            </div>
-                            <div id="scheduleForm" style="display:none; margin-bottom:20px; padding:15px; border:1px solid #166534; background:rgba(0,0,0,0.4);">
-                                <div class="form-group">
-                                    <label class="form-label">日付:</label>
-                                    <input type="date" class="form-input" id="scheduleDate">
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">タイトル:</label>
-                                    <input type="text" class="form-input" id="scheduleTitle" placeholder="スケジュールのタイトル">
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">メモ:</label>
-                                    <textarea class="form-input" id="scheduleMemo" rows="3" placeholder="詳細（任意）"></textarea>
-                                </div>
-                                <div style="display:flex; gap:10px;">
-                                    <button class="btn" onclick="app.saveSchedule()" style="flex:1;">保存</button>
-                                    <button class="btn" onclick="app.hideAddScheduleForm()" style="flex:1; border-color:#dc2626; color:#dc2626;">キャンセル</button>
-                                </div>
-                            </div>
-                            <div id="scheduleList" style="flex:1; overflow-y:auto;"></div>
+                        
+                        <div style="display:flex; justify-content:center; gap:10px; margin-bottom:20px;">
+                            <button class="btn btn-new" onclick="app.showAddScheduleForm()">+ NEW SCHEDULE</button>
                         </div>
+
+                        <div id="scheduleForm" style="display:none; margin-bottom:20px; padding:20px; border:2px solid #22c55e; background:rgba(0,0,0,0.4);">
+                            <div class="form-group">
+                                <label class="form-label">日付:</label>
+                                <input type="date" class="form-input" id="scheduleDate">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">タイトル:</label>
+                                <input type="text" class="form-input" id="scheduleTitle" placeholder="スケジュールのタイトル">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">メモ:</label>
+                                <textarea class="form-input" id="scheduleMemo" rows="4" placeholder="詳細（任意）"></textarea>
+                            </div>
+                            <div style="display:flex; gap:10px;">
+                                <button class="btn" onclick="app.saveSchedule()" style="flex:1;">保存</button>
+                                <button class="btn" onclick="app.hideAddScheduleForm()" style="flex:1; border-color:#dc2626; color:#dc2626;">キャンセル</button>
+                            </div>
+                        </div>
+                        
+                        <div id="calendarViewContainer" style="flex:1; overflow:auto;"></div>
                     </div>
                 `;
                 
                 this.renderMonthlyCalendar();
-                this.renderScheduleList();
             },
 
             setCalendarView(view) {
@@ -1997,7 +2078,11 @@
                     events.slice(0, 3).forEach(event => {
                         const item = document.createElement('div');
                         item.className = 'calendar-event-item-mini';
-                        item.textContent = event.title.substring(0, 20);
+                        item.textContent = event.title.substring(0, 15);
+                        item.onclick = (e) => {
+                            e.stopPropagation();
+                            this.viewScheduleDetail(event.data);
+                        };
                         eventsEl.appendChild(item);
                     });
                     if (events.length > 3) {
@@ -2022,7 +2107,7 @@
                         events.push({
                             type: 'schedule',
                             date: schedule.date,
-                            title: `[予定] ${schedule.title}`,
+                            title: schedule.title,
                             data: schedule
                         });
                     }
@@ -2031,31 +2116,69 @@
                 return events;
             },
 
+            viewScheduleDetail(schedule) {
+                this.currentSchedule = schedule;
+                document.getElementById('scheduleModalDate').textContent = schedule.date;
+                document.getElementById('scheduleModalTitle').textContent = schedule.title;
+                document.getElementById('scheduleModalMemo').textContent = schedule.memo || '(メモなし)';
+                document.getElementById('scheduleModal').classList.add('active');
+                this.playPipSound();
+            },
+
+            closeScheduleModal() {
+                document.getElementById('scheduleModal').classList.remove('active');
+                this.currentSchedule = null;
+            },
+
+            editScheduleFromModal() {
+                if (!this.currentSchedule) return;
+                
+                this.closeScheduleModal();
+                this.showAddScheduleForm();
+                
+                document.getElementById('scheduleDate').value = this.currentSchedule.date;
+                document.getElementById('scheduleTitle').value = this.currentSchedule.title;
+                document.getElementById('scheduleMemo').value = this.currentSchedule.memo || '';
+            },
+
+            deleteScheduleFromModal() {
+                if (!this.currentSchedule) return;
+                if (!confirm('このスケジュールを削除しますか？')) return;
+                
+                this.schedules = this.schedules.filter(s => s.id !== this.currentSchedule.id);
+                this.saveLocalData();
+                this.closeScheduleModal();
+                this.renderMonthlyCalendar();
+                
+                if (this.githubToken && this.gistId) this.syncData();
+            },
+
             previousPeriod() {
                 this.calendarDate = new Date(this.calendarDate.getFullYear(), this.calendarDate.getMonth() - 1, 1);
                 this.renderMonthlyCalendar();
-                this.renderScheduleList();
             },
 
             nextPeriod() {
                 this.calendarDate = new Date(this.calendarDate.getFullYear(), this.calendarDate.getMonth() + 1, 1);
                 this.renderMonthlyCalendar();
-                this.renderScheduleList();
             },
 
             showAddScheduleForm() {
                 const form = document.getElementById('scheduleForm');
                 if (form) {
                     form.style.display = 'block';
-                    document.getElementById('scheduleDate').value = new Date().toISOString().split('T')[0];
-                    document.getElementById('scheduleTitle').value = '';
-                    document.getElementById('scheduleMemo').value = '';
+                    if (!this.currentSchedule) {
+                        document.getElementById('scheduleDate').value = new Date().toISOString().split('T')[0];
+                        document.getElementById('scheduleTitle').value = '';
+                        document.getElementById('scheduleMemo').value = '';
+                    }
                 }
             },
 
             hideAddScheduleForm() {
                 const form = document.getElementById('scheduleForm');
                 if (form) form.style.display = 'none';
+                this.currentSchedule = null;
             },
 
             saveSchedule() {
@@ -2068,54 +2191,32 @@
                     return;
                 }
 
-                this.schedules.push({
-                    id: Date.now().toString(),
-                    date: date,
-                    title: title,
-                    memo: memo,
-                    timestamp: Date.now()
-                });
+                if (this.currentSchedule) {
+                    // Edit existing schedule
+                    this.currentSchedule.date = date;
+                    this.currentSchedule.title = title;
+                    this.currentSchedule.memo = memo;
+                } else {
+                    // Create new schedule
+                    this.schedules.push({
+                        id: Date.now().toString(),
+                        date: date,
+                        title: title,
+                        memo: memo,
+                        timestamp: Date.now()
+                    });
+                }
 
                 this.schedules.sort((a, b) => new Date(a.date) - new Date(b.date));
                 this.saveLocalData();
                 this.hideAddScheduleForm();
                 this.renderMonthlyCalendar();
-                this.renderScheduleList();
 
                 if (this.githubToken && this.gistId) this.syncData();
             },
 
             renderScheduleList() {
-                const list = document.getElementById('scheduleList');
-                if (!list) return;
-                
-                const year = this.calendarDate.getFullYear();
-                const month = this.calendarDate.getMonth();
-                
-                const monthSchedules = this.schedules.filter(s => {
-                    const scheduleDate = new Date(s.date);
-                    return scheduleDate.getFullYear() === year && scheduleDate.getMonth() === month;
-                });
-                
-                if (monthSchedules.length === 0) {
-                    list.innerHTML = '<div style="text-align:center; padding:20px; color:#16a34a; font-size:11px;">今月のスケジュールはありません</div>';
-                    return;
-                }
-                
-                list.innerHTML = '';
-                monthSchedules.forEach(schedule => {
-                    const item = document.createElement('div');
-                    item.className = 'schedule-item';
-                    item.innerHTML = `
-                        <div class="schedule-item-date">${schedule.date}</div>
-                        <div class="schedule-item-title">${schedule.title}</div>
-                        ${schedule.memo ? `<div class="schedule-item-memo">${schedule.memo.substring(0, 50)}${schedule.memo.length > 50 ? '...' : ''}</div>` : ''}
-                        <div style="margin-top:8px;">
-                            <button onclick="app.deleteSchedule('${schedule.id}')" style="color:#dc2626; background:transparent; border:1px solid #dc2626; padding:4px 8px; cursor:pointer; font-family:inherit; font-size:10px;">削除</button>
-                        </div>
-                    `;
-                    list.appendChild(item);
-                });
+                // This method is no longer used but kept for compatibility
             },
 
             deleteSchedule(id) {
@@ -2123,7 +2224,6 @@
                 this.schedules = this.schedules.filter(s => s.id !== id);
                 this.saveLocalData();
                 this.renderMonthlyCalendar();
-                this.renderScheduleList();
                 if (this.githubToken && this.gistId) this.syncData();
             },
 
