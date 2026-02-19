@@ -747,6 +747,96 @@
             outline: none;
             border-color: #22c55e;
         }
+
+        /* Confetti Animation */
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            background: #22c55e;
+            position: absolute;
+            animation: confetti-fall 3s linear forwards;
+            z-index: 1000;
+        }
+
+        @keyframes confetti-fall {
+            to {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        /* Quest Viewer Styles */
+        .quest-viewer-panel {
+            flex: 1;
+            border: 2px solid #22c55e;
+            background: rgba(0,0,0,0.6);
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .quest-task-checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #22c55e;
+            background: transparent;
+            cursor: pointer;
+            flex-shrink: 0;
+            position: relative;
+            display: inline-block;
+            margin-right: 12px;
+        }
+
+        .quest-task-checkbox.checked::after {
+            content: '✓';
+            position: absolute;
+            top: -2px;
+            left: 3px;
+            color: #22c55e;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .quest-task-row {
+            display: flex;
+            align-items: flex-start;
+            padding: 12px;
+            border: 1px solid #166534;
+            margin-bottom: 10px;
+            background: rgba(0,0,0,0.3);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quest-task-row:hover {
+            background: rgba(34, 197, 94, 0.1);
+            border-color: #22c55e;
+        }
+
+        .quest-task-row.completed {
+            opacity: 0.6;
+        }
+
+        .quest-task-row.completed .quest-task-text {
+            text-decoration: line-through;
+        }
+
+        .quest-task-text {
+            flex: 1;
+        }
+
+        .quest-task-number {
+            display: inline-block;
+            width: 28px;
+            height: 28px;
+            border: 2px solid #22c55e;
+            text-align: center;
+            line-height: 24px;
+            margin-right: 12px;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
     </style>
 </head>
 <body>
@@ -865,6 +955,7 @@
             currentEntry: null,
             currentMission: null,
             currentPlace: null,
+            questViewMode: 'view', // 'view' or 'edit'
             calendarDate: new Date(),
             calendarView: 'monthly',
             githubToken: localStorage.getItem('githubToken') || '',
@@ -1017,49 +1108,222 @@
             },
 
             renderQuests(container) {
-                container.innerHTML = `
-                    <div class="entries-panel">
-                        <div class="entries-header">
-                            <span class="entries-title">QUESTS [${this.missions.length}]</span>
-                            <button class="btn-new" onclick="app.newQuest()">+ NEW</button>
-                        </div>
-                        <div class="entries-list" id="questsList"></div>
-                    </div>
-                    <div class="editor-panel">
-                        <div class="editor-header">NEW QUEST</div>
-                        <input type="text" class="task-input" id="questTitle" placeholder="Quest title..." />
-                        <textarea class="editor-textarea" id="questDescription" placeholder="Quest description..." style="flex:0 0 80px;"></textarea>
-                        <div style="margin:10px 0;">
-                            <label style="font-size:12px; margin-bottom:5px; display:block;">DEADLINE:</label>
-                            <input type="date" class="task-input" id="questDeadline" />
-                        </div>
-                        <div style="flex:1; border:1px solid #166534; padding:10px; overflow-y:auto;">
-                            <div style="margin-bottom:10px;">
-                                <span style="font-size:12px; font-weight:bold;">WORKFLOW TASKS</span>
-                                <button class="btn-new" onclick="app.addQuestTask()" style="float:right;">+ ADD</button>
+                if (this.questViewMode === 'edit' || !this.currentMission) {
+                    // Edit mode - show the editor
+                    container.innerHTML = `
+                        <div class="entries-panel">
+                            <div class="entries-header">
+                                <span class="entries-title">QUESTS [${this.missions.length}]</span>
+                                <button class="btn-new" onclick="app.newQuest()">+ NEW</button>
                             </div>
-                            <div id="questTasksList"></div>
+                            <div class="entries-list" id="questsList"></div>
                         </div>
-                        <div class="editor-buttons">
-                            <button class="btn" onclick="app.saveQuest()">SAVE</button>
-                            <button class="btn btn-delete" onclick="app.deleteQuest()" id="btnDeleteQuest" style="display:none;">DEL</button>
+                        <div class="editor-panel">
+                            <div class="editor-header">${this.currentMission ? 'EDIT QUEST' : 'NEW QUEST'}</div>
+                            <input type="text" class="task-input" id="questTitle" placeholder="Quest title..." value="${this.currentMission ? this.currentMission.title : ''}" />
+                            <textarea class="editor-textarea" id="questDescription" placeholder="Quest description..." style="flex:0 0 80px;">${this.currentMission ? (this.currentMission.description || '') : ''}</textarea>
+                            <div style="margin:10px 0;">
+                                <label style="font-size:12px; margin-bottom:5px; display:block;">DEADLINE:</label>
+                                <input type="date" class="task-input" id="questDeadline" value="${this.currentMission ? this.currentMission.deadline : ''}" />
+                            </div>
+                            <div style="flex:1; border:1px solid #166534; padding:10px; overflow-y:auto;">
+                                <div style="margin-bottom:10px;">
+                                    <span style="font-size:12px; font-weight:bold;">WORKFLOW TASKS</span>
+                                    <button class="btn-new" onclick="app.addQuestTask()" style="float:right;">+ ADD</button>
+                                </div>
+                                <div id="questTasksList"></div>
+                            </div>
+                            <div class="editor-buttons">
+                                <button class="btn" onclick="app.saveQuest()">SAVE</button>
+                                ${this.currentMission ? '<button class="btn btn-delete" onclick="app.deleteQuest()">DEL</button>' : ''}
+                            </div>
                         </div>
-                    </div>
-                `;
-                
-                const list = document.getElementById('questsList');
-                this.missions.forEach(mission => {
-                    const div = document.createElement('div');
-                    div.className = 'mission-item';
-                    const completed = mission.tasks.filter(t => t.completed).length;
-                    div.innerHTML = `
-                        <div class="mission-title">${mission.title}</div>
-                        <div class="mission-progress">Progress: ${completed}/${mission.tasks.length} tasks</div>
-                        <div class="mission-deadline">Deadline: ${mission.deadline}</div>
                     `;
-                    div.onclick = () => this.editQuest(mission);
-                    list.appendChild(div);
-                });
+                    
+                    const list = document.getElementById('questsList');
+                    this.missions.forEach(mission => {
+                        const div = document.createElement('div');
+                        div.className = 'mission-item' + (this.currentMission === mission ? ' selected' : '');
+                        const completed = mission.tasks.filter(t => t.completed).length;
+                        div.innerHTML = `
+                            <div class="mission-title">${mission.title}</div>
+                            <div class="mission-progress">Progress: ${completed}/${mission.tasks.length} tasks</div>
+                            <div class="mission-deadline">Deadline: ${mission.deadline}</div>
+                        `;
+                        div.onclick = () => this.editQuest(mission);
+                        list.appendChild(div);
+                    });
+
+                    // Populate tasks if editing
+                    if (this.currentMission) {
+                        const tasksList = document.getElementById('questTasksList');
+                        this.currentMission.tasks.forEach((task) => {
+                            const div = document.createElement('div');
+                            div.className = 'mission-task-item';
+                            div.innerHTML = `
+                                <div class="mission-task-order">${task.order}</div>
+                                <button class="mission-task-remove" onclick="this.parentElement.remove(); app.reorderQuestTasks();">REMOVE</button>
+                                <div style="clear:both; padding-top:10px;">
+                                    <input type="text" class="task-input" value="${task.title}" placeholder="Task title..." />
+                                    <textarea class="editor-textarea" placeholder="Description..." style="height:80px; font-size:13px; padding:10px;">${task.description || ''}</textarea>
+                                </div>
+                            `;
+                            tasksList.appendChild(div);
+                        });
+                    }
+                } else {
+                    // View mode - show quest viewer
+                    const completed = this.currentMission.tasks.filter(t => t.completed).length;
+                    const total = this.currentMission.tasks.length;
+                    const allCompleted = completed === total && total > 0;
+
+                    container.innerHTML = `
+                        <div class="entries-panel">
+                            <div class="entries-header">
+                                <span class="entries-title">QUESTS [${this.missions.length}]</span>
+                                <button class="btn-new" onclick="app.newQuest()">+ NEW</button>
+                            </div>
+                            <div class="entries-list" id="questsList"></div>
+                        </div>
+                        <div class="quest-viewer-panel">
+                            <div class="editor-header">${this.currentMission.title}</div>
+                            
+                            <div style="padding:15px; border:1px solid #166534; background:rgba(0,0,0,0.3); margin-bottom:15px;">
+                                <div style="font-size:13px; margin-bottom:10px; line-height:1.6;">${this.currentMission.description || '(説明なし)'}</div>
+                                <div style="font-size:12px; color:#${new Date(this.currentMission.deadline) < new Date() && !allCompleted ? 'dc2626' : '22c55e'};">Deadline: ${this.currentMission.deadline}</div>
+                            </div>
+
+                            <div style="font-size:12px; font-weight:bold; margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid #16a34a;">
+                                WORKFLOW TASKS 
+                                <span style="float:right; color:${allCompleted ? '#00ff41' : '#22c55e'};">
+                                    ${completed}/${total} ${allCompleted ? '✓ COMPLETE!' : ''}
+                                </span>
+                            </div>
+
+                            <div style="flex:1; overflow-y:auto; margin-bottom:15px;">
+                                <div id="questTasksView"></div>
+                            </div>
+
+                            <div class="editor-buttons">
+                                <button class="btn" onclick="app.switchToQuestEditMode()">EDIT</button>
+                                <button class="btn btn-delete" onclick="app.closeQuestViewer()">CLOSE</button>
+                            </div>
+                        </div>
+                    `;
+
+                    const list = document.getElementById('questsList');
+                    this.missions.forEach(mission => {
+                        const div = document.createElement('div');
+                        div.className = 'mission-item' + (this.currentMission === mission ? ' selected' : '');
+                        const missionCompleted = mission.tasks.filter(t => t.completed).length;
+                        div.innerHTML = `
+                            <div class="mission-title">${mission.title}</div>
+                            <div class="mission-progress">Progress: ${missionCompleted}/${mission.tasks.length} tasks</div>
+                            <div class="mission-deadline">Deadline: ${mission.deadline}</div>
+                        `;
+                        div.onclick = () => this.viewQuest(mission);
+                        list.appendChild(div);
+                    });
+
+                    // Render tasks as checkboxes
+                    const tasksView = document.getElementById('questTasksView');
+                    this.currentMission.tasks.forEach((task, index) => {
+                        const div = document.createElement('div');
+                        div.className = 'quest-task-row' + (task.completed ? ' completed' : '');
+                        
+                        const checkbox = document.createElement('div');
+                        checkbox.className = 'quest-task-checkbox' + (task.completed ? ' checked' : '');
+                        checkbox.onclick = (e) => {
+                            e.stopPropagation();
+                            this.toggleQuestTask(index);
+                        };
+
+                        const number = document.createElement('div');
+                        number.className = 'quest-task-number';
+                        number.textContent = task.order;
+
+                        const textDiv = document.createElement('div');
+                        textDiv.className = 'quest-task-text';
+                        textDiv.innerHTML = `
+                            <div style="font-size:13px; font-weight:bold; margin-bottom:4px;">${task.title}</div>
+                            ${task.description ? `<div style="font-size:11px; color:#16a34a;">${task.description}</div>` : ''}
+                        `;
+
+                        div.appendChild(checkbox);
+                        div.appendChild(number);
+                        div.appendChild(textDiv);
+                        tasksView.appendChild(div);
+                    });
+
+                    // Show confetti if all tasks completed
+                    if (allCompleted) {
+                        this.showConfetti();
+                    }
+                }
+            },
+
+            viewQuest(mission) {
+                this.currentMission = mission;
+                this.questViewMode = 'view';
+                this.renderContent();
+                this.playPipSound();
+            },
+
+            switchToQuestEditMode() {
+                this.questViewMode = 'edit';
+                this.renderContent();
+                this.playPipSound();
+            },
+
+            closeQuestViewer() {
+                this.currentMission = null;
+                this.questViewMode = 'edit';
+                this.renderContent();
+                this.playPipSound();
+            },
+
+            toggleQuestTask(taskIndex) {
+                if (!this.currentMission) return;
+                
+                const task = this.currentMission.tasks[taskIndex];
+                task.completed = !task.completed;
+                
+                this.saveLocalData();
+                this.renderContent();
+                this.playPipSound();
+
+                // Check if all tasks are complete
+                const allComplete = this.currentMission.tasks.every(t => t.completed);
+                if (allComplete && this.currentMission.tasks.length > 0) {
+                    setTimeout(() => this.showConfetti(), 200);
+                }
+
+                if (this.githubToken && this.gistId) this.syncData();
+            },
+
+            showConfetti() {
+                const colors = ['#22c55e', '#00ff41', '#86efac', '#4ade80', '#16a34a'];
+                const confettiCount = 50;
+                
+                for (let i = 0; i < confettiCount; i++) {
+                    setTimeout(() => {
+                        const confetti = document.createElement('div');
+                        confetti.className = 'confetti';
+                        confetti.style.left = Math.random() * window.innerWidth + 'px';
+                        confetti.style.top = '-10px';
+                        confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                        confetti.style.animationDelay = Math.random() * 0.5 + 's';
+                        confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                        
+                        // Random rotation
+                        const rotation = Math.random() * 360;
+                        confetti.style.transform = `rotate(${rotation}deg)`;
+                        
+                        document.body.appendChild(confetti);
+                        
+                        setTimeout(() => confetti.remove(), 3500);
+                    }, i * 30);
+                }
             },
 
             renderPlaces(container) {
@@ -1465,11 +1729,8 @@
             // Quest methods
             newQuest() {
                 this.currentMission = null;
-                document.getElementById('questTitle').value = '';
-                document.getElementById('questDescription').value = '';
-                document.getElementById('questDeadline').value = '';
-                document.getElementById('questTasksList').innerHTML = '';
-                document.getElementById('btnDeleteQuest').style.display = 'none';
+                this.questViewMode = 'edit';
+                this.renderContent();
             },
 
             addQuestTask() {
@@ -1514,12 +1775,14 @@
                     const taskTitle = titleInput?.value.trim();
                     
                     if (taskTitle) {
+                        // Preserve completion status if editing existing mission
+                        const existingTask = this.currentMission?.tasks[index];
                         tasks.push({
-                            id: Date.now().toString() + '_' + index,
+                            id: existingTask?.id || (Date.now().toString() + '_' + index),
                             title: taskTitle,
                             description: descTextarea?.value.trim() || '',
                             order: index + 1,
-                            completed: false
+                            completed: existingTask?.completed || false
                         });
                     }
                 });
@@ -1530,44 +1793,28 @@
                     this.currentMission.deadline = deadline;
                     this.currentMission.tasks = tasks;
                 } else {
-                    this.missions.push({
+                    const newMission = {
                         id: Date.now().toString(),
                         title: title,
                         description: description,
                         deadline: deadline,
                         tasks: tasks,
                         timestamp: Date.now()
-                    });
+                    };
+                    this.missions.push(newMission);
+                    this.currentMission = newMission;
                 }
 
                 this.saveLocalData();
+                this.questViewMode = 'view';
                 this.renderContent();
                 if (this.githubToken && this.gistId) this.syncData();
             },
 
             editQuest(mission) {
                 this.currentMission = mission;
-                document.getElementById('questTitle').value = mission.title;
-                document.getElementById('questDescription').value = mission.description || '';
-                document.getElementById('questDeadline').value = mission.deadline;
-                document.getElementById('btnDeleteQuest').style.display = 'block';
-                
-                const tasksList = document.getElementById('questTasksList');
-                tasksList.innerHTML = '';
-                
-                mission.tasks.forEach((task) => {
-                    const div = document.createElement('div');
-                    div.className = 'mission-task-item';
-                    div.innerHTML = `
-                        <div class="mission-task-order">${task.order}</div>
-                        <button class="mission-task-remove" onclick="this.parentElement.remove(); app.reorderQuestTasks();">REMOVE</button>
-                        <div style="clear:both; padding-top:10px;">
-                            <input type="text" class="task-input" value="${task.title}" placeholder="Task title..." />
-                            <textarea class="editor-textarea" placeholder="Description..." style="height:80px; font-size:13px; padding:10px;">${task.description || ''}</textarea>
-                        </div>
-                    `;
-                    tasksList.appendChild(div);
-                });
+                this.questViewMode = 'edit';
+                this.renderContent();
             },
 
             deleteQuest() {
@@ -1575,6 +1822,8 @@
                 if (!confirm('このクエストを削除しますか？')) return;
                 this.missions = this.missions.filter(m => m.id !== this.currentMission.id);
                 this.saveLocalData();
+                this.currentMission = null;
+                this.questViewMode = 'edit';
                 this.renderContent();
                 if (this.githubToken && this.gistId) this.syncData();
             },
