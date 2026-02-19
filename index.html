@@ -1236,12 +1236,26 @@
                 this.loadLocalData();
                 this.render();
 
-                // Audio Context初期化（ユーザー操作後に初期化）
-                document.addEventListener('click', () => {
+                // Audio Context初期化（ユーザー操作時）
+                const initAudio = () => {
                     if (!this.audioContext) {
-                        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                        try {
+                            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                            console.log('AudioContext initialized');
+                        } catch (e) {
+                            console.warn('AudioContext initialization failed:', e);
+                        }
                     }
-                }, { once: true });
+                    // AudioContextがsuspended状態の場合はresume
+                    if (this.audioContext && this.audioContext.state === 'suspended') {
+                        this.audioContext.resume();
+                    }
+                };
+                
+                // 複数のイベントで初期化を試みる
+                document.addEventListener('click', initAudio, { once: true });
+                document.addEventListener('keydown', initAudio, { once: true });
+                document.addEventListener('touchstart', initAudio, { once: true });
 
                 // 初回起動時に設定モーダルを表示
                 if (!this.githubToken) {
@@ -1250,25 +1264,37 @@
             },
 
             playPipSound() {
-                if (!this.audioContext) return;
+                // AudioContextを初期化（まだの場合）
+                if (!this.audioContext) {
+                    try {
+                        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    } catch (e) {
+                        console.warn('AudioContext initialization failed:', e);
+                        return;
+                    }
+                }
 
-                const oscillator = this.audioContext.createOscillator();
-                const gainNode = this.audioContext.createGain();
+                try {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
 
-                oscillator.connect(gainNode);
-                gainNode.connect(this.audioContext.destination);
+                    oscillator.connect(gainNode);
+                    gainNode.connect(this.audioContext.destination);
 
-                // 低めの周波数でPip-Boy風の重厚な音
-                oscillator.frequency.value = 280; // 280Hz（低め）
-                oscillator.type = 'square'; // 矩形波でレトロな音質
+                    // 低めの周波数でPip-Boy風の重厚な音
+                    oscillator.frequency.value = 280; // 280Hz（低め）
+                    oscillator.type = 'square'; // 矩形波でレトロな音質
 
-                // 音量エンベロープ（短く鋭い音）
-                const now = this.audioContext.currentTime;
-                gainNode.gain.setValueAtTime(0.08, now); // 音量を小さめに
-                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+                    // 音量エンベロープ（短く鋭い音）
+                    const now = this.audioContext.currentTime;
+                    gainNode.gain.setValueAtTime(0.08, now); // 音量を小さめに
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
 
-                oscillator.start(now);
-                oscillator.stop(now + 0.05);
+                    oscillator.start(now);
+                    oscillator.stop(now + 0.05);
+                } catch (e) {
+                    console.warn('Pip sound playback failed:', e);
+                }
             },
 
             switchTab(tab) {
