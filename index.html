@@ -930,7 +930,7 @@
                     <button class="tab-btn active" data-main="jnl">JNL</button>
                     <button class="tab-btn" data-main="data">DATA</button>
                     <button class="tab-btn" data-main="smdy">SMDY</button>
-                    <button class="tab-btn" data-main="sch">SCH</button>
+                    <button class="tab-btn" data-main="calendar">CALENDAR</button>
                     <button class="tab-btn" data-main="inv">INV</button>
                 </div>
 
@@ -1064,13 +1064,13 @@
                     subs: { main: 'MAIN', memo: 'MEMO' }
                 },
                 data: {
-                    subs: { quests: 'QUESTS' }
+                    subs: { quest: 'QUEST', ex: 'EX' }
                 },
                 smdy: {
                     subs: { place: 'PLACE' }
                 },
-                sch: {
-                    subs: { calendar: 'CALENDAR' }
+                calendar: {
+                    subs: { monthly: 'MONTHLY', weekly: 'WEEKLY', daily: 'DAILY', list: 'LIST' }
                 },
                 inv: {
                     subs: { bank: 'BANK ACNT', budget: 'BUDGET' }
@@ -1190,14 +1190,26 @@
                     case 'jnl_memo':
                         this.renderMemo(container);
                         break;
-                    case 'data_quests':
-                        this.renderQuests(container);
+                    case 'data_quest':
+                        this.renderQuests(container, 'active');
+                        break;
+                    case 'data_ex':
+                        this.renderQuests(container, 'completed');
                         break;
                     case 'smdy_place':
                         this.renderPlaces(container);
                         break;
-                    case 'sch_calendar':
-                        this.renderCalendar(container);
+                    case 'calendar_monthly':
+                        this.renderCalendarMonthly(container);
+                        break;
+                    case 'calendar_weekly':
+                        this.renderCalendarWeekly(container);
+                        break;
+                    case 'calendar_daily':
+                        this.renderCalendarDaily(container);
+                        break;
+                    case 'calendar_list':
+                        this.renderCalendarList(container);
                         break;
                     case 'inv_bank':
                         this.renderBankAccount(container);
@@ -1258,23 +1270,27 @@
                 `;
             },
 
-            renderQuests(container) {
+            renderQuests(container, filterType = 'active') {
                 container.style.display = 'flex'; // Reset to flex for 2-column layout
                 
-                console.log('renderQuests called:', {
-                    questViewMode: this.questViewMode,
-                    currentMission: this.currentMission?.title,
-                    totalMissions: this.missions.length,
-                    missions: this.missions.map(m => m.title)
+                // Filter missions based on completion status
+                const filteredMissions = this.missions.filter(mission => {
+                    const completedTasks = mission.tasks.filter(t => t.completed).length;
+                    const totalTasks = mission.tasks.length;
+                    const isCompleted = totalTasks > 0 && completedTasks === totalTasks;
+                    
+                    return filterType === 'completed' ? isCompleted : !isCompleted;
                 });
+                
+                const tabTitle = filterType === 'completed' ? 'COMPLETED QUESTS' : 'ACTIVE QUESTS';
                 
                 if (this.questViewMode === 'edit' || !this.currentMission) {
                     // Edit mode - show the editor
                     container.innerHTML = `
                         <div class="entries-panel">
                             <div class="entries-header">
-                                <span class="entries-title">QUESTS [${this.missions.length}]</span>
-                                <button class="btn-new" onclick="app.newQuest()">+ NEW</button>
+                                <span class="entries-title">${tabTitle} [${filteredMissions.length}]</span>
+                                ${filterType === 'active' ? '<button class="btn-new" onclick="app.newQuest()">+ NEW</button>' : ''}
                             </div>
                             <div class="entries-list" id="questsList"></div>
                         </div>
@@ -1301,7 +1317,7 @@
                     `;
                     
                     const list = document.getElementById('questsList');
-                    this.missions.forEach(mission => {
+                    filteredMissions.forEach(mission => {
                         const div = document.createElement('div');
                         div.className = 'mission-item' + (this.currentMission === mission ? ' selected' : '');
                         const completed = mission.tasks.filter(t => t.completed).length;
@@ -1340,8 +1356,8 @@
                     container.innerHTML = `
                         <div class="entries-panel">
                             <div class="entries-header">
-                                <span class="entries-title">QUESTS [${this.missions.length}]</span>
-                                <button class="btn-new" onclick="app.newQuest()">+ NEW</button>
+                                <span class="entries-title">${tabTitle} [${filteredMissions.length}]</span>
+                                ${filterType === 'active' ? '<button class="btn-new" onclick="app.newQuest()">+ NEW</button>' : ''}
                             </div>
                             <div class="entries-list" id="questsList"></div>
                         </div>
@@ -1372,7 +1388,7 @@
                     `;
 
                     const list = document.getElementById('questsList');
-                    this.missions.forEach(mission => {
+                    filteredMissions.forEach(mission => {
                         const div = document.createElement('div');
                         div.className = 'mission-item' + (this.currentMission === mission ? ' selected' : '');
                         const missionCompleted = mission.tasks.filter(t => t.completed).length;
@@ -2055,7 +2071,7 @@
             },
 
             // Calendar methods
-            renderCalendar(container) {
+            renderCalendarMonthly(container) {
                 container.style.display = 'block'; // Override flex
                 container.innerHTML = `
                     <div style="width:100%; height:100%; display:flex; flex-direction:column; border:2px solid #22c55e; background:rgba(0,0,0,0.6); padding:20px;">
@@ -2110,6 +2126,169 @@
                 this.renderMonthlyCalendar();
             },
 
+            renderCalendarWeekly(container) {
+                container.style.display = 'block';
+                container.innerHTML = `
+                    <div style="width:100%; height:100%; display:flex; flex-direction:column; border:2px solid #22c55e; background:rgba(0,0,0,0.6); padding:20px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                            <button class="btn" onclick="app.previousWeek()" style="padding:8px 15px;">&lt;&lt; PREV WEEK</button>
+                            <div id="weekRange" style="font-size:18px; font-weight:bold; text-shadow:0 0 10px #22c55e;"></div>
+                            <button class="btn" onclick="app.nextWeek()" style="padding:8px 15px;">NEXT WEEK &gt;&gt;</button>
+                        </div>
+                        
+                        <div style="display:flex; justify-content:center; gap:10px; margin-bottom:20px;">
+                            <button class="btn btn-new" onclick="app.showAddScheduleForm()">+ NEW SCHEDULE</button>
+                            <button class="btn" onclick="app.showGoogleCalendarSync()" style="border-color:#3b82f6; color:#3b82f6;">GOOGLE CALENDAR SYNC</button>
+                        </div>
+
+                        <div id="scheduleForm" style="display:none; margin-bottom:20px; padding:20px; border:2px solid #22c55e; background:rgba(0,0,0,0.4);">
+                            <div class="form-group">
+                                <label class="form-label">日付:</label>
+                                <input type="date" class="form-input" id="scheduleDate">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">タイトル:</label>
+                                <input type="text" class="form-input" id="scheduleTitle" placeholder="スケジュールのタイトル">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">メモ:</label>
+                                <textarea class="form-input" id="scheduleMemo" rows="4" placeholder="詳細（任意）"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">繰り返し:</label>
+                                <select class="form-input" id="scheduleRecurrence" onchange="app.toggleRecurrenceOptions()">
+                                    <option value="none">なし</option>
+                                    <option value="weekly">毎週</option>
+                                    <option value="monthly">毎月</option>
+                                </select>
+                            </div>
+                            <div id="recurrenceOptions" style="display:none;">
+                                <div class="form-group">
+                                    <label class="form-label">終了日（任意）:</label>
+                                    <input type="date" class="form-input" id="scheduleEndDate">
+                                </div>
+                            </div>
+                            <div style="display:flex; gap:10px;">
+                                <button class="btn" onclick="app.saveSchedule()" style="flex:1;">保存</button>
+                                <button class="btn" onclick="app.hideAddScheduleForm()" style="flex:1; border-color:#dc2626; color:#dc2626;">キャンセル</button>
+                            </div>
+                        </div>
+                        
+                        <div id="weeklyViewContainer" style="flex:1; overflow:auto;"></div>
+                    </div>
+                `;
+                
+                this.renderWeeklyView();
+            },
+
+            renderCalendarDaily(container) {
+                container.style.display = 'block';
+                container.innerHTML = `
+                    <div style="width:100%; height:100%; display:flex; flex-direction:column; border:2px solid #22c55e; background:rgba(0,0,0,0.6); padding:20px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                            <button class="btn" onclick="app.previousDay()" style="padding:8px 15px;">&lt;&lt; PREV DAY</button>
+                            <div id="dailyDate" style="font-size:20px; font-weight:bold; text-shadow:0 0 10px #22c55e;"></div>
+                            <button class="btn" onclick="app.nextDay()" style="padding:8px 15px;">NEXT DAY &gt;&gt;</button>
+                        </div>
+                        
+                        <div style="display:flex; justify-content:center; gap:10px; margin-bottom:20px;">
+                            <button class="btn btn-new" onclick="app.showAddScheduleForm()">+ NEW SCHEDULE</button>
+                            <button class="btn" onclick="app.showGoogleCalendarSync()" style="border-color:#3b82f6; color:#3b82f6;">GOOGLE CALENDAR SYNC</button>
+                        </div>
+
+                        <div id="scheduleForm" style="display:none; margin-bottom:20px; padding:20px; border:2px solid #22c55e; background:rgba(0,0,0,0.4);">
+                            <div class="form-group">
+                                <label class="form-label">日付:</label>
+                                <input type="date" class="form-input" id="scheduleDate">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">タイトル:</label>
+                                <input type="text" class="form-input" id="scheduleTitle" placeholder="スケジュールのタイトル">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">メモ:</label>
+                                <textarea class="form-input" id="scheduleMemo" rows="4" placeholder="詳細（任意）"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">繰り返し:</label>
+                                <select class="form-input" id="scheduleRecurrence" onchange="app.toggleRecurrenceOptions()">
+                                    <option value="none">なし</option>
+                                    <option value="weekly">毎週</option>
+                                    <option value="monthly">毎月</option>
+                                </select>
+                            </div>
+                            <div id="recurrenceOptions" style="display:none;">
+                                <div class="form-group">
+                                    <label class="form-label">終了日（任意）:</label>
+                                    <input type="date" class="form-input" id="scheduleEndDate">
+                                </div>
+                            </div>
+                            <div style="display:flex; gap:10px;">
+                                <button class="btn" onclick="app.saveSchedule()" style="flex:1;">保存</button>
+                                <button class="btn" onclick="app.hideAddScheduleForm()" style="flex:1; border-color:#dc2626; color:#dc2626;">キャンセル</button>
+                            </div>
+                        </div>
+                        
+                        <div id="dailyViewContainer" style="flex:1; overflow:auto;"></div>
+                    </div>
+                `;
+                
+                this.renderDailyView();
+            },
+
+            renderCalendarList(container) {
+                container.style.display = 'block';
+                container.innerHTML = `
+                    <div style="width:100%; height:100%; display:flex; flex-direction:column; border:2px solid #22c55e; background:rgba(0,0,0,0.6); padding:20px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                            <div style="font-size:20px; font-weight:bold; text-shadow:0 0 10px #22c55e;">ALL SCHEDULES</div>
+                            <button class="btn" onclick="app.showGoogleCalendarSync()" style="border-color:#3b82f6; color:#3b82f6;">GOOGLE CALENDAR SYNC</button>
+                        </div>
+                        
+                        <div style="display:flex; justify-content:center; gap:10px; margin-bottom:20px;">
+                            <button class="btn btn-new" onclick="app.showAddScheduleForm()">+ NEW SCHEDULE</button>
+                        </div>
+
+                        <div id="scheduleForm" style="display:none; margin-bottom:20px; padding:20px; border:2px solid #22c55e; background:rgba(0,0,0,0.4);">
+                            <div class="form-group">
+                                <label class="form-label">日付:</label>
+                                <input type="date" class="form-input" id="scheduleDate">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">タイトル:</label>
+                                <input type="text" class="form-input" id="scheduleTitle" placeholder="スケジュールのタイトル">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">メモ:</label>
+                                <textarea class="form-input" id="scheduleMemo" rows="4" placeholder="詳細（任意）"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">繰り返し:</label>
+                                <select class="form-input" id="scheduleRecurrence" onchange="app.toggleRecurrenceOptions()">
+                                    <option value="none">なし</option>
+                                    <option value="weekly">毎週</option>
+                                    <option value="monthly">毎月</option>
+                                </select>
+                            </div>
+                            <div id="recurrenceOptions" style="display:none;">
+                                <div class="form-group">
+                                    <label class="form-label">終了日（任意）:</label>
+                                    <input type="date" class="form-input" id="scheduleEndDate">
+                                </div>
+                            </div>
+                            <div style="display:flex; gap:10px;">
+                                <button class="btn" onclick="app.saveSchedule()" style="flex:1;">保存</button>
+                                <button class="btn" onclick="app.hideAddScheduleForm()" style="flex:1; border-color:#dc2626; color:#dc2626;">キャンセル</button>
+                            </div>
+                        </div>
+                        
+                        <div id="listViewContainer" style="flex:1; overflow:auto;"></div>
+                    </div>
+                `;
+                
+                this.renderListView();
+            },
+
             toggleRecurrenceOptions() {
                 const recurrence = document.getElementById('scheduleRecurrence').value;
                 const options = document.getElementById('recurrenceOptions');
@@ -2118,11 +2297,333 @@
                 }
             },
 
-            setCalendarView(view) {
-                this.calendarView = view;
-                if (this.currentMain === 'sch' && this.currentSub === 'calendar') {
-                    this.renderMonthlyCalendar();
+            renderCalendarWeekly(container) {
+                container.style.display = 'block';
+                container.innerHTML = `
+                    <div style="width:100%; height:100%; display:flex; flex-direction:column; border:2px solid #22c55e; background:rgba(0,0,0,0.6); padding:20px;">
+                        <div class="editor-header">WEEKLY VIEW</div>
+                        <div style="text-align:center; padding:60px; color:#16a34a; font-size:14px;">
+                            週次ビューは開発中です...<br><br>
+                            現在はMONTHLYビューをご利用ください。
+                        </div>
+                    </div>
+                `;
+            },
+
+            renderCalendarDaily(container) {
+                container.style.display = 'block';
+                const today = new Date();
+                const dateStr = today.toISOString().split('T')[0];
+                const events = this.getEventsForDate(dateStr);
+                
+                container.innerHTML = `
+                    <div style="width:100%; height:100%; display:flex; flex-direction:column; border:2px solid #22c55e; background:rgba(0,0,0,0.6); padding:20px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                            <button class="btn" onclick="app.previousDay()" style="padding:8px 15px;">&lt;&lt; PREV</button>
+                            <div style="font-size:20px; font-weight:bold; text-shadow:0 0 10px #22c55e;" id="dailyViewDate"></div>
+                            <button class="btn" onclick="app.nextDay()" style="padding:8px 15px;">NEXT &gt;&gt;</button>
+                        </div>
+                        
+                        <button class="btn btn-new" onclick="app.showAddScheduleForm(); document.getElementById('scheduleDate').value='${dateStr}';" style="margin-bottom:20px;">+ NEW SCHEDULE FOR TODAY</button>
+
+                        <div id="scheduleForm" style="display:none; margin-bottom:20px; padding:20px; border:2px solid #22c55e; background:rgba(0,0,0,0.4);"></div>
+                        
+                        <div style="flex:1; overflow-y:auto;">
+                            <div id="dailyScheduleList"></div>
+                        </div>
+                    </div>
+                `;
+                
+                this.renderDailySchedules();
+            },
+
+            renderDailySchedules() {
+                const today = this.calendarDate || new Date();
+                const dateStr = today.toISOString().split('T')[0];
+                const dateEl = document.getElementById('dailyViewDate');
+                const list = document.getElementById('dailyScheduleList');
+                
+                if (dateEl) {
+                    const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+                    dateEl.textContent = today.toLocaleDateString('ja-JP', options);
                 }
+                
+                if (!list) return;
+                
+                const events = this.getEventsForDate(dateStr);
+                
+                if (events.length === 0) {
+                    list.innerHTML = '<div style="text-align:center; padding:40px; color:#16a34a; font-size:13px;">この日の予定はありません</div>';
+                    return;
+                }
+                
+                list.innerHTML = '';
+                events.forEach(event => {
+                    const item = document.createElement('div');
+                    item.className = 'schedule-item';
+                    item.style.cursor = 'pointer';
+                    item.innerHTML = `
+                        <div class="schedule-item-date">${event.date}</div>
+                        <div class="schedule-item-title">${event.data.title}</div>
+                        ${event.data.memo ? `<div class="schedule-item-memo">${event.data.memo}</div>` : ''}
+                    `;
+                    item.onclick = () => this.viewScheduleDetail(event.data);
+                    list.appendChild(item);
+                });
+            },
+
+            previousDay() {
+                if (!this.calendarDate) this.calendarDate = new Date();
+                this.calendarDate.setDate(this.calendarDate.getDate() - 1);
+                this.renderDailySchedules();
+            },
+
+            nextDay() {
+                if (!this.calendarDate) this.calendarDate = new Date();
+                this.calendarDate.setDate(this.calendarDate.getDate() + 1);
+                this.renderDailySchedules();
+            },
+
+            renderCalendarList(container) {
+                container.style.display = 'block';
+                container.innerHTML = `
+                    <div style="width:100%; height:100%; display:flex; flex-direction:column; border:2px solid #22c55e; background:rgba(0,0,0,0.6); padding:20px;">
+                        <div class="editor-header">ALL SCHEDULES</div>
+                        
+                        <button class="btn btn-new" onclick="app.showAddScheduleForm()" style="margin-bottom:20px;">+ NEW SCHEDULE</button>
+
+                        <div id="scheduleForm" style="display:none; margin-bottom:20px; padding:20px; border:2px solid #22c55e; background:rgba(0,0,0,0.4);"></div>
+                        
+                        <div style="flex:1; overflow-y:auto;">
+                            <div id="allSchedulesList"></div>
+                        </div>
+                    </div>
+                `;
+                
+                this.renderAllSchedulesList();
+            },
+
+            renderAllSchedulesList() {
+                const list = document.getElementById('allSchedulesList');
+                if (!list) return;
+                
+                if (this.schedules.length === 0) {
+                    list.innerHTML = '<div style="text-align:center; padding:40px; color:#16a34a; font-size:13px;">スケジュールがありません</div>';
+                    return;
+                }
+                
+                list.innerHTML = '';
+                const sortedSchedules = [...this.schedules].sort((a, b) => new Date(a.date) - new Date(b.date));
+                
+                sortedSchedules.forEach(schedule => {
+                    const item = document.createElement('div');
+                    item.className = 'schedule-item';
+                    item.style.cursor = 'pointer';
+                    
+                    let recurrenceInfo = '';
+                    if (schedule.recurrence && schedule.recurrence.type !== 'none') {
+                        const recurrenceText = schedule.recurrence.type === 'weekly' ? '毎週' : '毎月';
+                        recurrenceInfo = ` <span style="color:#3b82f6; font-size:11px;">[${recurrenceText}]</span>`;
+                    }
+                    
+                    item.innerHTML = `
+                        <div class="schedule-item-date">${schedule.date}${recurrenceInfo}</div>
+                        <div class="schedule-item-title">${schedule.title}</div>
+                        ${schedule.memo ? `<div class="schedule-item-memo">${schedule.memo.substring(0, 100)}${schedule.memo.length > 100 ? '...' : ''}</div>` : ''}
+                    `;
+                    item.onclick = () => this.viewScheduleDetail(schedule);
+                    list.appendChild(item);
+                });
+            },
+
+            renderWeeklyView() {
+                const weekStart = new Date(this.calendarDate);
+                weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // Start from Sunday
+                
+                const weekEnd = new Date(weekStart);
+                weekEnd.setDate(weekEnd.getDate() + 6);
+                
+                const weekRangeEl = document.getElementById('weekRange');
+                if (weekRangeEl) {
+                    const startStr = `${weekStart.getMonth()+1}/${weekStart.getDate()}`;
+                    const endStr = `${weekEnd.getMonth()+1}/${weekEnd.getDate()}`;
+                    weekRangeEl.textContent = `${startStr} - ${endStr}, ${weekStart.getFullYear()}`;
+                }
+                
+                const container = document.getElementById('weeklyViewContainer');
+                if (!container) return;
+                
+                container.innerHTML = '';
+                const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                
+                for (let i = 0; i < 7; i++) {
+                    const currentDay = new Date(weekStart);
+                    currentDay.setDate(currentDay.getDate() + i);
+                    const dateStr = currentDay.toISOString().split('T')[0];
+                    const events = this.getEventsForDate(dateStr);
+                    const today = new Date().toISOString().split('T')[0];
+                    
+                    const dayDiv = document.createElement('div');
+                    dayDiv.style.cssText = 'padding:15px; border:2px solid #166534; margin-bottom:15px; background:rgba(0,0,0,0.3); cursor:pointer;';
+                    if (dateStr === today) {
+                        dayDiv.style.borderColor = '#22c55e';
+                        dayDiv.style.background = 'rgba(34,197,94,0.15)';
+                    }
+                    
+                    dayDiv.onclick = () => {
+                        this.showAddScheduleForm();
+                        document.getElementById('scheduleDate').value = dateStr;
+                        this.playPipSound();
+                    };
+                    
+                    dayDiv.innerHTML = `
+                        <div style="font-size:16px; font-weight:bold; margin-bottom:10px; color:#22c55e;">
+                            ${dayNames[i]} - ${currentDay.getMonth()+1}/${currentDay.getDate()}
+                        </div>
+                        <div id="events_${i}" style="padding-left:15px;"></div>
+                    `;
+                    
+                    container.appendChild(dayDiv);
+                    
+                    const eventsContainer = document.getElementById(`events_${i}`);
+                    if (events.length > 0) {
+                        events.forEach(event => {
+                            const eventEl = document.createElement('div');
+                            eventEl.style.cssText = 'padding:8px; margin:5px 0; background:rgba(34,197,94,0.2); border-left:3px solid #22c55e; cursor:pointer;';
+                            eventEl.textContent = event.title;
+                            eventEl.onclick = (e) => {
+                                e.stopPropagation();
+                                this.viewScheduleDetail(event.data);
+                            };
+                            eventsContainer.appendChild(eventEl);
+                        });
+                    } else {
+                        eventsContainer.innerHTML = '<div style="color:#16a34a; font-size:12px;">予定なし</div>';
+                    }
+                }
+            },
+
+            renderDailyView() {
+                const dateStr = this.calendarDate.toISOString().split('T')[0];
+                const dailyDateEl = document.getElementById('dailyDate');
+                if (dailyDateEl) {
+                    const year = this.calendarDate.getFullYear();
+                    const month = this.calendarDate.getMonth() + 1;
+                    const day = this.calendarDate.getDate();
+                    const dayNames = ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'];
+                    const dayName = dayNames[this.calendarDate.getDay()];
+                    dailyDateEl.textContent = `${year}年${month}月${day}日 (${dayName})`;
+                }
+                
+                const container = document.getElementById('dailyViewContainer');
+                if (!container) return;
+                
+                const events = this.getEventsForDate(dateStr);
+                
+                container.innerHTML = `
+                    <div style="padding:20px; border:2px solid #22c55e; background:rgba(0,0,0,0.3); min-height:400px;">
+                        <div style="font-size:16px; font-weight:bold; margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid #16a34a;">
+                            TODAY'S SCHEDULE
+                        </div>
+                        <div id="dailyEventsList"></div>
+                    </div>
+                `;
+                
+                const eventsList = document.getElementById('dailyEventsList');
+                if (events.length > 0) {
+                    events.forEach(event => {
+                        const eventDiv = document.createElement('div');
+                        eventDiv.style.cssText = 'padding:15px; margin-bottom:15px; border:1px solid #166534; background:rgba(34,197,94,0.1); cursor:pointer;';
+                        eventDiv.innerHTML = `
+                            <div style="font-size:14px; font-weight:bold; margin-bottom:8px;">${event.title}</div>
+                            <div style="font-size:12px; color:#16a34a;">${event.data.memo || '(メモなし)'}</div>
+                        `;
+                        eventDiv.onclick = () => this.viewScheduleDetail(event.data);
+                        eventsList.appendChild(eventDiv);
+                    });
+                } else {
+                    eventsList.innerHTML = '<div style="text-align:center; padding:40px; color:#16a34a; font-size:14px;">今日の予定はありません</div>';
+                }
+            },
+
+            renderListView() {
+                const container = document.getElementById('listViewContainer');
+                if (!container) return;
+                
+                // Get all schedules sorted by date
+                const allSchedules = [...this.schedules].sort((a, b) => new Date(a.date) - new Date(b.date));
+                
+                container.innerHTML = '';
+                
+                if (allSchedules.length === 0) {
+                    container.innerHTML = '<div style="text-align:center; padding:40px; color:#16a34a; font-size:14px;">スケジュールがありません</div>';
+                    return;
+                }
+                
+                // Group by month
+                const grouped = {};
+                allSchedules.forEach(schedule => {
+                    const date = new Date(schedule.date);
+                    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                    if (!grouped[key]) grouped[key] = [];
+                    grouped[key].push(schedule);
+                });
+                
+                Object.keys(grouped).sort().reverse().forEach(monthKey => {
+                    const [year, month] = monthKey.split('-');
+                    const monthDiv = document.createElement('div');
+                    monthDiv.style.cssText = 'margin-bottom:30px;';
+                    
+                    const header = document.createElement('div');
+                    header.style.cssText = 'font-size:16px; font-weight:bold; margin-bottom:15px; padding-bottom:8px; border-bottom:2px solid #22c55e; color:#22c55e;';
+                    header.textContent = `${year}年${month}月`;
+                    monthDiv.appendChild(header);
+                    
+                    grouped[monthKey].forEach(schedule => {
+                        const scheduleDiv = document.createElement('div');
+                        scheduleDiv.style.cssText = 'padding:12px; margin-bottom:10px; border:1px solid #166534; background:rgba(0,0,0,0.3); cursor:pointer;';
+                        
+                        let recurrenceLabel = '';
+                        if (schedule.recurrence && schedule.recurrence.type !== 'none') {
+                            recurrenceLabel = schedule.recurrence.type === 'weekly' ? ' 🔁 毎週' : ' 🔁 毎月';
+                        }
+                        
+                        scheduleDiv.innerHTML = `
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <div>
+                                    <div style="font-size:13px; font-weight:bold; margin-bottom:4px;">${schedule.title}${recurrenceLabel}</div>
+                                    <div style="font-size:11px; color:#16a34a;">${schedule.date}</div>
+                                </div>
+                                <button onclick="event.stopPropagation(); app.deleteSchedule('${schedule.id}')" style="color:#dc2626; background:transparent; border:1px solid #dc2626; padding:4px 8px; cursor:pointer; font-family:inherit; font-size:10px;">削除</button>
+                            </div>
+                        `;
+                        
+                        scheduleDiv.onclick = () => this.viewScheduleDetail(schedule);
+                        monthDiv.appendChild(scheduleDiv);
+                    });
+                    
+                    container.appendChild(monthDiv);
+                });
+            },
+
+            previousWeek() {
+                this.calendarDate.setDate(this.calendarDate.getDate() - 7);
+                this.renderWeeklyView();
+            },
+
+            nextWeek() {
+                this.calendarDate.setDate(this.calendarDate.getDate() + 7);
+                this.renderWeeklyView();
+            },
+
+            previousDay() {
+                this.calendarDate.setDate(this.calendarDate.getDate() - 1);
+                this.renderDailyView();
+            },
+
+            nextDay() {
+                this.calendarDate.setDate(this.calendarDate.getDate() + 1);
+                this.renderDailyView();
             },
 
             renderMonthlyCalendar() {
@@ -2351,7 +2852,56 @@
             },
 
             showAddScheduleForm() {
-                const form = document.getElementById('scheduleForm');
+                let form = document.getElementById('scheduleForm');
+                
+                // If form doesn't exist in current view, create it
+                if (!form) {
+                    const container = document.querySelector('#mainContent > div');
+                    if (container) {
+                        const formHtml = `
+                            <div id="scheduleForm" style="margin-bottom:20px; padding:20px; border:2px solid #22c55e; background:rgba(0,0,0,0.4);">
+                                <div class="form-group">
+                                    <label class="form-label">日付:</label>
+                                    <input type="date" class="form-input" id="scheduleDate">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">タイトル:</label>
+                                    <input type="text" class="form-input" id="scheduleTitle" placeholder="スケジュールのタイトル">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">メモ:</label>
+                                    <textarea class="form-input" id="scheduleMemo" rows="4" placeholder="詳細（任意）"></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">繰り返し:</label>
+                                    <select class="form-input" id="scheduleRecurrence" onchange="app.toggleRecurrenceOptions()">
+                                        <option value="none">なし</option>
+                                        <option value="weekly">毎週</option>
+                                        <option value="monthly">毎月</option>
+                                    </select>
+                                </div>
+                                <div id="recurrenceOptions" style="display:none;">
+                                    <div class="form-group">
+                                        <label class="form-label">終了日（任意）:</label>
+                                        <input type="date" class="form-input" id="scheduleEndDate">
+                                    </div>
+                                </div>
+                                <div style="display:flex; gap:10px;">
+                                    <button class="btn" onclick="app.saveSchedule()" style="flex:1;">保存</button>
+                                    <button class="btn" onclick="app.hideAddScheduleForm()" style="flex:1; border-color:#dc2626; color:#dc2626;">キャンセル</button>
+                                </div>
+                            </div>
+                        `;
+                        
+                        // Insert before schedule list
+                        const existingForm = container.querySelector('#scheduleForm');
+                        if (!existingForm) {
+                            container.insertAdjacentHTML('beforeend', formHtml);
+                        }
+                    }
+                    form = document.getElementById('scheduleForm');
+                }
+                
                 if (form) {
                     form.style.display = 'block';
                     if (!this.currentSchedule) {
@@ -2407,7 +2957,11 @@
                 this.schedules.sort((a, b) => new Date(a.date) - new Date(b.date));
                 this.saveLocalData();
                 this.hideAddScheduleForm();
-                this.renderMonthlyCalendar();
+                
+                // Refresh current view
+                if (this.currentMain === 'calendar') {
+                    this.renderContent();
+                }
 
                 if (this.githubToken && this.gistId) this.syncData();
             },
