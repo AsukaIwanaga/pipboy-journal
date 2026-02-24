@@ -1199,6 +1199,14 @@
 
             renderQuests(container) {
                 container.style.display = 'flex'; // Reset to flex for 2-column layout
+                
+                console.log('renderQuests called:', {
+                    questViewMode: this.questViewMode,
+                    currentMission: this.currentMission?.title,
+                    totalMissions: this.missions.length,
+                    missions: this.missions.map(m => m.title)
+                });
+                
                 if (this.questViewMode === 'edit' || !this.currentMission) {
                     // Edit mode - show the editor
                     container.innerHTML = `
@@ -1705,7 +1713,9 @@
                 this.entries.sort((a, b) => b.timestamp - a.timestamp);
                 this.memo = localStorage.getItem('memo') || '';
                 this.missions = JSON.parse(localStorage.getItem('missions') || '[]');
+                this.missions.sort((a, b) => b.timestamp - a.timestamp);
                 this.places = JSON.parse(localStorage.getItem('places') || '[]');
+                this.places.sort((a, b) => b.timestamp - a.timestamp);
                 this.schedules = JSON.parse(localStorage.getItem('schedules') || '[]');
                 this.bankHistory = JSON.parse(localStorage.getItem('bankHistory') || '[]');
                 this.bankHistory.sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -1948,8 +1958,22 @@
                     });
                 }
 
+                this.places.sort((a, b) => b.timestamp - a.timestamp);
                 this.saveLocalData();
+                
+                // Reset current place first
+                this.currentPlace = null;
+                
                 this.renderContent();
+                
+                // Clear form after rendering
+                if (document.getElementById('placeName')) {
+                    document.getElementById('placeName').value = '';
+                    document.getElementById('placeNotes').value = '';
+                    const btnDelete = document.getElementById('btnDeletePlace');
+                    if (btnDelete) btnDelete.style.display = 'none';
+                }
+                
                 if (this.githubToken && this.gistId) this.syncData();
             },
 
