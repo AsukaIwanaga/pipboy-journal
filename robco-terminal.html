@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROBCO INDUSTRIES (TM) TERMLINK</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'VT323', 'Courier New', monospace;
+            background: #000;
+            color: #22c55e;
+            overflow: hidden;
+            line-height: 1.4;
+        }
+
+        .screen {
+            padding: 30px;
+            min-height: 100vh;
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        .terminal-text {
+            font-size: 18px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 12px;
+            height: 20px;
+            background: #22c55e;
+            animation: blink 1s infinite;
+            margin-left: 2px;
+        }
+
+        @keyframes blink {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0; }
+        }
+
+        .menu-item {
+            padding: 2px 0;
+            cursor: pointer;
+        }
+
+        .menu-item:hover {
+            background: #22c55e;
+            color: #000;
+        }
+
+        .menu-item.selected {
+            background: #22c55e;
+            color: #000;
+        }
+
+        input[type="text"],
+        input[type="password"],
+        textarea {
+            background: transparent;
+            border: none;
+            color: #22c55e;
+            font-family: inherit;
+            font-size: 18px;
+            outline: none;
+            width: 100%;
+        }
+
+        textarea {
+            resize: none;
+        }
+
+        .progress-bar {
+            display: inline-block;
+        }
+
+        .code-scroll {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        .code-line {
+            font-size: 14px;
+            color: #16a34a;
+            white-space: nowrap;
+        }
+
+        .login-box {
+            position: relative;
+            z-index: 10;
+            background: #000;
+            padding: 20px;
+            max-width: 600px;
+        }
+
+        .bottom-right {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            font-size: 18px;
+        }
+
+        .pip-sound {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div class="screen active" id="loginScreen">
+        <div class="code-scroll" id="codeScroll"></div>
+        <div class="login-box">
+            <div class="terminal-text">
+WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK
+GITHUB GISTへのログインが必要です
+
+ENTER ID: <input type="text" id="githubToken" placeholder="" style="width:400px;">
+ENTER PW: <input type="password" id="gistId" placeholder="(初回は空欄)" style="width:400px;">
+
+<button onclick="term.login()" style="background:#22c55e; color:#000; border:none; padding:5px 20px; font-family:inherit; font-size:18px; cursor:pointer; margin-top:10px;">[CONNECT]</button>
+
+<div id="loginLog" style="margin-top:20px; color:#dc2626; font-size:14px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Screen -->
+    <div class="screen" id="loadingScreen">
+        <div class="terminal-text" style="padding-top:45vh; text-align:center;">
+<span id="loadingText">LOADING...</span>
+<div id="progressBar" style="margin-top:20px;"></div>
+<div id="welcomeText" style="margin-top:40px; font-size:24px;"></div>
+        </div>
+    </div>
+
+    <!-- Home Screen -->
+    <div class="screen" id="homeScreen">
+        <div class="terminal-text">
+WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK
+ASUKA IWANAGA PRIVATE TERMINAL
+
+<div id="homeMenu" style="margin-top:20px;"></div>
+        </div>
+        <div class="bottom-right"><span class="cursor"></span></div>
+    </div>
+
+    <!-- Log List Screen -->
+    <div class="screen" id="logListScreen">
+        <div class="terminal-text">
+WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK
+ASUKA IWANAGA PRIVATE TERMINAL
+
+<div id="logList" style="margin-top:20px;"></div>
+        </div>
+        <div class="bottom-right">&gt; <span class="cursor"></span></div>
+    </div>
+
+    <!-- Log View Screen -->
+    <div class="screen" id="logViewScreen">
+        <div class="terminal-text">
+WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK
+ASUKA IWANAGA PRIVATE TERMINAL
+
+<div id="logContent" style="margin-top:20px;"></div>
+        </div>
+        <div class="bottom-right" id="logViewCursor">&gt; <span class="cursor"></span></div>
+    </div>
+
+    <!-- Log Edit Screen -->
+    <div class="screen" id="logEditScreen">
+        <div class="terminal-text">
+WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK
+ASUKA IWANAGA PRIVATE TERMINAL
+
+以下にジャーナルの内容を入力
+
+<div style="margin-top:10px;">&gt; <textarea id="logEditArea" rows="15" style="width:95%;"></textarea></div>
+        </div>
+        <div class="bottom-right" id="logEditBottom">&gt; 保存しますか？ <span class="menu-item" onclick="term.saveLog(true)">[YES]</span> <span class="menu-item" onclick="term.saveLog(false)">[NO]</span></div>
+    </div>
+
+    <!-- Memo List Screen -->
+    <div class="screen" id="memoListScreen">
+        <div class="terminal-text">
+WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK
+ASUKA IWANAGA PRIVATE TERMINAL
+
+<div id="memoList" style="margin-top:20px;"></div>
+        </div>
+        <div class="bottom-right">&gt; <span class="cursor"></span></div>
+    </div>
+
+    <!-- Memo Edit Screen -->
+    <div class="screen" id="memoEditScreen">
+        <div class="terminal-text">
+WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK
+ASUKA IWANAGA PRIVATE TERMINAL
+
+MEMO: <span id="memoTitle"></span>
+
+<div style="margin-top:10px;">&gt; <textarea id="memoEditArea" rows="15" style="width:95%;"></textarea></div>
+        </div>
+        <div class="bottom-right" id="memoEditBottom">&gt; 保存しますか？ <span class="menu-item" onclick="term.saveMemo(true)">[YES]</span> <span class="menu-item" onclick="term.saveMemo(false)">[NO]</span></div>
+    </div>
+
+    <!-- Quest List Screen -->
+    <div class="screen" id="questListScreen">
+        <div class="terminal-text">
+WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK
+ASUKA IWANAGA PRIVATE TERMINAL
+
+<div id="questList" style="margin-top:20px;"></div>
+        </div>
+        <div class="bottom-right">&gt; <span class="cursor"></span></div>
+    </div>
+
+    <!-- Quest View Screen -->
+    <div class="screen" id="questViewScreen">
+        <div class="terminal-text">
+WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK
+ASUKA IWANAGA PRIVATE TERMINAL
+
+<div id="questContent" style="margin-top:20px;"></div>
+        </div>
+        <div class="bottom-right" id="questViewCursor">&gt; <span class="cursor"></span></div>
+    </div>
+
+    <!-- Quest Edit Screen -->
+    <div class="screen" id="questEditScreen">
+        <div class="terminal-text">
+WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK
+ASUKA IWANAGA PRIVATE TERMINAL
+
+以下にクエストの内容を入力
+
+MISSION: <input type="text" id="questTitle" style="width:400px;">
+DDL: <input type="date" id="questDeadline" style="width:200px;">
+CYC: <select id="questCycle" style="background:#000; color:#22c55e; border:1px solid #22c55e; font-family:inherit; font-size:18px;">
+    <option value="NONE">-</option>
+    <option value="WEEKLY">WEEKLY</option>
+    <option value="MONTHLY">MONTHLY</option>
+</select>
+
+DES: <textarea id="questDescription" rows="3" style="width:95%;"></textarea>
+
+TASKS (1行に1つ):
+<textarea id="questTasks" rows="8" style="width:95%;"></textarea>
+        </div>
+        <div class="bottom-right">&gt; 保存しますか？ <span class="menu-item" onclick="term.saveQuest(true)">[YES]</span> <span class="menu-item" onclick="term.saveQuest(false)">[NO]</span></div>
+    </div>
+
+    <audio id="pipSound" class="pip-sound">
+        <source src="" type="audio/wav">
+    </audio>
+
+    <script>
+        const term = {
+            currentScreen: 'loginScreen',
+            logs: [],
+            memos: [],
+            quests: [],
+            currentLog: null,
+            currentMemo: null,
+            currentQuest: null,
+            githubToken: localStorage.getItem('termToken') || '',
+            gistId: localStorage.getItem('termGistId') || '',
+            audioContext: null,
+            typingIndex: 0,
+            isTyping: false,
+
+            init() {
+                this.loadData();
+                this.startCodeScroll();
+                
+                // Prefill if saved
+                if (this.githubToken) {
+                    document.getElementById('githubToken').value = this.githubToken;
+                }
+                if (this.gistId) {
+                    document.getElementById('gistId').value = this.gistId;
+                }
+
+                // Keyboard navigation
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        this.goHome();
+                    }
+                });
+            },
+
+            startCodeScroll() {
+                const container = document.getElementById('codeScroll');
+                const chars = '0123456789ABCDEF';
+                const codeLines = [];
+
+                for (let i = 0; i < 50; i++) {
+                    let line = '';
+                    for (let j = 0; j < 80; j++) {
+                        line += chars[Math.floor(Math.random() * chars.length)];
+                    }
+                    codeLines.push(line);
+                }
+
+                let scrollPos = 0;
+                setInterval(() => {
+                    scrollPos = (scrollPos + 1) % codeLines.length;
+                    container.innerHTML = '';
+                    for (let i = 0; i < 30; i++) {
+                        const idx = (scrollPos + i) % codeLines.length;
+                        const div = document.createElement('div');
+                        div.className = 'code-line';
+                        div.textContent = codeLines[idx];
+                        container.appendChild(div);
+                    }
+                }, 100);
+            },
+
+            async login() {
+                const token = document.getElementById('githubToken').value.trim();
+                const gistId = document.getElementById('gistId').value.trim();
+                const log = document.getElementById('loginLog');
+
+                if (!token) {
+                    const now = new Date();
+                    log.textContent = `> トークンを入力してください ${now.getMonth()+1}/${now.getDate()} ${now.getHours()}:${now.getMinutes()}`;
+                    return;
+                }
+
+                this.githubToken = token;
+                this.gistId = gistId;
+                localStorage.setItem('termToken', token);
+                if (gistId) localStorage.setItem('termGistId', gistId);
+
+                log.textContent = '> 接続中...';
+
+                try {
+                    if (gistId) {
+                        await this.pullFromGist();
+                    }
+                    this.showLoading();
+                } catch (error) {
+                    const now = new Date();
+                    log.textContent = `> 接続に失敗しました ${now.getMonth()+1}/${now.getDate()} ${now.getHours()}:${now.getMinutes()}`;
+                }
+            },
+
+            showLoading() {
+                this.showScreen('loadingScreen');
+                const progressBar = document.getElementById('progressBar');
+                let progress = 0;
+
+                const interval = setInterval(() => {
+                    progress += 1;
+                    const filled = Math.floor(progress / 100 * 20);
+                    const empty = 20 - filled;
+                    progressBar.textContent = '[' + '█'.repeat(filled) + '_'.repeat(empty) + '] ' + progress + '%';
+
+                    if (progress >= 100) {
+                        clearInterval(interval);
+                        document.getElementById('loadingText').style.display = 'none';
+                        progressBar.style.display = 'none';
+                        document.getElementById('welcomeText').textContent = 'ようこそ';
+                        setTimeout(() => {
+                            this.goHome();
+                        }, 2000);
+                    }
+                }, 80);
+            },
+
+            goHome() {
+                this.showScreen('homeScreen');
+                const menu = document.getElementById('homeMenu');
+                menu.innerHTML = `
+<div class="menu-item" onclick="term.showLogList()">[LOG]</div>
+<div class="menu-item" onclick="term.showMemoList()">[MEMO]</div>
+<div class="menu-item" onclick="term.showQuestList()">[QUEST]</div>
+<div class="menu-item" onclick="term.showScreen('homeScreen')">[SOMEDAY]</div>
+                `.trim();
+            },
+
+            showLogList() {
+                this.showScreen('logListScreen');
+                const list = document.getElementById('logList');
+                const sorted = [...this.logs].sort((a, b) => b.timestamp - a.timestamp);
+                
+                let html = '<div class="menu-item" onclick="term.newLog()">[+ 新規作成]</div>\n';
+                sorted.forEach((log, i) => {
+                    const date = new Date(log.timestamp);
+                    const dateStr = `${date.getFullYear()}年${date.getMonth()+1}月${date.getDate()}日`;
+                    const preview = log.text.substring(0, 30).replace(/\n/g, ' ');
+                    html += `<div class="menu-item" onclick="term.viewLog(${i})">[${dateStr}   ---${preview}]</div>\n`;
+                });
+                list.innerHTML = html;
+            },
+
+            newLog() {
+                this.currentLog = null;
+                document.getElementById('logEditArea').value = '';
+                this.showScreen('logEditScreen');
+            },
+
+            viewLog(index) {
+                const sorted = [...this.logs].sort((a, b) => b.timestamp - a.timestamp);
+                const log = sorted[index];
+                this.currentLog = log;
+                
+                this.showScreen('logViewScreen');
+                const content = document.getElementById('logContent');
+                const cursor = document.getElementById('logViewCursor');
+                
+                content.textContent = '';
+                cursor.innerHTML = '&gt; LOADING...<span class="cursor"></span>';
+                
+                this.typeText(log.text, content, () => {
+                    cursor.innerHTML = '&gt; <span class="cursor"></span>';
+                });
+            },
+
+            saveLog(yes) {
+                if (!yes) {
+                    const bottom = document.getElementById('logEditBottom');
+                    bottom.innerHTML = '&gt; 破棄しますか？ <span class="menu-item" onclick="term.discardLog(true)">[YES]</span> <span class="menu-item" onclick="term.discardLog(false)">[NO]</span>';
+                    return;
+                }
+
+                const text = document.getElementById('logEditArea').value.trim();
+                if (!text) return;
+
+                const bottom = document.getElementById('logEditBottom');
+                bottom.innerHTML = '&gt; LOADING...';
+
+                if (this.currentLog) {
+                    this.currentLog.text = text;
+                    this.currentLog.timestamp = Date.now();
+                } else {
+                    this.logs.push({
+                        id: Date.now().toString(),
+                        text: text,
+                        timestamp: Date.now()
+                    });
+                }
+
+                this.saveData();
+                this.syncData();
+
+                setTimeout(() => {
+                    bottom.innerHTML = '&gt; 保存しました';
+                    setTimeout(() => {
+                        this.showLogList();
+                    }, 2000);
+                }, 500);
+            },
+
+            discardLog(yes) {
+                if (yes) {
+                    const bottom = document.getElementById('logEditBottom');
+                    bottom.innerHTML = '&gt; 破棄しました。トップ画面に戻ります。';
+                    setTimeout(() => {
+                        this.showLogList();
+                    }, 2000);
+                } else {
+                    const bottom = document.getElementById('logEditBottom');
+                    bottom.innerHTML = '&gt; 保存しますか？ <span class="menu-item" onclick="term.saveLog(true)">[YES]</span> <span class="menu-item" onclick="term.saveLog(false)">[NO]</span>';
+                }
+            },
+
+            showMemoList() {
+                this.showScreen('memoListScreen');
+                const list = document.getElementById('memoList');
+                
+                let html = '<div class="menu-item" onclick="term.newMemo()">[+ 新規作成]</div>\n';
+                this.memos.forEach((memo, i) => {
+                    const preview = memo.text.substring(0, 30).replace(/\n/g, ' ');
+                    html += `<div class="menu-item" onclick="term.editMemo(${i})">[${memo.title}   ---${preview}]</div>\n`;
+                });
+                list.innerHTML = html;
+            },
+
+            newMemo() {
+                const title = prompt('メモのタイトル:');
+                if (!title) return;
+                
+                this.currentMemo = {
+                    id: Date.now().toString(),
+                    title: title,
+                    text: '',
+                    timestamp: Date.now()
+                };
+                this.memos.push(this.currentMemo);
+                
+                document.getElementById('memoTitle').textContent = title;
+                document.getElementById('memoEditArea').value = '';
+                this.showScreen('memoEditScreen');
+            },
+
+            editMemo(index) {
+                this.currentMemo = this.memos[index];
+                document.getElementById('memoTitle').textContent = this.currentMemo.title;
+                document.getElementById('memoEditArea').value = this.currentMemo.text;
+                this.showScreen('memoEditScreen');
+            },
+
+            saveMemo(yes) {
+                if (!yes) {
+                    const bottom = document.getElementById('memoEditBottom');
+                    bottom.innerHTML = '&gt; 破棄しますか？ <span class="menu-item" onclick="term.discardMemo(true)">[YES]</span> <span class="menu-item" onclick="term.discardMemo(false)">[NO]</span>';
+                    return;
+                }
+
+                const text = document.getElementById('memoEditArea').value.trim();
+                this.currentMemo.text = text;
+                this.currentMemo.timestamp = Date.now();
+
+                const bottom = document.getElementById('memoEditBottom');
+                bottom.innerHTML = '&gt; LOADING...';
+
+                this.saveData();
+                this.syncData();
+
+                setTimeout(() => {
+                    bottom.innerHTML = '&gt; 保存しました';
+                    setTimeout(() => {
+                        this.showMemoList();
+                    }, 2000);
+                }, 500);
+            },
+
+            discardMemo(yes) {
+                if (yes) {
+                    const bottom = document.getElementById('memoEditBottom');
+                    bottom.innerHTML = '&gt; 破棄しました。トップ画面に戻ります。';
+                    setTimeout(() => {
+                        this.showMemoList();
+                    }, 2000);
+                } else {
+                    const bottom = document.getElementById('memoEditBottom');
+                    bottom.innerHTML = '&gt; 保存しますか？ <span class="menu-item" onclick="term.saveMemo(true)">[YES]</span> <span class="menu-item" onclick="term.saveMemo(false)">[NO]</span>';
+                }
+            },
+
+            showQuestList() {
+                this.showScreen('questListScreen');
+                const list = document.getElementById('questList');
+                
+                let html = '<div class="menu-item" onclick="term.newQuest()">[+ 新規作成]</div>\n';
+                this.quests.forEach((quest, i) => {
+                    const completed = quest.tasks.filter(t => t.completed).length;
+                    const total = quest.tasks.length;
+                    const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+                    const cycleStr = quest.cycle !== 'NONE' ? ` cyc:${quest.cycle}` : '';
+                    html += `<div class="menu-item" onclick="term.viewQuest(${i})">[${quest.title} ddl:${quest.deadline}${cycleStr} task:${percent}%]</div>\n`;
+                });
+                list.innerHTML = html;
+            },
+
+            newQuest() {
+                this.currentQuest = null;
+                document.getElementById('questTitle').value = '';
+                document.getElementById('questDeadline').value = '';
+                document.getElementById('questCycle').value = 'NONE';
+                document.getElementById('questDescription').value = '';
+                document.getElementById('questTasks').value = '';
+                this.showScreen('questEditScreen');
+            },
+
+            viewQuest(index) {
+                const quest = this.quests[index];
+                this.currentQuest = quest;
+                
+                this.showScreen('questViewScreen');
+                const content = document.getElementById('questContent');
+                const cursor = document.getElementById('questViewCursor');
+                
+                const completed = quest.tasks.filter(t => t.completed).length;
+                const total = quest.tasks.length;
+                const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+                
+                let text = `MISSION: ${quest.title}\nDDL: ${quest.deadline}\nCYC: ${quest.cycle}\nTGT: ${percent}%\nDES: ${quest.description}\n\nTASK:`;
+                
+                quest.tasks.forEach(task => {
+                    const checkbox = task.completed ? '[X]' : '[ ]';
+                    text += `\n       ${checkbox} ${task.title}`;
+                });
+                
+                content.textContent = '';
+                cursor.innerHTML = '&gt; LOADING...<span class="cursor"></span>';
+                
+                this.typeText(text, content, () => {
+                    cursor.innerHTML = '&gt; <span class="cursor"></span>';
+                });
+            },
+
+            saveQuest(yes) {
+                if (!yes) {
+                    this.showQuestList();
+                    return;
+                }
+
+                const title = document.getElementById('questTitle').value.trim();
+                const deadline = document.getElementById('questDeadline').value;
+                const cycle = document.getElementById('questCycle').value;
+                const description = document.getElementById('questDescription').value.trim();
+                const tasksText = document.getElementById('questTasks').value.trim();
+
+                if (!title || !deadline) {
+                    alert('タイトルと期日は必須です');
+                    return;
+                }
+
+                const tasks = tasksText.split('\n').filter(t => t.trim()).map(t => ({
+                    id: Date.now().toString() + Math.random(),
+                    title: t.trim(),
+                    completed: false
+                }));
+
+                if (this.currentQuest) {
+                    this.currentQuest.title = title;
+                    this.currentQuest.deadline = deadline;
+                    this.currentQuest.cycle = cycle;
+                    this.currentQuest.description = description;
+                    this.currentQuest.tasks = tasks;
+                } else {
+                    this.quests.push({
+                        id: Date.now().toString(),
+                        title,
+                        deadline,
+                        cycle,
+                        description,
+                        tasks,
+                        timestamp: Date.now()
+                    });
+                }
+
+                this.saveData();
+                this.syncData();
+                this.showQuestList();
+            },
+
+            typeText(text, element, callback) {
+                this.isTyping = true;
+                let index = 0;
+                const chars = text.split('');
+                
+                const type = () => {
+                    if (!this.isTyping || index >= chars.length) {
+                        this.isTyping = false;
+                        if (callback) callback();
+                        return;
+                    }
+
+                    element.textContent += chars[index];
+                    
+                    // Pip sound every 5 characters
+                    if (index % 5 === 0) {
+                        this.playPip();
+                    }
+
+                    index++;
+                    setTimeout(type, 30);
+                };
+
+                type();
+            },
+
+            playPip() {
+                if (!this.audioContext) {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(this.audioContext.destination);
+
+                oscillator.frequency.value = 280;
+                oscillator.type = 'square';
+
+                gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.05);
+
+                oscillator.start(this.audioContext.currentTime);
+                oscillator.stop(this.audioContext.currentTime + 0.05);
+            },
+
+            showScreen(screenId) {
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                document.getElementById(screenId).classList.add('active');
+                this.currentScreen = screenId;
+            },
+
+            loadData() {
+                this.logs = JSON.parse(localStorage.getItem('termLogs') || '[]');
+                this.memos = JSON.parse(localStorage.getItem('termMemos') || '[]');
+                this.quests = JSON.parse(localStorage.getItem('termQuests') || '[]');
+            },
+
+            saveData() {
+                localStorage.setItem('termLogs', JSON.stringify(this.logs));
+                localStorage.setItem('termMemos', JSON.stringify(this.memos));
+                localStorage.setItem('termQuests', JSON.stringify(this.quests));
+            },
+
+            async syncData() {
+                if (!this.githubToken) return;
+
+                try {
+                    const data = {
+                        description: 'ROBCO Terminal Data',
+                        public: false,
+                        files: {
+                            'logs.json': { content: JSON.stringify(this.logs, null, 2) },
+                            'memos.json': { content: JSON.stringify(this.memos, null, 2) },
+                            'quests.json': { content: JSON.stringify(this.quests, null, 2) }
+                        }
+                    };
+
+                    const url = this.gistId 
+                        ? `https://api.github.com/gists/${this.gistId}`
+                        : 'https://api.github.com/gists';
+                    
+                    const method = this.gistId ? 'PATCH' : 'POST';
+
+                    const response = await fetch(url, {
+                        method,
+                        headers: {
+                            'Authorization': `token ${this.githubToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        if (!this.gistId) {
+                            this.gistId = result.id;
+                            localStorage.setItem('termGistId', this.gistId);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Sync error:', error);
+                }
+            },
+
+            async pullFromGist() {
+                if (!this.githubToken || !this.gistId) return;
+
+                const response = await fetch(`https://api.github.com/gists/${this.gistId}`, {
+                    headers: { 'Authorization': `token ${this.githubToken}` }
+                });
+
+                if (response.ok) {
+                    const gist = await response.json();
+                    if (gist.files['logs.json']) {
+                        this.logs = JSON.parse(gist.files['logs.json'].content);
+                    }
+                    if (gist.files['memos.json']) {
+                        this.memos = JSON.parse(gist.files['memos.json'].content);
+                    }
+                    if (gist.files['quests.json']) {
+                        this.quests = JSON.parse(gist.files['quests.json'].content);
+                    }
+                    this.saveData();
+                }
+            }
+        };
+
+        window.addEventListener('DOMContentLoaded', () => term.init());
+    </script>
+</body>
+</html>
