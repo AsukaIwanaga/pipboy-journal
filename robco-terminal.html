@@ -127,7 +127,6 @@
     <div class="screen active" id="loginScreen">
         <div class="terminal-text" style="padding:50px;">
 <div id="loginDisplay"></div>
-<div id="loginInputLine" style="display:none;">&gt; <span id="loginInput"></span><span class="cursor"></span></div>
         </div>
     </div>
 
@@ -363,16 +362,28 @@ s:SAVE  c:CANCEL  h:HELP  t:TOP  b:BACK
                 }
 
                 document.addEventListener('keydown', (e) => this.handleKeyboard(e));
+                
+                // Add paste event listener for GIST ID and TOKEN
+                document.addEventListener('paste', (e) => {
+                    if (this.loginStep === 1 || this.loginStep === 2) {
+                        e.preventDefault();
+                        const loginInput = document.getElementById('loginInput');
+                        if (loginInput) {
+                            const pastedText = e.clipboardData.getData('text');
+                            this.loginInputBuffer += pastedText;
+                            loginInput.innerHTML = this.loginInputBuffer + '<span class="cursor"></span>';
+                        }
+                    }
+                });
             },
 
             loginStep: 0,
             loginInputBuffer: '',
-            loginIdValue: '',
-            loginPwValue: '',
+            loginToken: '',
+            loginGistId: '',
 
             startLoginSequence(autoLogin) {
                 const display = document.getElementById('loginDisplay');
-                const inputLine = document.getElementById('loginInputLine');
                 
                 const now = new Date();
                 const version = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
@@ -380,11 +391,10 @@ s:SAVE  c:CANCEL  h:HELP  t:TOP  b:BACK
                 const welcomeText = `WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK
 -ver. ${version}
 
-pwを入力してください
+認証が必要です
 `;
 
                 display.textContent = '';
-                inputLine.style.display = 'none';
                 
                 if (autoLogin) {
                     // Auto-login with stored credentials
@@ -394,138 +404,105 @@ pwを入力してください
                         display.appendChild(autoMsg);
                         
                         setTimeout(() => {
-                            this.loginWithPassword();
+                            this.autoLoginWithStored();
                         }, 1000);
                     });
                 } else {
-                    // Manual login with password
+                    // Manual login
                     this.typeText(welcomeText, display, () => {
-                        this.loginStep = 1; // Password input
-                        this.showPasswordPrompt();
-                    });
-                }
+                        this.loginStep = 1; // Start with GIST ID
+                        this.showLoginPrompt();
                     });
                 }
             },
 
-            showPasswordPrompt() {
+            async autoLoginWithStored() {
+                // Use stored credentials directly
+                if (this.githubToken && this.gistId) {
+                    this.showPipboyBoot();
+                } else {
+                    // If no stored credentials, go to manual login
+                    this.startLoginSequence(false);
+                }
+            },
+
+            showLoginPrompt() {
                 const display = document.getElementById('loginDisplay');
-                const inputLine = document.getElementById('loginInputLine');
                 
-                display.innerHTML += '<br>&gt; PW: ';
-                inputLine.style.display = 'inline';
-                document.getElementById('loginInput').textContent = '';
+                if (this.loginStep === 1) {
+                    const line = document.createElement('div');
+                    line.innerHTML = '&gt; GIST ID: <span id="loginInput"><span class="cursor"></span></span>';
+                    display.appendChild(line);
+                } else if (this.loginStep === 2) {
+                    const line = document.createElement('div');
+                    line.innerHTML = '&gt; TOKEN: <span id="loginInput"><span class="cursor"></span></span>';
+                    display.appendChild(line);
+                }
+                
                 this.loginInputBuffer = '';
             },
 
             handleLoginInput(e) {
                 if (this.loginStep === 0) return;
 
+                const loginInput = document.getElementById('loginInput');
+                if (!loginInput) return;
+
                 if (e.key === 'Enter') {
                     e.preventDefault();
                     
                     if (this.loginStep === 1) {
-                        // Password entered
-                        const inputLine = document.getElementById('loginInputLine');
-                        inputLine.style.display = 'none';
+                        // Gist ID entered
+                        this.loginGistId = this.loginInputBuffer;
+                        this.loginStep = 2;
+                        this.showLoginPrompt();
+                        
+                    } else if (this.loginStep === 2) {
+                        // Token entered
+                        this.loginToken = this.loginInputBuffer;
                         this.loginStep = 0;
                         
-                        // Verify password and login
-                        this.loginWithPassword(this.loginInputBuffer);
+                        // Login with credentials
+                        this.loginWithToken(this.loginToken, this.loginGistId);
                     }
                 } else if (e.key === 'Backspace') {
                     e.preventDefault();
                     if (this.loginInputBuffer.length > 0) {
                         this.loginInputBuffer = this.loginInputBuffer.slice(0, -1);
-                        // Display as asterisks
-                        document.getElementById('loginInput').textContent = '*'.repeat(this.loginInputBuffer.length);
+                        // Both fields show text normally
+                        loginInput.innerHTML = this.loginInputBuffer + '<span class="cursor"></span>';
                     }
                 } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
                     e.preventDefault();
                     
-                    // Only allow alphanumeric, max 8 chars, auto lowercase
-                    if (/[a-zA-Z0-9]/.test(e.key) && this.loginInputBuffer.length < 8) {
-                        this.loginInputBuffer += e.key.toLowerCase();
-                        // Display as asterisks
-                        document.getElementById('loginInput').textContent = '*'.repeat(this.loginInputBuffer.length);
-                    }
+                    // Both GIST ID and TOKEN allow all characters
+                    this.loginInputBuffer += e.key;
+                    loginInput.innerHTML = this.loginInputBuffer + '<span class="cursor"></span>';
                 }
             },
 
-            async loginWithPassword(password = null) {
-                const display = document.getElementById('loginDisplay');
+            loginWithCredentials(token, gistId) {
+                // Store credentials
+                this.githubToken = token;
+                this.gistId = gistId;
+                localStorage.setItem('termToken', token);
+                localStorage.setItem('termGistId', gistId);
                 
-                // If password provided, verify it first
-                if (password !== null) {
-                    try {
-                        const response = await fetch('assets/pw.md');
-                        const text = await response.text();
-                        
-                        // Parse pw.md
-                        const lines = text.split('\n');
-                        let correctPw = '';
-                        let token = '';
-                        let gistId = '';
-                        
-                        lines.forEach(line => {
-                            if (line.startsWith('pw:')) {
-                                correctPw = line.replace('pw:', '').trim();
-                            } else if (line.startsWith('token:')) {
-                                token = line.replace('token:', '').trim();
-                            } else if (line.startsWith('gist id:')) {
-                                gistId = line.replace('gist id:', '').trim();
-                            }
-                        });
-                        
-                        if (password !== correctPw) {
-                            display.innerHTML += '\n\nERROR: Invalid password';
-                            setTimeout(() => {
-                                this.loginStep = 1;
-                                this.showPasswordPrompt();
-                            }, 2000);
-                            return;
-                        }
-                        
-                        // Store credentials
-                        this.githubToken = token;
-                        this.gistId = gistId;
-                        localStorage.setItem('termToken', token);
-                        localStorage.setItem('termGistId', gistId);
-                        
-                    } catch (error) {
-                        display.innerHTML += '\n\nERROR: Failed to load password file';
-                        console.error(error);
-                        return;
-                    }
-                } else {
-                    // Auto-login: load from pw.md
-                    try {
-                        const response = await fetch('assets/pw.md');
-                        const text = await response.text();
-                        
-                        const lines = text.split('\n');
-                        let token = '';
-                        let gistId = '';
-                        
-                        lines.forEach(line => {
-                            if (line.startsWith('token:')) {
-                                token = line.replace('token:', '').trim();
-                            } else if (line.startsWith('gist id:')) {
-                                gistId = line.replace('gist id:', '').trim();
-                            }
-                        });
-                        
-                        this.githubToken = token;
-                        this.gistId = gistId;
-                        localStorage.setItem('termToken', token);
-                        localStorage.setItem('termGistId', gistId);
-                        
-                    } catch (error) {
-                        console.error('Auto-login failed:', error);
-                        display.innerHTML += '\n\nERROR: Auto-login failed';
-                        return;
-                    }
-                }
+                // Proceed to boot
+                this.showPipboyBoot();
+            },
+
+            async autoLoginWithStored() {
+                // Load from localStorage (already loaded in init)
+                this.showPipboyBoot();
+            },
+
+            loginWithToken(token, gistId) {
+                // Store credentials directly
+                this.githubToken = token;
+                this.gistId = gistId;
+                localStorage.setItem('termToken', token);
+                localStorage.setItem('termGistId', gistId);
                 
                 // Proceed to boot
                 this.showPipboyBoot();
