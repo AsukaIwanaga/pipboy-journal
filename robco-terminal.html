@@ -54,19 +54,13 @@
             cursor: pointer;
         }
 
-        .menu-item:hover {
-            background: #22c55e;
-            color: #000;
-        }
-
-        .menu-item.selected {
+        .menu-item:hover, .menu-item.selected {
             background: #22c55e;
             color: #000;
         }
 
         input[type="text"],
-        input[type="password"],
-        textarea {
+        input[type="password"] {
             background: transparent;
             border: none;
             color: #22c55e;
@@ -74,14 +68,6 @@
             font-size: 18px;
             outline: none;
             width: 100%;
-        }
-
-        textarea {
-            resize: none;
-        }
-
-        .progress-bar {
-            display: inline-block;
         }
 
         .code-scroll {
@@ -116,8 +102,15 @@
             font-size: 18px;
         }
 
-        .pip-sound {
-            display: none;
+        #terminalOutput {
+            max-height: 70vh;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+
+        #terminalInputLine {
+            display: flex;
+            align-items: center;
         }
     </style>
 </head>
@@ -182,19 +175,6 @@ ASUKA IWANAGA PRIVATE TERMINAL
         <div class="bottom-right" id="logViewCursor">&gt; <span class="cursor"></span></div>
     </div>
 
-    <!-- Log Edit Screen -->
-    <div class="screen" id="logEditScreen">
-        <div class="terminal-text">
-WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK
-ASUKA IWANAGA PRIVATE TERMINAL
-
-以下にジャーナルの内容を入力
-
-<div style="margin-top:10px;">&gt; <textarea id="logEditArea" rows="15" style="width:95%;"></textarea></div>
-        </div>
-        <div class="bottom-right" id="logEditBottom">&gt; 保存しますか？ <span class="menu-item selected" onclick="term.saveLog(true)">[YES]</span> <span class="menu-item" onclick="term.saveLog(false)">[NO]</span></div>
-    </div>
-
     <!-- Memo List Screen -->
     <div class="screen" id="memoListScreen">
         <div class="terminal-text">
@@ -204,19 +184,6 @@ ASUKA IWANAGA PRIVATE TERMINAL
 <div id="memoList" style="margin-top:20px;"></div>
         </div>
         <div class="bottom-right">&gt; <span class="cursor"></span></div>
-    </div>
-
-    <!-- Memo Edit Screen -->
-    <div class="screen" id="memoEditScreen">
-        <div class="terminal-text">
-WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK
-ASUKA IWANAGA PRIVATE TERMINAL
-
-MEMO: <span id="memoTitle"></span>
-
-<div style="margin-top:10px;">&gt; <textarea id="memoEditArea" rows="15" style="width:95%;"></textarea></div>
-        </div>
-        <div class="bottom-right" id="memoEditBottom">&gt; 保存しますか？ <span class="menu-item selected" onclick="term.saveMemo(true)">[YES]</span> <span class="menu-item" onclick="term.saveMemo(false)">[NO]</span></div>
     </div>
 
     <!-- Quest List Screen -->
@@ -241,33 +208,16 @@ ASUKA IWANAGA PRIVATE TERMINAL
         <div class="bottom-right" id="questViewCursor">&gt; <span class="cursor"></span></div>
     </div>
 
-    <!-- Quest Edit Screen -->
-    <div class="screen" id="questEditScreen">
+    <!-- Terminal Edit Screen -->
+    <div class="screen" id="terminalEditScreen">
         <div class="terminal-text">
 WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK
 ASUKA IWANAGA PRIVATE TERMINAL
 
-以下にクエストの内容を入力
-
-MISSION: <input type="text" id="questTitle" style="width:400px;">
-DDL: <input type="date" id="questDeadline" style="width:200px;">
-CYC: <select id="questCycle" style="background:#000; color:#22c55e; border:1px solid #22c55e; font-family:inherit; font-size:18px;">
-    <option value="NONE">-</option>
-    <option value="WEEKLY">WEEKLY</option>
-    <option value="MONTHLY">MONTHLY</option>
-</select>
-
-DES: <textarea id="questDescription" rows="3" style="width:95%;"></textarea>
-
-TASKS (1行に1つ):
-<textarea id="questTasks" rows="8" style="width:95%;"></textarea>
+<div id="terminalOutput"></div>
+<div id="terminalInputLine">&gt; <span id="terminalInputText"></span><span class="cursor"></span></div>
         </div>
-        <div class="bottom-right">&gt; 保存しますか？ <span class="menu-item" onclick="term.saveQuest(true)">[YES]</span> <span class="menu-item" onclick="term.saveQuest(false)">[NO]</span></div>
     </div>
-
-    <audio id="pipSound" class="pip-sound">
-        <source src="" type="audio/wav">
-    </audio>
 
     <script>
         const term = {
@@ -281,16 +231,18 @@ TASKS (1行に1つ):
             githubToken: localStorage.getItem('termToken') || '',
             gistId: localStorage.getItem('termGistId') || '',
             audioContext: null,
-            typingIndex: 0,
-            isTyping: false,
             selectedMenuItem: 0,
             menuItems: [],
+            
+            // Terminal input system
+            terminalMode: null,
+            terminalBuffer: [],
+            terminalCurrentLine: '',
 
             init() {
                 this.loadData();
                 this.startCodeScroll();
                 
-                // Prefill if saved
                 if (this.githubToken) {
                     document.getElementById('githubToken').value = this.githubToken;
                 }
@@ -298,13 +250,16 @@ TASKS (1行に1つ):
                     document.getElementById('gistId').value = this.gistId;
                 }
 
-                // Keyboard navigation
-                document.addEventListener('keydown', (e) => {
-                    this.handleKeyboard(e);
-                });
+                document.addEventListener('keydown', (e) => this.handleKeyboard(e));
             },
 
             handleKeyboard(e) {
+                // Terminal edit mode - completely different handling
+                if (this.currentScreen === 'terminalEditScreen') {
+                    this.handleTerminalInput(e);
+                    return;
+                }
+
                 // Don't interfere with input fields
                 if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
                     return;
@@ -328,6 +283,133 @@ TASKS (1行に1つ):
                         this.goBack();
                         break;
                 }
+            },
+
+            handleTerminalInput(e) {
+                const inputText = document.getElementById('terminalInputText');
+                
+                switch(e.key) {
+                    case 'Enter':
+                        e.preventDefault();
+                        this.terminalExecuteLine();
+                        break;
+                    case 'Backspace':
+                        e.preventDefault();
+                        if (this.terminalCurrentLine.length > 0) {
+                            this.terminalCurrentLine = this.terminalCurrentLine.slice(0, -1);
+                            inputText.textContent = this.terminalCurrentLine;
+                        }
+                        break;
+                    case 'Escape':
+                        e.preventDefault();
+                        this.terminalCancel();
+                        break;
+                    default:
+                        if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                            e.preventDefault();
+                            this.terminalCurrentLine += e.key;
+                            inputText.textContent = this.terminalCurrentLine;
+                            if (this.terminalCurrentLine.length % 5 === 0) {
+                                this.playPip();
+                            }
+                        }
+                }
+            },
+
+            terminalExecuteLine() {
+                const line = this.terminalCurrentLine.trim();
+                const output = document.getElementById('terminalOutput');
+                
+                // Echo current line
+                const lineDiv = document.createElement('div');
+                lineDiv.textContent = '> ' + this.terminalCurrentLine;
+                output.appendChild(lineDiv);
+                
+                // Process commands
+                if (line.toLowerCase() === ':save' || line.toLowerCase() === ':s') {
+                    this.terminalSave();
+                    return;
+                } else if (line.toLowerCase() === ':cancel' || line.toLowerCase() === ':c' || line.toLowerCase() === ':q') {
+                    this.terminalCancel();
+                    return;
+                } else if (line.toLowerCase() === ':help' || line.toLowerCase() === ':h') {
+                    this.terminalShowHelp();
+                } else if (line !== '') {
+                    this.terminalBuffer.push(this.terminalCurrentLine);
+                }
+                
+                // Clear current line
+                this.terminalCurrentLine = '';
+                document.getElementById('terminalInputText').textContent = '';
+                
+                // Auto scroll
+                output.scrollTop = output.scrollHeight;
+            },
+
+            terminalShowHelp() {
+                const output = document.getElementById('terminalOutput');
+                const help = document.createElement('div');
+                help.textContent = `
+COMMANDS:
+  :save または :s    - 保存して終了
+  :cancel または :c  - キャンセルして戻る
+  :help または :h    - このヘルプを表示
+
+入力を続けてください。各行がEnterで確定されます。
+`;
+                output.appendChild(help);
+            },
+
+            terminalSave() {
+                const content = this.terminalBuffer.join('\n');
+                
+                if (this.terminalMode === 'log_edit') {
+                    if (this.currentLog) {
+                        this.currentLog.text = content;
+                        this.currentLog.timestamp = Date.now();
+                    } else {
+                        this.logs.push({
+                            id: Date.now().toString(),
+                            text: content,
+                            timestamp: Date.now()
+                        });
+                    }
+                    this.saveData();
+                    this.syncData();
+                    
+                    const output = document.getElementById('terminalOutput');
+                    const msg = document.createElement('div');
+                    msg.textContent = '\n> 保存しました...';
+                    output.appendChild(msg);
+                    setTimeout(() => this.showLogList(), 1000);
+                    
+                } else if (this.terminalMode === 'memo_edit') {
+                    this.currentMemo.text = content;
+                    this.currentMemo.timestamp = Date.now();
+                    this.saveData();
+                    this.syncData();
+                    
+                    const output = document.getElementById('terminalOutput');
+                    const msg = document.createElement('div');
+                    msg.textContent = '\n> 保存しました...';
+                    output.appendChild(msg);
+                    setTimeout(() => this.showMemoList(), 1000);
+                }
+            },
+
+            terminalCancel() {
+                const output = document.getElementById('terminalOutput');
+                const msg = document.createElement('div');
+                msg.textContent = '\n> キャンセルしました...';
+                output.appendChild(msg);
+                
+                setTimeout(() => {
+                    if (this.terminalMode === 'log_edit') {
+                        this.showLogList();
+                    } else if (this.terminalMode === 'memo_edit') {
+                        this.showMemoList();
+                    }
+                }, 1000);
             },
 
             updateMenuItems() {
@@ -360,73 +442,18 @@ TASKS (1行に1つ):
             },
 
             goBack() {
-                // Determine where to go back based on current screen
                 switch(this.currentScreen) {
                     case 'logListScreen':
                     case 'memoListScreen':
                     case 'questListScreen':
-                        this.confirmGoHome();
+                        this.goHome();
                         break;
                     case 'logViewScreen':
                         this.showLogList();
                         break;
-                    case 'logEditScreen':
-                        if (this.currentLog) {
-                            this.showLogList();
-                        } else {
-                            this.confirmGoHome();
-                        }
-                        break;
-                    case 'memoEditScreen':
-                        this.showMemoList();
-                        break;
                     case 'questViewScreen':
                         this.showQuestList();
                         break;
-                    case 'questEditScreen':
-                        this.showQuestList();
-                        break;
-                    case 'homeScreen':
-                        // Already at home
-                        break;
-                    default:
-                        this.confirmGoHome();
-                }
-            },
-
-            confirmGoHome() {
-                const currentBottom = document.querySelector('.bottom-right');
-                if (currentBottom) {
-                    currentBottom.innerHTML = '&gt; 戻りますか <span class="menu-item selected" onclick="term.goHome()">[YES]</span> <span class="menu-item" onclick="term.cancelGoHome()">[NO]</span>';
-                    this.menuItems = Array.from(currentBottom.querySelectorAll('.menu-item'));
-                    this.selectedMenuItem = 0;
-                }
-            },
-
-            cancelGoHome() {
-                // Restore original bottom content based on screen
-                this.renderBottomContent();
-            },
-
-            renderBottomContent() {
-                const currentBottom = document.querySelector('.bottom-right');
-                if (!currentBottom) return;
-
-                switch(this.currentScreen) {
-                    case 'homeScreen':
-                        currentBottom.innerHTML = '<span class="cursor"></span>';
-                        break;
-                    case 'logListScreen':
-                    case 'memoListScreen':
-                    case 'questListScreen':
-                        currentBottom.innerHTML = '&gt; <span class="cursor"></span>';
-                        break;
-                    case 'logViewScreen':
-                    case 'questViewScreen':
-                        currentBottom.innerHTML = '&gt; <span class="cursor"></span>';
-                        break;
-                    default:
-                        currentBottom.innerHTML = '&gt; <span class="cursor"></span>';
                 }
             },
 
@@ -502,9 +529,7 @@ TASKS (1行に1つ):
                         document.getElementById('loadingText').style.display = 'none';
                         progressBar.style.display = 'none';
                         document.getElementById('welcomeText').textContent = 'ようこそ';
-                        setTimeout(() => {
-                            this.goHome();
-                        }, 2000);
+                        setTimeout(() => this.goHome(), 2000);
                     }
                 }, 80);
             },
@@ -519,7 +544,6 @@ TASKS (1行に1つ):
 <div class="menu-item">[SOMEDAY]</div>
                 `.trim();
 
-                // Setup click handlers
                 const items = menu.querySelectorAll('.menu-item');
                 items[0].onclick = () => this.showLogList();
                 items[1].onclick = () => this.showMemoList();
@@ -543,7 +567,6 @@ TASKS (1行に1つ):
                 });
                 list.innerHTML = html;
 
-                // Setup click handlers
                 const items = list.querySelectorAll('.menu-item');
                 items[0].onclick = () => this.newLog();
                 sorted.forEach((log, i) => {
@@ -555,13 +578,18 @@ TASKS (1行に1つ):
 
             newLog() {
                 this.currentLog = null;
-                document.getElementById('logEditArea').value = '';
-                this.showScreen('logEditScreen');
+                this.terminalMode = 'log_edit';
+                this.terminalBuffer = [];
+                this.terminalCurrentLine = '';
+                this.showScreen('terminalEditScreen');
                 
-                // Initialize menu items for YES/NO
-                const bottom = document.getElementById('logEditBottom');
-                this.menuItems = Array.from(bottom.querySelectorAll('.menu-item'));
-                this.selectedMenuItem = 0;
+                const output = document.getElementById('terminalOutput');
+                output.innerHTML = `LOG ENTRY MODE
+コマンド: :save (保存), :cancel (中止), :help (ヘルプ)
+内容を入力してください:
+
+`;
+                document.getElementById('terminalInputText').textContent = '';
             },
 
             viewLog(index) {
@@ -583,57 +611,6 @@ TASKS (1行に1つ):
                 });
             },
 
-            saveLog(yes) {
-                if (!yes) {
-                    const bottom = document.getElementById('logEditBottom');
-                    bottom.innerHTML = '&gt; 破棄しますか？ <span class="menu-item selected" onclick="term.discardLog(true)">[YES]</span> <span class="menu-item" onclick="term.discardLog(false)">[NO]</span>';
-                    this.menuItems = Array.from(bottom.querySelectorAll('.menu-item'));
-                    this.selectedMenuItem = 0;
-                    return;
-                }
-
-                const text = document.getElementById('logEditArea').value.trim();
-                if (!text) return;
-
-                const bottom = document.getElementById('logEditBottom');
-                bottom.innerHTML = '&gt; LOADING...';
-
-                if (this.currentLog) {
-                    this.currentLog.text = text;
-                    this.currentLog.timestamp = Date.now();
-                } else {
-                    this.logs.push({
-                        id: Date.now().toString(),
-                        text: text,
-                        timestamp: Date.now()
-                    });
-                }
-
-                this.saveData();
-                this.syncData();
-
-                setTimeout(() => {
-                    bottom.innerHTML = '&gt; 保存しました';
-                    setTimeout(() => {
-                        this.showLogList();
-                    }, 2000);
-                }, 500);
-            },
-
-            discardLog(yes) {
-                const bottom = document.getElementById('logEditBottom');
-                if (yes) {
-                    bottom.innerHTML = '&gt; 破棄しました。トップ画面に戻ります。';
-                    setTimeout(() => {
-                        this.showLogList();
-                    }, 2000);
-                } else {
-                    bottom.innerHTML = '&gt; 保存しますか？ <span class="menu-item selected" onclick="term.saveLog(true)">[YES]</span> <span class="menu-item" onclick="term.saveLog(false)">[NO]</span>';
-                    this.menuItems = Array.from(bottom.querySelectorAll('.menu-item'));
-                    this.selectedMenuItem = 0;
-                }
-            },
-
             showMemoList() {
                 this.showScreen('memoListScreen');
                 const list = document.getElementById('memoList');
@@ -645,7 +622,6 @@ TASKS (1行に1つ):
                 });
                 list.innerHTML = html;
 
-                // Setup click handlers
                 const items = list.querySelectorAll('.menu-item');
                 items[0].onclick = () => this.newMemo();
                 this.memos.forEach((memo, i) => {
@@ -667,67 +643,39 @@ TASKS (1行に1つ):
                 };
                 this.memos.push(this.currentMemo);
                 
-                document.getElementById('memoTitle').textContent = title;
-                document.getElementById('memoEditArea').value = '';
-                this.showScreen('memoEditScreen');
+                this.terminalMode = 'memo_edit';
+                this.terminalBuffer = [];
+                this.terminalCurrentLine = '';
+                this.showScreen('terminalEditScreen');
                 
-                // Initialize menu items for YES/NO
-                const bottom = document.getElementById('memoEditBottom');
-                this.menuItems = Array.from(bottom.querySelectorAll('.menu-item'));
-                this.selectedMenuItem = 0;
+                const output = document.getElementById('terminalOutput');
+                output.innerHTML = `MEMO: ${title}
+コマンド: :save (保存), :cancel (中止), :help (ヘルプ)
+内容を入力してください:
+
+`;
+                document.getElementById('terminalInputText').textContent = '';
             },
 
             editMemo(index) {
                 this.currentMemo = this.memos[index];
-                document.getElementById('memoTitle').textContent = this.currentMemo.title;
-                document.getElementById('memoEditArea').value = this.currentMemo.text;
-                this.showScreen('memoEditScreen');
                 
-                // Initialize menu items for YES/NO
-                const bottom = document.getElementById('memoEditBottom');
-                this.menuItems = Array.from(bottom.querySelectorAll('.menu-item'));
-                this.selectedMenuItem = 0;
-            },
+                this.terminalMode = 'memo_edit';
+                this.terminalBuffer = this.currentMemo.text.split('\n');
+                this.terminalCurrentLine = '';
+                this.showScreen('terminalEditScreen');
+                
+                const output = document.getElementById('terminalOutput');
+                output.innerHTML = `MEMO: ${this.currentMemo.title}
+コマンド: :save (保存), :cancel (中止), :help (ヘルプ)
 
-            saveMemo(yes) {
-                if (!yes) {
-                    const bottom = document.getElementById('memoEditBottom');
-                    bottom.innerHTML = '&gt; 破棄しますか？ <span class="menu-item selected" onclick="term.discardMemo(true)">[YES]</span> <span class="menu-item" onclick="term.discardMemo(false)">[NO]</span>';
-                    this.menuItems = Array.from(bottom.querySelectorAll('.menu-item'));
-                    this.selectedMenuItem = 0;
-                    return;
-                }
+現在の内容:
+${this.currentMemo.text}
 
-                const text = document.getElementById('memoEditArea').value.trim();
-                this.currentMemo.text = text;
-                this.currentMemo.timestamp = Date.now();
+続けて編集してください:
 
-                const bottom = document.getElementById('memoEditBottom');
-                bottom.innerHTML = '&gt; LOADING...';
-
-                this.saveData();
-                this.syncData();
-
-                setTimeout(() => {
-                    bottom.innerHTML = '&gt; 保存しました';
-                    setTimeout(() => {
-                        this.showMemoList();
-                    }, 2000);
-                }, 500);
-            },
-
-            discardMemo(yes) {
-                const bottom = document.getElementById('memoEditBottom');
-                if (yes) {
-                    bottom.innerHTML = '&gt; 破棄しました。トップ画面に戻ります。';
-                    setTimeout(() => {
-                        this.showMemoList();
-                    }, 2000);
-                } else {
-                    bottom.innerHTML = '&gt; 保存しますか？ <span class="menu-item selected" onclick="term.saveMemo(true)">[YES]</span> <span class="menu-item" onclick="term.saveMemo(false)">[NO]</span>';
-                    this.menuItems = Array.from(bottom.querySelectorAll('.menu-item'));
-                    this.selectedMenuItem = 0;
-                }
+`;
+                document.getElementById('terminalInputText').textContent = '';
             },
 
             showQuestList() {
@@ -744,7 +692,6 @@ TASKS (1行に1つ):
                 });
                 list.innerHTML = html;
 
-                // Setup click handlers
                 const items = list.querySelectorAll('.menu-item');
                 items[0].onclick = () => this.newQuest();
                 this.quests.forEach((quest, i) => {
@@ -755,13 +702,33 @@ TASKS (1行に1つ):
             },
 
             newQuest() {
-                this.currentQuest = null;
-                document.getElementById('questTitle').value = '';
-                document.getElementById('questDeadline').value = '';
-                document.getElementById('questCycle').value = 'NONE';
-                document.getElementById('questDescription').value = '';
-                document.getElementById('questTasks').value = '';
-                this.showScreen('questEditScreen');
+                const title = prompt('クエストのタイトル:');
+                if (!title) return;
+                const deadline = prompt('期限 (YYYY-MM-DD):');
+                if (!deadline) return;
+                const cycle = prompt('サイクル (NONE/WEEKLY/MONTHLY):') || 'NONE';
+                const description = prompt('説明:') || '';
+                const tasksInput = prompt('タスク (カンマ区切り):') || '';
+                
+                const tasks = tasksInput.split(',').filter(t => t.trim()).map(t => ({
+                    id: Date.now().toString() + Math.random(),
+                    title: t.trim(),
+                    completed: false
+                }));
+                
+                this.quests.push({
+                    id: Date.now().toString(),
+                    title,
+                    deadline,
+                    cycle: cycle.toUpperCase(),
+                    description,
+                    tasks,
+                    timestamp: Date.now()
+                });
+                
+                this.saveData();
+                this.syncData();
+                this.showQuestList();
             },
 
             viewQuest(index) {
@@ -793,67 +760,18 @@ TASKS (1行に1つ):
                 });
             },
 
-            saveQuest(yes) {
-                if (!yes) {
-                    this.showQuestList();
-                    return;
-                }
-
-                const title = document.getElementById('questTitle').value.trim();
-                const deadline = document.getElementById('questDeadline').value;
-                const cycle = document.getElementById('questCycle').value;
-                const description = document.getElementById('questDescription').value.trim();
-                const tasksText = document.getElementById('questTasks').value.trim();
-
-                if (!title || !deadline) {
-                    alert('タイトルと期日は必須です');
-                    return;
-                }
-
-                const tasks = tasksText.split('\n').filter(t => t.trim()).map(t => ({
-                    id: Date.now().toString() + Math.random(),
-                    title: t.trim(),
-                    completed: false
-                }));
-
-                if (this.currentQuest) {
-                    this.currentQuest.title = title;
-                    this.currentQuest.deadline = deadline;
-                    this.currentQuest.cycle = cycle;
-                    this.currentQuest.description = description;
-                    this.currentQuest.tasks = tasks;
-                } else {
-                    this.quests.push({
-                        id: Date.now().toString(),
-                        title,
-                        deadline,
-                        cycle,
-                        description,
-                        tasks,
-                        timestamp: Date.now()
-                    });
-                }
-
-                this.saveData();
-                this.syncData();
-                this.showQuestList();
-            },
-
             typeText(text, element, callback) {
-                this.isTyping = true;
                 let index = 0;
                 const chars = text.split('');
                 
                 const type = () => {
-                    if (!this.isTyping || index >= chars.length) {
-                        this.isTyping = false;
+                    if (index >= chars.length) {
                         if (callback) callback();
                         return;
                     }
 
                     element.textContent += chars[index];
                     
-                    // Pip sound every 5 characters
                     if (index % 5 === 0) {
                         this.playPip();
                     }
