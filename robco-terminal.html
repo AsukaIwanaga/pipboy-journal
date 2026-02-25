@@ -192,7 +192,7 @@ ASUKA IWANAGA PRIVATE TERMINAL
 
 <div style="margin-top:10px;">&gt; <textarea id="logEditArea" rows="15" style="width:95%;"></textarea></div>
         </div>
-        <div class="bottom-right" id="logEditBottom">&gt; 保存しますか？ <span class="menu-item" onclick="term.saveLog(true)">[YES]</span> <span class="menu-item" onclick="term.saveLog(false)">[NO]</span></div>
+        <div class="bottom-right" id="logEditBottom">&gt; 保存しますか？ <span class="menu-item selected" onclick="term.saveLog(true)">[YES]</span> <span class="menu-item" onclick="term.saveLog(false)">[NO]</span></div>
     </div>
 
     <!-- Memo List Screen -->
@@ -216,7 +216,7 @@ MEMO: <span id="memoTitle"></span>
 
 <div style="margin-top:10px;">&gt; <textarea id="memoEditArea" rows="15" style="width:95%;"></textarea></div>
         </div>
-        <div class="bottom-right" id="memoEditBottom">&gt; 保存しますか？ <span class="menu-item" onclick="term.saveMemo(true)">[YES]</span> <span class="menu-item" onclick="term.saveMemo(false)">[NO]</span></div>
+        <div class="bottom-right" id="memoEditBottom">&gt; 保存しますか？ <span class="menu-item selected" onclick="term.saveMemo(true)">[YES]</span> <span class="menu-item" onclick="term.saveMemo(false)">[NO]</span></div>
     </div>
 
     <!-- Quest List Screen -->
@@ -283,6 +283,8 @@ TASKS (1行に1つ):
             audioContext: null,
             typingIndex: 0,
             isTyping: false,
+            selectedMenuItem: 0,
+            menuItems: [],
 
             init() {
                 this.loadData();
@@ -298,10 +300,134 @@ TASKS (1行に1つ):
 
                 // Keyboard navigation
                 document.addEventListener('keydown', (e) => {
-                    if (e.key === 'Escape') {
-                        this.goHome();
-                    }
+                    this.handleKeyboard(e);
                 });
+            },
+
+            handleKeyboard(e) {
+                // Don't interfere with input fields
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+                    return;
+                }
+
+                switch(e.key) {
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        this.moveSelection(-1);
+                        break;
+                    case 'ArrowDown':
+                        e.preventDefault();
+                        this.moveSelection(1);
+                        break;
+                    case 'Enter':
+                        e.preventDefault();
+                        this.selectCurrentItem();
+                        break;
+                    case 'Escape':
+                        e.preventDefault();
+                        this.goBack();
+                        break;
+                }
+            },
+
+            updateMenuItems() {
+                const screen = document.getElementById(this.currentScreen);
+                if (!screen) return;
+
+                this.menuItems = Array.from(screen.querySelectorAll('.menu-item'));
+                this.selectedMenuItem = 0;
+                this.updateMenuSelection();
+            },
+
+            moveSelection(direction) {
+                if (this.menuItems.length === 0) return;
+
+                this.menuItems[this.selectedMenuItem].classList.remove('selected');
+                this.selectedMenuItem = (this.selectedMenuItem + direction + this.menuItems.length) % this.menuItems.length;
+                this.updateMenuSelection();
+            },
+
+            updateMenuSelection() {
+                if (this.menuItems.length === 0) return;
+
+                this.menuItems.forEach(item => item.classList.remove('selected'));
+                this.menuItems[this.selectedMenuItem].classList.add('selected');
+            },
+
+            selectCurrentItem() {
+                if (this.menuItems.length === 0) return;
+                this.menuItems[this.selectedMenuItem].click();
+            },
+
+            goBack() {
+                // Determine where to go back based on current screen
+                switch(this.currentScreen) {
+                    case 'logListScreen':
+                    case 'memoListScreen':
+                    case 'questListScreen':
+                        this.confirmGoHome();
+                        break;
+                    case 'logViewScreen':
+                        this.showLogList();
+                        break;
+                    case 'logEditScreen':
+                        if (this.currentLog) {
+                            this.showLogList();
+                        } else {
+                            this.confirmGoHome();
+                        }
+                        break;
+                    case 'memoEditScreen':
+                        this.showMemoList();
+                        break;
+                    case 'questViewScreen':
+                        this.showQuestList();
+                        break;
+                    case 'questEditScreen':
+                        this.showQuestList();
+                        break;
+                    case 'homeScreen':
+                        // Already at home
+                        break;
+                    default:
+                        this.confirmGoHome();
+                }
+            },
+
+            confirmGoHome() {
+                const currentBottom = document.querySelector('.bottom-right');
+                if (currentBottom) {
+                    currentBottom.innerHTML = '&gt; 戻りますか <span class="menu-item selected" onclick="term.goHome()">[YES]</span> <span class="menu-item" onclick="term.cancelGoHome()">[NO]</span>';
+                    this.menuItems = Array.from(currentBottom.querySelectorAll('.menu-item'));
+                    this.selectedMenuItem = 0;
+                }
+            },
+
+            cancelGoHome() {
+                // Restore original bottom content based on screen
+                this.renderBottomContent();
+            },
+
+            renderBottomContent() {
+                const currentBottom = document.querySelector('.bottom-right');
+                if (!currentBottom) return;
+
+                switch(this.currentScreen) {
+                    case 'homeScreen':
+                        currentBottom.innerHTML = '<span class="cursor"></span>';
+                        break;
+                    case 'logListScreen':
+                    case 'memoListScreen':
+                    case 'questListScreen':
+                        currentBottom.innerHTML = '&gt; <span class="cursor"></span>';
+                        break;
+                    case 'logViewScreen':
+                    case 'questViewScreen':
+                        currentBottom.innerHTML = '&gt; <span class="cursor"></span>';
+                        break;
+                    default:
+                        currentBottom.innerHTML = '&gt; <span class="cursor"></span>';
+                }
             },
 
             startCodeScroll() {
@@ -387,11 +513,20 @@ TASKS (1行に1つ):
                 this.showScreen('homeScreen');
                 const menu = document.getElementById('homeMenu');
                 menu.innerHTML = `
-<div class="menu-item" onclick="term.showLogList()">[LOG]</div>
-<div class="menu-item" onclick="term.showMemoList()">[MEMO]</div>
-<div class="menu-item" onclick="term.showQuestList()">[QUEST]</div>
-<div class="menu-item" onclick="term.showScreen('homeScreen')">[SOMEDAY]</div>
+<div class="menu-item">[LOG]</div>
+<div class="menu-item">[MEMO]</div>
+<div class="menu-item">[QUEST]</div>
+<div class="menu-item">[SOMEDAY]</div>
                 `.trim();
+
+                // Setup click handlers
+                const items = menu.querySelectorAll('.menu-item');
+                items[0].onclick = () => this.showLogList();
+                items[1].onclick = () => this.showMemoList();
+                items[2].onclick = () => this.showQuestList();
+                items[3].onclick = () => this.showScreen('homeScreen');
+
+                this.updateMenuItems();
             },
 
             showLogList() {
@@ -399,20 +534,34 @@ TASKS (1行に1つ):
                 const list = document.getElementById('logList');
                 const sorted = [...this.logs].sort((a, b) => b.timestamp - a.timestamp);
                 
-                let html = '<div class="menu-item" onclick="term.newLog()">[+ 新規作成]</div>\n';
+                let html = '<div class="menu-item">[+ 新規作成]</div>\n';
                 sorted.forEach((log, i) => {
                     const date = new Date(log.timestamp);
                     const dateStr = `${date.getFullYear()}年${date.getMonth()+1}月${date.getDate()}日`;
                     const preview = log.text.substring(0, 30).replace(/\n/g, ' ');
-                    html += `<div class="menu-item" onclick="term.viewLog(${i})">[${dateStr}   ---${preview}]</div>\n`;
+                    html += `<div class="menu-item">[${dateStr}   ---${preview}]</div>\n`;
                 });
                 list.innerHTML = html;
+
+                // Setup click handlers
+                const items = list.querySelectorAll('.menu-item');
+                items[0].onclick = () => this.newLog();
+                sorted.forEach((log, i) => {
+                    items[i + 1].onclick = () => this.viewLog(i);
+                });
+
+                this.updateMenuItems();
             },
 
             newLog() {
                 this.currentLog = null;
                 document.getElementById('logEditArea').value = '';
                 this.showScreen('logEditScreen');
+                
+                // Initialize menu items for YES/NO
+                const bottom = document.getElementById('logEditBottom');
+                this.menuItems = Array.from(bottom.querySelectorAll('.menu-item'));
+                this.selectedMenuItem = 0;
             },
 
             viewLog(index) {
@@ -428,14 +577,18 @@ TASKS (1行に1つ):
                 cursor.innerHTML = '&gt; LOADING...<span class="cursor"></span>';
                 
                 this.typeText(log.text, content, () => {
-                    cursor.innerHTML = '&gt; <span class="cursor"></span>';
+                    cursor.innerHTML = '&gt; 戻りますか <span class="menu-item selected" onclick="term.showLogList()">[YES]</span>';
+                    this.menuItems = [cursor.querySelector('.menu-item')];
+                    this.selectedMenuItem = 0;
                 });
             },
 
             saveLog(yes) {
                 if (!yes) {
                     const bottom = document.getElementById('logEditBottom');
-                    bottom.innerHTML = '&gt; 破棄しますか？ <span class="menu-item" onclick="term.discardLog(true)">[YES]</span> <span class="menu-item" onclick="term.discardLog(false)">[NO]</span>';
+                    bottom.innerHTML = '&gt; 破棄しますか？ <span class="menu-item selected" onclick="term.discardLog(true)">[YES]</span> <span class="menu-item" onclick="term.discardLog(false)">[NO]</span>';
+                    this.menuItems = Array.from(bottom.querySelectorAll('.menu-item'));
+                    this.selectedMenuItem = 0;
                     return;
                 }
 
@@ -468,15 +621,16 @@ TASKS (1行に1つ):
             },
 
             discardLog(yes) {
+                const bottom = document.getElementById('logEditBottom');
                 if (yes) {
-                    const bottom = document.getElementById('logEditBottom');
                     bottom.innerHTML = '&gt; 破棄しました。トップ画面に戻ります。';
                     setTimeout(() => {
                         this.showLogList();
                     }, 2000);
                 } else {
-                    const bottom = document.getElementById('logEditBottom');
-                    bottom.innerHTML = '&gt; 保存しますか？ <span class="menu-item" onclick="term.saveLog(true)">[YES]</span> <span class="menu-item" onclick="term.saveLog(false)">[NO]</span>';
+                    bottom.innerHTML = '&gt; 保存しますか？ <span class="menu-item selected" onclick="term.saveLog(true)">[YES]</span> <span class="menu-item" onclick="term.saveLog(false)">[NO]</span>';
+                    this.menuItems = Array.from(bottom.querySelectorAll('.menu-item'));
+                    this.selectedMenuItem = 0;
                 }
             },
 
@@ -484,12 +638,21 @@ TASKS (1行に1つ):
                 this.showScreen('memoListScreen');
                 const list = document.getElementById('memoList');
                 
-                let html = '<div class="menu-item" onclick="term.newMemo()">[+ 新規作成]</div>\n';
+                let html = '<div class="menu-item">[+ 新規作成]</div>\n';
                 this.memos.forEach((memo, i) => {
                     const preview = memo.text.substring(0, 30).replace(/\n/g, ' ');
-                    html += `<div class="menu-item" onclick="term.editMemo(${i})">[${memo.title}   ---${preview}]</div>\n`;
+                    html += `<div class="menu-item">[${memo.title}   ---${preview}]</div>\n`;
                 });
                 list.innerHTML = html;
+
+                // Setup click handlers
+                const items = list.querySelectorAll('.menu-item');
+                items[0].onclick = () => this.newMemo();
+                this.memos.forEach((memo, i) => {
+                    items[i + 1].onclick = () => this.editMemo(i);
+                });
+
+                this.updateMenuItems();
             },
 
             newMemo() {
@@ -507,6 +670,11 @@ TASKS (1行に1つ):
                 document.getElementById('memoTitle').textContent = title;
                 document.getElementById('memoEditArea').value = '';
                 this.showScreen('memoEditScreen');
+                
+                // Initialize menu items for YES/NO
+                const bottom = document.getElementById('memoEditBottom');
+                this.menuItems = Array.from(bottom.querySelectorAll('.menu-item'));
+                this.selectedMenuItem = 0;
             },
 
             editMemo(index) {
@@ -514,12 +682,19 @@ TASKS (1行に1つ):
                 document.getElementById('memoTitle').textContent = this.currentMemo.title;
                 document.getElementById('memoEditArea').value = this.currentMemo.text;
                 this.showScreen('memoEditScreen');
+                
+                // Initialize menu items for YES/NO
+                const bottom = document.getElementById('memoEditBottom');
+                this.menuItems = Array.from(bottom.querySelectorAll('.menu-item'));
+                this.selectedMenuItem = 0;
             },
 
             saveMemo(yes) {
                 if (!yes) {
                     const bottom = document.getElementById('memoEditBottom');
-                    bottom.innerHTML = '&gt; 破棄しますか？ <span class="menu-item" onclick="term.discardMemo(true)">[YES]</span> <span class="menu-item" onclick="term.discardMemo(false)">[NO]</span>';
+                    bottom.innerHTML = '&gt; 破棄しますか？ <span class="menu-item selected" onclick="term.discardMemo(true)">[YES]</span> <span class="menu-item" onclick="term.discardMemo(false)">[NO]</span>';
+                    this.menuItems = Array.from(bottom.querySelectorAll('.menu-item'));
+                    this.selectedMenuItem = 0;
                     return;
                 }
 
@@ -542,15 +717,16 @@ TASKS (1行に1つ):
             },
 
             discardMemo(yes) {
+                const bottom = document.getElementById('memoEditBottom');
                 if (yes) {
-                    const bottom = document.getElementById('memoEditBottom');
                     bottom.innerHTML = '&gt; 破棄しました。トップ画面に戻ります。';
                     setTimeout(() => {
                         this.showMemoList();
                     }, 2000);
                 } else {
-                    const bottom = document.getElementById('memoEditBottom');
-                    bottom.innerHTML = '&gt; 保存しますか？ <span class="menu-item" onclick="term.saveMemo(true)">[YES]</span> <span class="menu-item" onclick="term.saveMemo(false)">[NO]</span>';
+                    bottom.innerHTML = '&gt; 保存しますか？ <span class="menu-item selected" onclick="term.saveMemo(true)">[YES]</span> <span class="menu-item" onclick="term.saveMemo(false)">[NO]</span>';
+                    this.menuItems = Array.from(bottom.querySelectorAll('.menu-item'));
+                    this.selectedMenuItem = 0;
                 }
             },
 
@@ -558,15 +734,24 @@ TASKS (1行に1つ):
                 this.showScreen('questListScreen');
                 const list = document.getElementById('questList');
                 
-                let html = '<div class="menu-item" onclick="term.newQuest()">[+ 新規作成]</div>\n';
+                let html = '<div class="menu-item">[+ 新規作成]</div>\n';
                 this.quests.forEach((quest, i) => {
                     const completed = quest.tasks.filter(t => t.completed).length;
                     const total = quest.tasks.length;
                     const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
                     const cycleStr = quest.cycle !== 'NONE' ? ` cyc:${quest.cycle}` : '';
-                    html += `<div class="menu-item" onclick="term.viewQuest(${i})">[${quest.title} ddl:${quest.deadline}${cycleStr} task:${percent}%]</div>\n`;
+                    html += `<div class="menu-item">[${quest.title} ddl:${quest.deadline}${cycleStr} task:${percent}%]</div>\n`;
                 });
                 list.innerHTML = html;
+
+                // Setup click handlers
+                const items = list.querySelectorAll('.menu-item');
+                items[0].onclick = () => this.newQuest();
+                this.quests.forEach((quest, i) => {
+                    items[i + 1].onclick = () => this.viewQuest(i);
+                });
+
+                this.updateMenuItems();
             },
 
             newQuest() {
@@ -602,7 +787,9 @@ TASKS (1行に1つ):
                 cursor.innerHTML = '&gt; LOADING...<span class="cursor"></span>';
                 
                 this.typeText(text, content, () => {
-                    cursor.innerHTML = '&gt; <span class="cursor"></span>';
+                    cursor.innerHTML = '&gt; 戻りますか <span class="menu-item selected" onclick="term.showQuestList()">[YES]</span>';
+                    this.menuItems = [cursor.querySelector('.menu-item')];
+                    this.selectedMenuItem = 0;
                 });
             },
 
