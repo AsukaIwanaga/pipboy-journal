@@ -447,7 +447,10 @@ github gistにログインしてください
 
             showPipboyBoot() {
                 const display = document.getElementById('loginDisplay');
-                display.innerHTML = '';
+                display.innerHTML = `
+<div style="text-align:center; margin-bottom:20px;">
+    <img src="assets/vaultboy.gif" style="width:150px; height:150px; image-rendering: crisp-edges;">
+</div>`;
                 
                 const bootText = `
 ROBCO INDUSTRIES UNIFIED OPERATING SYSTEM
@@ -456,10 +459,12 @@ COPYRIGHT 2075-2077 ROBCO INDUSTRIES
 
 INITIALIZING...`;
                 
+                this.playSound('welcome.mp3', 0.6);
+                
                 this.typeText(bootText, display, () => {
                     setTimeout(() => {
                         this.showLoading();
-                    }, 500);
+                    }, 5000); // Changed from 500ms to 5000ms (5 seconds)
                 });
             },
 
@@ -631,6 +636,9 @@ INITIALIZING...`;
                             this.syncData();
                         }
                         
+                        // Play save success sound
+                        this.playSound('register.mp3', 0.5);
+                        
                         // Show confirmation with properly bound handlers
                         const listName = this.terminalMode === 'log_edit' ? 'LOG一覧' : 'MEMO一覧';
                         msg.innerHTML = `&gt; 保存が完了しました。<br>&gt; ${listName}へ戻りますか？ <span class="menu-item selected" id="btnSaveYes" tabindex="0">[YES]</span>   <span class="menu-item" id="btnSaveNo" tabindex="0">[NO]</span>`;
@@ -701,6 +709,8 @@ INITIALIZING...`;
             moveSelection(direction) {
                 if (this.menuItems.length === 0) return;
 
+                this.playSound('selection.mp3', 0.3);
+                
                 this.menuItems[this.selectedMenuItem].classList.remove('selected');
                 this.selectedMenuItem = (this.selectedMenuItem + direction + this.menuItems.length) % this.menuItems.length;
                 this.updateMenuSelection();
@@ -1051,25 +1061,41 @@ INITIALIZING...`;
                 type();
             },
 
-            playPip() {
-                if (!this.audioContext) {
-                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            playSound(filename, volume = 0.5) {
+                try {
+                    const audio = new Audio(`assets/${filename}`);
+                    audio.volume = volume;
+                    audio.play().catch(e => console.log('Audio play failed:', e));
+                } catch (e) {
+                    console.log('Audio error:', e);
                 }
+            },
 
-                const oscillator = this.audioContext.createOscillator();
-                const gainNode = this.audioContext.createGain();
+            playPip() {
+                // Try to play MP3, fallback to generated sound
+                const audio = new Audio('assets/pip.mp3');
+                audio.volume = 0.3;
+                audio.play().catch(() => {
+                    // Fallback to generated sound if MP3 not available
+                    if (!this.audioContext) {
+                        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    }
 
-                oscillator.connect(gainNode);
-                gainNode.connect(this.audioContext.destination);
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
 
-                oscillator.frequency.value = 440; // Changed from 280 to 440Hz (A note)
-                oscillator.type = 'square';
+                    oscillator.connect(gainNode);
+                    gainNode.connect(this.audioContext.destination);
 
-                gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.05);
+                    oscillator.frequency.value = 440; // Changed from 280 to 440Hz (A note)
+                    oscillator.type = 'square';
 
-                oscillator.start(this.audioContext.currentTime);
-                oscillator.stop(this.audioContext.currentTime + 0.05);
+                    gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.05);
+
+                    oscillator.start(this.audioContext.currentTime);
+                    oscillator.stop(this.audioContext.currentTime + 0.05);
+                });
             },
 
             showScreen(screenId) {
