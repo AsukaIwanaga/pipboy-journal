@@ -1061,12 +1061,16 @@ WELCOME TO TERMLINK`;
                 if (!commandInput) return;
                 
                 commandInput.value = '';
-                commandInput.addEventListener('keydown', (e) => {
+                // Remove old listeners by replacing the element
+                const newInput = commandInput.cloneNode(true);
+                commandInput.parentNode.replaceChild(newInput, commandInput);
+                
+                newInput.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
-                        const cmd = commandInput.value.trim().toLowerCase();
+                        const cmd = newInput.value.trim().toLowerCase();
                         this.handleCommand(cmd);
-                        commandInput.value = '';
+                        newInput.value = '';
                     }
                 });
             },
@@ -1109,11 +1113,6 @@ WELCOME TO TERMLINK`;
                         document.getElementById('commandInput').focus();
                     }, 2000);
                 }
-            },
-                document.getElementById('btnHelp').onclick = () => this.terminalShowHelp();
-                
-                // Focus textarea
-                setTimeout(() => document.getElementById('terminalInput').focus(), 100);
             },
 
             viewLog(index) {
@@ -1300,34 +1299,19 @@ WELCOME TO TERMLINK`;
                 
                 document.getElementById('terminalModeTitle').textContent = `MEMO: ${this.currentMemo.title}`;
                 document.getElementById('terminalInput').parentElement.innerHTML = '&gt; <textarea id="terminalInput" rows="15" style="width:95%; background:#000; color:#22c55e; border:none; font-family:inherit; font-size:18px; padding:0; outline:none; resize:none; line-height:1.4;"></textarea>';
-                document.getElementById('terminalInput').value = this.currentMemo.text;
                 
-                // Setup button handlers
-                document.getElementById('btnSave').onclick = () => this.terminalSave();
-                document.getElementById('btnCancel').onclick = () => this.terminalCancel();
-                document.getElementById('btnTop').onclick = () => {
-                    const msg = document.getElementById('terminalMessage');
-                    msg.innerHTML = '&gt; 変更を破棄してTOPへ戻りますか？ <span class="menu-item selected" id="btnTopYes" tabindex="0">[YES]</span>   <span class="menu-item" id="btnTopNo" tabindex="0">[NO]</span>';
-                    
-                    setTimeout(() => {
-                        const yesBtn = document.getElementById('btnTopYes');
-                        const noBtn = document.getElementById('btnTopNo');
-                        
-                        if (yesBtn) {
-                            yesBtn.onclick = () => this.goHome();
-                        }
-                        
-                        if (noBtn) {
-                            noBtn.onclick = () => {
-                                msg.innerHTML = '&gt; <span class="cursor"></span>';
-                            };
-                        }
-                    }, 10);
-                };
-                document.getElementById('btnHelp').onclick = () => this.terminalShowHelp();
+                const textarea = document.getElementById('terminalInput');
+                textarea.value = this.currentMemo.text;
+                this.originalContent = this.currentMemo.text;
+                this.hasUnsavedChanges = false;
                 
-                // Focus textarea
-                setTimeout(() => document.getElementById('terminalInput').focus(), 100);
+                // Track changes
+                textarea.addEventListener('input', () => {
+                    this.hasUnsavedChanges = (textarea.value !== this.originalContent);
+                });
+                
+                this.setupCommandInput();
+                setTimeout(() => textarea.focus(), 100);
             },
 
             showQuestList() {
