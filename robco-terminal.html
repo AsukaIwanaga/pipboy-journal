@@ -269,7 +269,7 @@ ASUKA IWANAGA PRIVATE TERMINAL
                     return;
                 }
 
-                // Handle button selection
+                // Handle button selection in terminal edit screen
                 if (this.currentScreen === 'terminalEditScreen') {
                     if (e.key === 'Tab') {
                         e.preventDefault();
@@ -313,6 +313,17 @@ ASUKA IWANAGA PRIVATE TERMINAL
                     case 'ArrowDown':
                         e.preventDefault();
                         this.moveSelection(1);
+                        break;
+                    case 'ArrowLeft':
+                        e.preventDefault();
+                        this.goBack();
+                        break;
+                    case 'ArrowRight':
+                        e.preventDefault();
+                        // Only select if there's a menu item selected
+                        if (this.menuItems.length > 0) {
+                            this.selectCurrentItem();
+                        }
                         break;
                     case 'Enter':
                         e.preventDefault();
