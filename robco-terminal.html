@@ -159,9 +159,11 @@ ASUKA IWANAGA PRIVATE TERMINAL
 
 <div id="logList" style="margin-top:20px;"></div>
         </div>
-        <div class="bottom-left">
-<span class="bottom-left-buttons"><span class="menu-item" onclick="term.goHome()">[TOP]</span></span>
-<span class="bottom-left-cursor">&gt; <span class="cursor"></span></span>
+        <div style="position:fixed; bottom:60px; left:30px; font-size:18px;">
+t:TOP
+        </div>
+        <div style="position:fixed; bottom:30px; left:30px; right:30px; display:flex; justify-content:flex-end; font-size:18px;">
+&gt; <input type="text" id="logListCommandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>
         </div>
     </div>
 
@@ -187,9 +189,11 @@ ASUKA IWANAGA PRIVATE TERMINAL
 
 <div id="memoList" style="margin-top:20px;"></div>
         </div>
-        <div class="bottom-left">
-<span class="bottom-left-buttons"><span class="menu-item" onclick="term.goHome()">[TOP]</span></span>
-<span class="bottom-left-cursor">&gt; <span class="cursor"></span></span>
+        <div style="position:fixed; bottom:60px; left:30px; font-size:18px;">
+t:TOP
+        </div>
+        <div style="position:fixed; bottom:30px; left:30px; right:30px; display:flex; justify-content:flex-end; font-size:18px;">
+&gt; <input type="text" id="memoListCommandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>
         </div>
     </div>
 
@@ -217,9 +221,11 @@ ASUKA IWANAGA PRIVATE TERMINAL
 
 <div id="questList" style="margin-top:20px;"></div>
         </div>
-        <div class="bottom-left">
-<span class="bottom-left-buttons"><span class="menu-item" onclick="term.goHome()">[TOP]</span></span>
-<span class="bottom-left-cursor">&gt; <span class="cursor"></span></span>
+        <div style="position:fixed; bottom:60px; left:30px; font-size:18px;">
+t:TOP  b:BACK
+        </div>
+        <div style="position:fixed; bottom:30px; left:30px; right:30px; display:flex; justify-content:flex-end; font-size:18px;">
+&gt; <input type="text" id="questListCommandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>
         </div>
     </div>
 
@@ -374,7 +380,7 @@ s:SAVE  c:CANCEL  h:HELP  t:TOP  b:BACK
                 const welcomeText = `WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK
 -ver. ${version}
 
-github gistにログインしてください
+pwを入力してください
 `;
 
                 display.textContent = '';
@@ -388,35 +394,28 @@ github gistにログインしてください
                         display.appendChild(autoMsg);
                         
                         setTimeout(() => {
-                            this.loginIdValue = this.githubToken;
-                            this.loginPwValue = this.gistId;
-                            this.executeLogin();
+                            this.loginWithPassword();
                         }, 1000);
                     });
                 } else {
-                    // Manual login
+                    // Manual login with password
                     this.typeText(welcomeText, display, () => {
-                        this.loginStep = 1; // Start with ID input
-                        this.showLoginPrompt();
+                        this.loginStep = 1; // Password input
+                        this.showPasswordPrompt();
+                    });
+                }
                     });
                 }
             },
 
-            showLoginPrompt() {
+            showPasswordPrompt() {
                 const display = document.getElementById('loginDisplay');
                 const inputLine = document.getElementById('loginInputLine');
                 
-                if (this.loginStep === 1) {
-                    display.innerHTML += '<br>&gt; ID: ';
-                    inputLine.style.display = 'inline';
-                    document.getElementById('loginInput').textContent = '';
-                    this.loginInputBuffer = '';
-                } else if (this.loginStep === 2) {
-                    display.innerHTML += '<br>&gt; PW: ';
-                    inputLine.style.display = 'inline';
-                    document.getElementById('loginInput').textContent = '';
-                    this.loginInputBuffer = '';
-                }
+                display.innerHTML += '<br>&gt; PW: ';
+                inputLine.style.display = 'inline';
+                document.getElementById('loginInput').textContent = '';
+                this.loginInputBuffer = '';
             },
 
             handleLoginInput(e) {
@@ -426,109 +425,110 @@ github gistにログインしてください
                     e.preventDefault();
                     
                     if (this.loginStep === 1) {
-                        // ID entered
-                        this.loginIdValue = this.loginInputBuffer;
+                        // Password entered
                         const inputLine = document.getElementById('loginInputLine');
-                        
                         inputLine.style.display = 'none';
-                        
-                        this.loginStep = 2;
-                        this.showLoginPrompt();
-                        
-                    } else if (this.loginStep === 2) {
-                        // PW entered
-                        this.loginPwValue = this.loginInputBuffer;
-                        const inputLine = document.getElementById('loginInputLine');
-                        
-                        inputLine.style.display = 'none';
-                        
                         this.loginStep = 0;
                         
-                        // Execute login
-                        this.executeLogin();
+                        // Verify password and login
+                        this.loginWithPassword(this.loginInputBuffer);
                     }
                 } else if (e.key === 'Backspace') {
                     e.preventDefault();
                     if (this.loginInputBuffer.length > 0) {
                         this.loginInputBuffer = this.loginInputBuffer.slice(0, -1);
-                        document.getElementById('loginInput').textContent = this.loginInputBuffer;
+                        // Display as asterisks
+                        document.getElementById('loginInput').textContent = '*'.repeat(this.loginInputBuffer.length);
                     }
                 } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
                     e.preventDefault();
-                    this.loginInputBuffer += e.key;
-                    document.getElementById('loginInput').textContent = this.loginInputBuffer;
+                    
+                    // Only allow alphanumeric, max 8 chars, auto lowercase
+                    if (/[a-zA-Z0-9]/.test(e.key) && this.loginInputBuffer.length < 8) {
+                        this.loginInputBuffer += e.key.toLowerCase();
+                        // Display as asterisks
+                        document.getElementById('loginInput').textContent = '*'.repeat(this.loginInputBuffer.length);
+                    }
                 }
             },
 
-            async executeLogin() {
+            async loginWithPassword(password = null) {
                 const display = document.getElementById('loginDisplay');
                 
-                const loadingMsg = document.createElement('div');
-                loadingMsg.textContent = '\nLOADING...';
-                display.appendChild(loadingMsg);
-                
-                const progressDiv = document.createElement('div');
-                progressDiv.id = 'loginProgress';
-                display.appendChild(progressDiv);
-                
-                // Simulate loading progress
-                let progress = 0;
-                const interval = setInterval(() => {
-                    progress += 10;
-                    const filled = Math.floor(progress / 10);
-                    const empty = 10 - filled;
-                    progressDiv.textContent = '[' + '█'.repeat(filled) + '_'.repeat(empty) + '] ' + progress + '%';
-                    
-                    if (progress >= 100) {
-                        clearInterval(interval);
+                // If password provided, verify it first
+                if (password !== null) {
+                    try {
+                        const response = await fetch('assets/pw.md');
+                        const text = await response.text();
                         
-                        // Validate ID
-                        if (!this.loginIdValue) {
-                            const errorMsg = document.createElement('div');
-                            errorMsg.textContent = '\n> ERROR: GitHub Tokenを入力してください';
-                            errorMsg.style.color = '#dc2626';
-                            display.appendChild(errorMsg);
-                            
-                            setTimeout(() => {
-                                this.startLoginSequence(false);
-                            }, 2000);
-                            return;
-                        }
+                        // Parse pw.md
+                        const lines = text.split('\n');
+                        let correctPw = '';
+                        let token = '';
+                        let gistId = '';
                         
-                        // Validate PW (Gist ID is mandatory)
-                        if (!this.loginPwValue) {
-                            const errorMsg = document.createElement('div');
-                            errorMsg.textContent = '\n> ERROR: Gist IDを入力してください';
-                            errorMsg.style.color = '#dc2626';
-                            display.appendChild(errorMsg);
-                            
-                            setTimeout(() => {
-                                this.startLoginSequence(false);
-                            }, 2000);
-                            return;
-                        }
-                        
-                        // Save credentials
-                        this.githubToken = this.loginIdValue;
-                        this.gistId = this.loginPwValue;
-                        localStorage.setItem('termToken', this.loginIdValue);
-                        localStorage.setItem('termGistId', this.loginPwValue);
-                        
-                        // Try to pull from Gist
-                        this.pullFromGist().then(() => {
-                            this.showPipboyBoot();
-                        }).catch((error) => {
-                            const errorMsg = document.createElement('div');
-                            errorMsg.textContent = '\n> ERROR: Gistへの接続に失敗しました\n> Token/IDを確認してください';
-                            errorMsg.style.color = '#dc2626';
-                            display.appendChild(errorMsg);
-                            
-                            setTimeout(() => {
-                                this.startLoginSequence(false);
-                            }, 3000);
+                        lines.forEach(line => {
+                            if (line.startsWith('pw:')) {
+                                correctPw = line.replace('pw:', '').trim();
+                            } else if (line.startsWith('token:')) {
+                                token = line.replace('token:', '').trim();
+                            } else if (line.startsWith('gist id:')) {
+                                gistId = line.replace('gist id:', '').trim();
+                            }
                         });
+                        
+                        if (password !== correctPw) {
+                            display.innerHTML += '\n\nERROR: Invalid password';
+                            setTimeout(() => {
+                                this.loginStep = 1;
+                                this.showPasswordPrompt();
+                            }, 2000);
+                            return;
+                        }
+                        
+                        // Store credentials
+                        this.githubToken = token;
+                        this.gistId = gistId;
+                        localStorage.setItem('termToken', token);
+                        localStorage.setItem('termGistId', gistId);
+                        
+                    } catch (error) {
+                        display.innerHTML += '\n\nERROR: Failed to load password file';
+                        console.error(error);
+                        return;
                     }
-                }, 100);
+                } else {
+                    // Auto-login: load from pw.md
+                    try {
+                        const response = await fetch('assets/pw.md');
+                        const text = await response.text();
+                        
+                        const lines = text.split('\n');
+                        let token = '';
+                        let gistId = '';
+                        
+                        lines.forEach(line => {
+                            if (line.startsWith('token:')) {
+                                token = line.replace('token:', '').trim();
+                            } else if (line.startsWith('gist id:')) {
+                                gistId = line.replace('gist id:', '').trim();
+                            }
+                        });
+                        
+                        this.githubToken = token;
+                        this.gistId = gistId;
+                        localStorage.setItem('termToken', token);
+                        localStorage.setItem('termGistId', gistId);
+                        
+                    } catch (error) {
+                        console.error('Auto-login failed:', error);
+                        display.innerHTML += '\n\nERROR: Auto-login failed';
+                        return;
+                    }
+                }
+                
+                // Proceed to boot
+                this.showPipboyBoot();
             },
 
             showPipboyBoot() {
@@ -1030,6 +1030,25 @@ WELCOME TO TERMLINK`;
                 });
 
                 this.updateMenuItems();
+                
+                // Setup command input
+                const commandInput = document.getElementById('logListCommandInput');
+                if (commandInput) {
+                    commandInput.value = '';
+                    const newInput = commandInput.cloneNode(true);
+                    commandInput.parentNode.replaceChild(newInput, commandInput);
+                    
+                    newInput.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            const cmd = newInput.value.trim().toLowerCase();
+                            if (cmd === 't') {
+                                this.goHome();
+                            }
+                            newInput.value = '';
+                        }
+                    });
+                }
             },
 
             newLog() {
@@ -1178,6 +1197,25 @@ WELCOME TO TERMLINK`;
                 });
 
                 this.updateMenuItems();
+                
+                // Setup command input
+                const commandInput = document.getElementById('memoListCommandInput');
+                if (commandInput) {
+                    commandInput.value = '';
+                    const newInput = commandInput.cloneNode(true);
+                    commandInput.parentNode.replaceChild(newInput, commandInput);
+                    
+                    newInput.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            const cmd = newInput.value.trim().toLowerCase();
+                            if (cmd === 't') {
+                                this.goHome();
+                            }
+                            newInput.value = '';
+                        }
+                    });
+                }
             },
 
             viewMemo(index) {
@@ -1373,6 +1411,59 @@ WELCOME TO TERMLINK`;
                 }
 
                 this.updateMenuItems();
+                
+                // Setup command input for quest list
+                const commandInput = document.getElementById('questListCommandInput');
+                if (commandInput) {
+                    commandInput.value = '';
+                    const newInput = commandInput.cloneNode(true);
+                    commandInput.parentNode.replaceChild(newInput, commandInput);
+                    
+                    newInput.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            const cmd = newInput.value.trim().toLowerCase();
+                            if (cmd === 't') {
+                                this.goHome();
+                            } else if (cmd === 'b') {
+                                this.goHome();
+                            } else if (cmd.startsWith('d ')) {
+                                const hour = parseInt(cmd.split(' ')[1]);
+                                if (hour >= 0 && hour <= 23) {
+                                    this.questSettings.dailyHour = hour;
+                                    this.saveData();
+                                    this.showQuestSettings();
+                                }
+                            } else if (cmd.startsWith('w ')) {
+                                const day = parseInt(cmd.split(' ')[1]);
+                                if (day >= 0 && day <= 6) {
+                                    this.questSettings.weeklyDay = day;
+                                    this.saveData();
+                                    this.showQuestSettings();
+                                }
+                            } else if (cmd.startsWith('m ')) {
+                                const date = parseInt(cmd.split(' ')[1]);
+                                if (date >= 1 && date <= 31) {
+                                    this.questSettings.monthlyDate = date;
+                                    this.saveData();
+                                    this.showQuestSettings();
+                                }
+                            } else if (cmd.startsWith('o ')) {
+                                const order = cmd.split(' ')[1];
+                                if (order === 'c') {
+                                    this.questSettings.sortOrder = 'created';
+                                } else if (order === 'd') {
+                                    this.questSettings.sortOrder = 'deadline';
+                                } else if (order === 't') {
+                                    this.questSettings.sortOrder = 'title';
+                                }
+                                this.saveData();
+                                this.showQuestSettings();
+                            }
+                            newInput.value = '';
+                        }
+                    });
+                }
             },
 
             showQuestSettings() {
@@ -1382,39 +1473,17 @@ WELCOME TO TERMLINK`;
                 const days = ['日', '月', '火', '水', '木', '金', '土'];
                 
                 let html = '<div style="margin-bottom:20px;">QUEST REPEAT SETTINGS</div>';
-                html += `<div>DAILY: 毎日 <input type="number" id="dailyHour" min="0" max="23" value="${this.questSettings.dailyHour}" style="width:50px; background:#000; color:#22c55e; border:1px solid #22c55e; padding:2px;"> 時</div>`;
-                html += `<div style="margin-top:10px;">WEEKLY: 毎週 <select id="weeklyDay" style="background:#000; color:#22c55e; border:1px solid #22c55e; padding:2px;">`;
-                for (let i = 0; i < 7; i++) {
-                    const selected = i === this.questSettings.weeklyDay ? ' selected' : '';
-                    html += `<option value="${i}"${selected}>${days[i]}曜日</option>`;
-                }
-                html += `</select></div>`;
-                html += `<div style="margin-top:10px;">MONTHLY: 毎月 <input type="number" id="monthlyDate" min="1" max="31" value="${this.questSettings.monthlyDate}" style="width:50px; background:#000; color:#22c55e; border:1px solid #22c55e; padding:2px;"> 日</div>`;
-                
-                html += `<div style="margin-top:20px;">完了ミッション並び順:</div>`;
-                html += `<div><select id="sortOrder" style="background:#000; color:#22c55e; border:1px solid #22c55e; padding:2px;">`;
-                html += `<option value="created"${this.questSettings.sortOrder === 'created' ? ' selected' : ''}>作成日順</option>`;
-                html += `<option value="deadline"${this.questSettings.sortOrder === 'deadline' ? ' selected' : ''}>締切順</option>`;
-                html += `<option value="title"${this.questSettings.sortOrder === 'title' ? ' selected' : ''}>あいうえお順</option>`;
-                html += `</select></div>`;
-                
-                html += '<div class="menu-item" style="margin-top:20px;">[SAVE]</div>';
-                html += '<div class="menu-item">[BACK]</div>';
+                html += `<div>DAILY: 毎日 ${this.questSettings.dailyHour} 時</div>`;
+                html += `<div>WEEKLY: 毎週 ${days[this.questSettings.weeklyDay]}曜日</div>`;
+                html += `<div>MONTHLY: 毎月 ${this.questSettings.monthlyDate} 日</div>`;
+                html += `<div>完了ミッション並び順: ${this.questSettings.sortOrder === 'created' ? '作成日順' : this.questSettings.sortOrder === 'deadline' ? '締切順' : 'あいうえお順'}</div>`;
+                html += '<br><div style="color:#888;">コマンド:</div>';
+                html += '<div style="color:#888;">d [0-23] : DAILY時刻変更</div>';
+                html += '<div style="color:#888;">w [0-6] : WEEKLY曜日変更 (0=日 1=月...)</div>';
+                html += '<div style="color:#888;">m [1-31] : MONTHLY日付変更</div>';
+                html += '<div style="color:#888;">o [c/d/t] : 並び順変更 (c=作成日 d=締切 t=タイトル)</div>';
                 
                 list.innerHTML = html;
-                
-                const items = list.querySelectorAll('.menu-item');
-                items[0].onclick = () => {
-                    this.questSettings.dailyHour = parseInt(document.getElementById('dailyHour').value);
-                    this.questSettings.weeklyDay = parseInt(document.getElementById('weeklyDay').value);
-                    this.questSettings.monthlyDate = parseInt(document.getElementById('monthlyDate').value);
-                    this.questSettings.sortOrder = document.getElementById('sortOrder').value;
-                    this.saveData();
-                    alert('設定を保存しました');
-                    this.showQuestList();
-                };
-                items[1].onclick = () => this.showQuestList();
-                
                 this.updateMenuItems();
             },
 
