@@ -287,8 +287,8 @@ ASUKA IWANAGA PRIVATE TERMINAL
                 
                 const welcomeText = `WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK
 -ver. 26-02-25 11:38
-ログインが必要です
-github gist
+
+github gistにログインしてください
 `;
 
                 display.textContent = '';
@@ -321,17 +321,13 @@ github gist
                 const inputLine = document.getElementById('loginInputLine');
                 
                 if (this.loginStep === 1) {
-                    const idPrompt = document.createElement('div');
-                    idPrompt.textContent = 'ID';
-                    display.appendChild(idPrompt);
-                    inputLine.style.display = 'block';
+                    display.innerHTML += '<br>&gt; ID: ';
+                    inputLine.style.display = 'inline';
                     document.getElementById('loginInput').textContent = '';
                     this.loginInputBuffer = '';
                 } else if (this.loginStep === 2) {
-                    const pwPrompt = document.createElement('div');
-                    pwPrompt.textContent = 'PW';
-                    display.appendChild(pwPrompt);
-                    inputLine.style.display = 'block';
+                    display.innerHTML += '<br>&gt; PW: ';
+                    inputLine.style.display = 'inline';
                     document.getElementById('loginInput').textContent = '';
                     this.loginInputBuffer = '';
                 }
@@ -347,13 +343,9 @@ github gist
                         // ID entered
                         this.loginIdValue = this.loginInputBuffer;
                         const inputLine = document.getElementById('loginInputLine');
-                        const display = document.getElementById('loginDisplay');
-                        
-                        const idLine = document.createElement('div');
-                        idLine.textContent = '> ' + this.loginInputBuffer;
-                        display.appendChild(idLine);
                         
                         inputLine.style.display = 'none';
+                        
                         this.loginStep = 2;
                         this.showLoginPrompt();
                         
@@ -361,13 +353,9 @@ github gist
                         // PW entered
                         this.loginPwValue = this.loginInputBuffer;
                         const inputLine = document.getElementById('loginInputLine');
-                        const display = document.getElementById('loginDisplay');
-                        
-                        const pwLine = document.createElement('div');
-                        pwLine.textContent = '> ' + '*'.repeat(this.loginInputBuffer.length);
-                        display.appendChild(pwLine);
                         
                         inputLine.style.display = 'none';
+                        
                         this.loginStep = 0;
                         
                         // Execute login
@@ -408,10 +396,23 @@ github gist
                     if (progress >= 100) {
                         clearInterval(interval);
                         
-                        // Validate and login
+                        // Validate ID
                         if (!this.loginIdValue) {
                             const errorMsg = document.createElement('div');
-                            errorMsg.textContent = '\n> ERROR: IDを入力してください';
+                            errorMsg.textContent = '\n> ERROR: GitHub Tokenを入力してください';
+                            errorMsg.style.color = '#dc2626';
+                            display.appendChild(errorMsg);
+                            
+                            setTimeout(() => {
+                                this.startLoginSequence(false);
+                            }, 2000);
+                            return;
+                        }
+                        
+                        // Validate PW (Gist ID is mandatory)
+                        if (!this.loginPwValue) {
+                            const errorMsg = document.createElement('div');
+                            errorMsg.textContent = '\n> ERROR: Gist IDを入力してください';
                             errorMsg.style.color = '#dc2626';
                             display.appendChild(errorMsg);
                             
@@ -425,20 +426,21 @@ github gist
                         this.githubToken = this.loginIdValue;
                         this.gistId = this.loginPwValue;
                         localStorage.setItem('termToken', this.loginIdValue);
-                        if (this.loginPwValue) {
-                            localStorage.setItem('termGistId', this.loginPwValue);
-                        }
+                        localStorage.setItem('termGistId', this.loginPwValue);
                         
-                        // Try to pull from Gist if ID exists
-                        if (this.gistId) {
-                            this.pullFromGist().then(() => {
-                                this.showPipboyBoot();
-                            }).catch(() => {
-                                this.showPipboyBoot();
-                            });
-                        } else {
+                        // Try to pull from Gist
+                        this.pullFromGist().then(() => {
                             this.showPipboyBoot();
-                        }
+                        }).catch((error) => {
+                            const errorMsg = document.createElement('div');
+                            errorMsg.textContent = '\n> ERROR: Gistへの接続に失敗しました\n> Token/IDを確認してください';
+                            errorMsg.style.color = '#dc2626';
+                            display.appendChild(errorMsg);
+                            
+                            setTimeout(() => {
+                                this.startLoginSequence(false);
+                            }, 3000);
+                        });
                     }
                 }, 100);
             },
@@ -482,7 +484,7 @@ INITIALIZING...`;
                 if (this.currentScreen === 'terminalEditScreen') {
                     if (e.key === 'Tab') {
                         e.preventDefault();
-                        const buttons = ['btnSave', 'btnCancel', 'btnHelp'];
+                        const buttons = ['btnSave', 'btnCancel', 'btnHelp', 'btnTop'];
                         const current = document.activeElement.id;
                         const currentIndex = buttons.indexOf(current);
                         const nextIndex = (currentIndex + 1) % buttons.length;
@@ -493,8 +495,10 @@ INITIALIZING...`;
                             const btn = document.getElementById(id);
                             if (btn) btn.classList.remove('selected');
                         });
-                        nextBtn.classList.add('selected');
-                        nextBtn.focus();
+                        if (nextBtn) {
+                            nextBtn.classList.add('selected');
+                            nextBtn.focus();
+                        }
                         return;
                     }
                     
@@ -512,6 +516,27 @@ INITIALIZING...`;
                         if (e.target.id === 'btnHelp') {
                             e.preventDefault();
                             this.terminalShowHelp();
+                            return;
+                        }
+                        if (e.target.id === 'btnTop') {
+                            e.preventDefault();
+                            const msg = document.getElementById('terminalMessage');
+                            msg.innerHTML = '&gt; 変更を破棄してTOPへ戻りますか？ <span class="menu-item selected" id="btnTopYes" tabindex="0">[YES]</span>   <span class="menu-item" id="btnTopNo" tabindex="0">[NO]</span>';
+                            
+                            setTimeout(() => {
+                                const yesBtn = document.getElementById('btnTopYes');
+                                const noBtn = document.getElementById('btnTopNo');
+                                
+                                if (yesBtn) {
+                                    yesBtn.onclick = () => this.goHome();
+                                }
+                                
+                                if (noBtn) {
+                                    noBtn.onclick = () => {
+                                        msg.innerHTML = '&gt; <span class="cursor"></span>';
+                                    };
+                                }
+                            }, 10);
                             return;
                         }
                     }
@@ -617,9 +642,12 @@ INITIALIZING...`;
                             
                             if (yesBtn) {
                                 yesBtn.onclick = () => {
+                                    console.log('YES clicked, mode:', this.terminalMode);
                                     if (this.terminalMode === 'log_edit') {
+                                        console.log('Navigating to showLogList');
                                         this.showLogList();
                                     } else if (this.terminalMode === 'memo_edit') {
+                                        console.log('Navigating to showMemoList');
                                         this.showMemoList();
                                     }
                                 };
