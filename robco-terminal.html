@@ -515,37 +515,53 @@ s:SAVE  c:CANCEL  h:HELP  t:TOP  b:BACK
                 const bootText = `
 ROBCO INDUSTRIES UNIFIED OPERATING SYSTEM
 COPYRIGHT 2075-2077 ROBCO INDUSTRIES
--Server 1-
 
-INITIALIZING...`;
+WELCOME TO TERMLINK`;
                 
                 this.typeText(bootText, display, () => {
                     setTimeout(() => {
-                        this.showWelcomeScreen();
+                        this.showLoading();
                     }, 500);
                 });
             },
 
+            showLoading() {
+                this.showScreen('loadingScreen');
+                const progressBar = document.getElementById('progressBar');
+                let progress = 0;
+
+                const interval = setInterval(() => {
+                    progress += 1;
+                    const filled = Math.floor(progress / 100 * 20);
+                    const empty = 20 - filled;
+                    progressBar.textContent = '[' + '█'.repeat(filled) + '_'.repeat(empty) + '] ' + progress + '%';
+
+                    if (progress >= 100) {
+                        clearInterval(interval);
+                        document.getElementById('loadingText').style.display = 'none';
+                        progressBar.style.display = 'none';
+                        
+                        // Show "ようこそ" and Vault Boy
+                        this.showWelcomeScreen();
+                    }
+                }, 40);
+            },
+
             showWelcomeScreen() {
-                const display = document.getElementById('loginDisplay');
-                display.innerHTML = `
-<div style="text-align:center; margin-bottom:30px;">
+                const welcomeText = document.getElementById('welcomeText');
+                welcomeText.innerHTML = `
+<div style="margin-bottom:20px;">ようこそ</div>
+<div style="text-align:center;">
     <img src="assets/vaultboy.gif" style="width:150px; height:150px; image-rendering: crisp-edges;">
 </div>`;
                 
+                // Play welcome sound
                 this.playSound('welcome.mp3', 0.6);
                 
-                const welcomeText = `
-ROBCO INDUSTRIES UNIFIED OPERATING SYSTEM
-COPYRIGHT 2075-2077 ROBCO INDUSTRIES
-
-WELCOME TO TERMLINK`;
-                
-                this.typeText(welcomeText, display, () => {
-                    setTimeout(() => {
-                        this.showLoading();
-                    }, 8000);
-                });
+                // Wait 8 seconds then go home
+                setTimeout(() => {
+                    this.goHome();
+                }, 8000);
             },
 
             handleKeyboard(e) {
@@ -951,26 +967,6 @@ WELCOME TO TERMLINK`;
                 }
             },
 
-            showLoading() {
-                this.showScreen('loadingScreen');
-                const progressBar = document.getElementById('progressBar');
-                let progress = 0;
-
-                const interval = setInterval(() => {
-                    progress += 1;
-                    const filled = Math.floor(progress / 100 * 20);
-                    const empty = 20 - filled;
-                    progressBar.textContent = '[' + '█'.repeat(filled) + '_'.repeat(empty) + '] ' + progress + '%';
-
-                    if (progress >= 100) {
-                        clearInterval(interval);
-                        document.getElementById('loadingText').style.display = 'none';
-                        progressBar.style.display = 'none';
-                        document.getElementById('welcomeText').textContent = 'ようこそ';
-                        setTimeout(() => this.goHome(), 2000);
-                    }
-                }, 40); // Changed from 80ms to 40ms (2x speed)
-            },
 
             goHome() {
                 this.showScreen('homeScreen');
