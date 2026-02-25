@@ -430,12 +430,12 @@ s:SAVE  c:CANCEL  h:HELP  t:TOP  b:BACK
                 const display = document.getElementById('loginDisplay');
                 
                 if (this.loginStep === 1) {
-                    const line = document.createElement('div');
-                    line.innerHTML = '&gt; GIST ID: <span id="loginInput"><span class="cursor"></span></span>';
+                    const line = document.createElement('span');
+                    line.innerHTML = '\n&gt; GIST ID: <span id="loginInput"><span class="cursor"></span></span>';
                     display.appendChild(line);
                 } else if (this.loginStep === 2) {
-                    const line = document.createElement('div');
-                    line.innerHTML = '&gt; TOKEN: <span id="loginInput"><span class="cursor"></span></span>';
+                    const line = document.createElement('span');
+                    line.innerHTML = '\n&gt; TOKEN: <span id="loginInput"><span class="cursor"></span></span>';
                     display.appendChild(line);
                 }
                 
@@ -550,18 +550,18 @@ WELCOME TO TERMLINK`;
             showWelcomeScreen() {
                 const welcomeText = document.getElementById('welcomeText');
                 welcomeText.innerHTML = `
-<div style="margin-bottom:20px;">ようこそ</div>
-<div style="text-align:center;">
+<div style="text-align:center; margin-bottom:20px;">
     <img src="assets/vaultboy.gif" style="width:150px; height:150px; image-rendering: crisp-edges;">
-</div>`;
+</div>
+<div>ようこそ</div>`;
                 
                 // Play welcome sound
                 this.playSound('welcome.mp3', 0.6);
                 
-                // Wait 8 seconds then go home
+                // Wait 5 seconds then go home
                 setTimeout(() => {
                     this.goHome();
-                }, 8000);
+                }, 5000);
             },
 
             handleKeyboard(e) {
@@ -934,6 +934,26 @@ WELCOME TO TERMLINK`;
 
                 this.playSound('selection.mp3', 0.3);
                 
+                // Check if trying to go down from last item
+                if (direction === 1 && this.selectedMenuItem === this.menuItems.length - 1) {
+                    // Move to command input
+                    this.menuItems[this.selectedMenuItem].classList.remove('selected');
+                    const commandInput = document.getElementById('commandInput') || 
+                                       document.getElementById('questCommandInput') || 
+                                       document.getElementById('logListCommandInput') ||
+                                       document.getElementById('memoListCommandInput');
+                    if (commandInput) {
+                        commandInput.focus();
+                        return;
+                    }
+                }
+                
+                // Check if trying to go up from first item
+                if (direction === -1 && this.selectedMenuItem === 0) {
+                    // Stay at first item
+                    return;
+                }
+                
                 this.menuItems[this.selectedMenuItem].classList.remove('selected');
                 this.selectedMenuItem = (this.selectedMenuItem + direction + this.menuItems.length) % this.menuItems.length;
                 this.updateMenuSelection();
@@ -1012,7 +1032,14 @@ WELCOME TO TERMLINK`;
                     commandInput.parentNode.replaceChild(newInput, commandInput);
                     
                     newInput.addEventListener('keydown', (e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
+                        if (e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            if (this.menuItems.length > 0) {
+                                this.selectedMenuItem = this.menuItems.length - 1;
+                                this.updateMenuSelection();
+                                this.menuItems[this.selectedMenuItem].focus();
+                            }
+                        } else if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
                             const cmd = newInput.value.trim().toLowerCase();
                             if (cmd === 't') {
@@ -1063,8 +1090,16 @@ WELCOME TO TERMLINK`;
                         const cmd = newInput.value.trim().toLowerCase();
                         this.handleCommand(cmd);
                         newInput.value = '';
+                        // Keep focus on command input
+                        setTimeout(() => {
+                            const currentInput = document.getElementById('commandInput');
+                            if (currentInput) currentInput.focus();
+                        }, 100);
                     }
                 });
+                
+                // Auto-focus command input
+                newInput.focus();
             },
 
             handleCommand(cmd) {
@@ -1179,7 +1214,14 @@ WELCOME TO TERMLINK`;
                     commandInput.parentNode.replaceChild(newInput, commandInput);
                     
                     newInput.addEventListener('keydown', (e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
+                        if (e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            if (this.menuItems.length > 0) {
+                                this.selectedMenuItem = this.menuItems.length - 1;
+                                this.updateMenuSelection();
+                                this.menuItems[this.selectedMenuItem].focus();
+                            }
+                        } else if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
                             const cmd = newInput.value.trim().toLowerCase();
                             if (cmd === 't') {
@@ -1393,7 +1435,15 @@ WELCOME TO TERMLINK`;
                     commandInput.parentNode.replaceChild(newInput, commandInput);
                     
                     newInput.addEventListener('keydown', (e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
+                        if (e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            // Return to last menu item
+                            if (this.menuItems.length > 0) {
+                                this.selectedMenuItem = this.menuItems.length - 1;
+                                this.updateMenuSelection();
+                                this.menuItems[this.selectedMenuItem].focus();
+                            }
+                        } else if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
                             const cmd = newInput.value.trim().toLowerCase();
                             if (cmd === 't') {
