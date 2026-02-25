@@ -201,14 +201,11 @@ ASUKA IWANAGA PRIVATE TERMINAL
 
 <div id="memoContent" style="margin-top:20px;"></div>
         </div>
-        <div style="position:fixed; bottom:90px; left:30px; right:30px; display:flex; justify-content:flex-end; font-size:18px; gap:15px;" id="memoViewButtons">
-<span class="menu-item selected" id="btnMemoEdit" tabindex="0">[EDIT]</span><span class="menu-item" id="btnMemoHelp" tabindex="0">[HELP]</span>
-        </div>
         <div style="position:fixed; bottom:60px; left:30px; font-size:18px;">
-<span class="menu-item" id="btnMemoBack" tabindex="0">[BACK]</span> <span class="menu-item" id="btnMemoTop" tabindex="0">[TOP]</span>
+e:EDIT  h:HELP  b:BACK  t:TOP
         </div>
-        <div style="position:fixed; bottom:30px; left:30px; right:30px; display:flex; justify-content:flex-end; font-size:18px;" id="memoViewMessage">
-&gt; <span class="cursor"></span>
+        <div style="position:fixed; bottom:30px; left:30px; right:30px; display:flex; justify-content:flex-end; font-size:18px;">
+&gt; <input type="text" id="memoViewCommandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>
         </div>
     </div>
 
@@ -249,14 +246,11 @@ ASUKA IWANAGA PRIVATE TERMINAL
 <div id="questEditTitle">QUEST ENTRY MODE</div>
 <div id="questEditContent" style="margin-top:10px;"></div>
         </div>
-        <div style="position:fixed; bottom:90px; left:30px; right:30px; display:flex; justify-content:flex-end; font-size:18px; gap:15px;" id="questFunctionButtons">
-<span class="menu-item selected" id="btnQuestSave" tabindex="0">[SAVE]</span><span class="menu-item" id="btnQuestCancel" tabindex="0">[CANCEL]</span>
+        <div style="position:fixed; bottom:60px; left:30px; font-size:18px;">
+s:SAVE  c:CANCEL  t:TOP  b:BACK
         </div>
-        <div style="position:fixed; bottom:60px; left:30px; font-size:18px;" id="questGlobalButtons">
-<span class="menu-item" id="btnQuestTop" tabindex="0">[TOP]</span>
-        </div>
-        <div style="position:fixed; bottom:30px; left:30px; right:30px; display:flex; justify-content:flex-end; font-size:18px;" id="questMessage">
-&gt; <span class="cursor"></span>
+        <div style="position:fixed; bottom:30px; left:30px; right:30px; display:flex; justify-content:flex-end; font-size:18px;">
+&gt; <input type="text" id="questCommandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>
         </div>
     </div>
 
@@ -1194,20 +1188,34 @@ WELCOME TO TERMLINK`;
                 
                 this.showScreen('memoViewScreen');
                 const content = document.getElementById('memoContent');
-                const message = document.getElementById('memoViewMessage');
                 
                 content.textContent = '';
-                message.innerHTML = '&gt; 記録を読み込み中...<span class="cursor"></span>';
                 
                 this.typeText(memo.text, content, () => {
-                    message.innerHTML = '&gt; <span class="cursor"></span>';
+                    // Setup command input after typing completes
+                    const commandInput = document.getElementById('memoViewCommandInput');
+                    if (commandInput) {
+                        commandInput.value = '';
+                        commandInput.focus();
+                        commandInput.onkeydown = null;
+                        commandInput.addEventListener('keydown', (e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                const cmd = commandInput.value.trim().toLowerCase();
+                                if (cmd === 'e') {
+                                    this.editMemo(index);
+                                } else if (cmd === 'h') {
+                                    this.terminalShowHelp();
+                                } else if (cmd === 'b') {
+                                    this.showMemoList();
+                                } else if (cmd === 't') {
+                                    this.goHome();
+                                }
+                                commandInput.value = '';
+                            }
+                        });
+                    }
                 });
-                
-                // Setup buttons
-                document.getElementById('btnMemoEdit').onclick = () => this.editMemo(index);
-                document.getElementById('btnMemoHelp').onclick = () => this.terminalShowHelp();
-                document.getElementById('btnMemoBack').onclick = () => this.showMemoList();
-                document.getElementById('btnMemoTop').onclick = () => this.goHome();
             },
 
             newMemo() {
@@ -1532,35 +1540,96 @@ WELCOME TO TERMLINK`;
                     });
                     content.innerHTML = html;
                     
-                    cycles.forEach((c, i) => {
-                        document.getElementById(`cycle${i}`).onclick = () => {
-                            this.questEditData.cycle = c;
-                            this.questEditStep++;
-                            this.showQuestEditStep();
-                        };
-                    });
                     this.updateMenuItems();
+                    
+                    // Keyboard navigation for cycle
+                    const handleCycleKey = (e) => {
+                        if (e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            this.moveSelection(-1);
+                        } else if (e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            this.moveSelection(1);
+                        } else if (e.key === 'Enter' || e.key === ' ' || (e.key === 'Tab' && !e.shiftKey)) {
+                            e.preventDefault();
+                            this.questEditData.cycle = cycles[this.selectedMenuItem];
+                            this.questEditStep++;
+                            document.removeEventListener('keydown', handleCycleKey);
+                            this.showQuestEditStep();
+                        } else if (e.key === 'Tab' && e.shiftKey) {
+                            e.preventDefault();
+                            document.removeEventListener('keydown', handleCycleKey);
+                            this.questEditStep--;
+                            this.showQuestEditStep();
+                        }
+                    };
+                    document.addEventListener('keydown', handleCycleKey);
                     
                 } else if (this.questEditStep === 4) {
                     // Description input
                     content.innerHTML = `MISSION: ${this.questEditData.title}<br>DEADLINE: ${this.questEditData.deadline}<br>CYCLE: ${this.questEditData.cycle}<br>&gt; DESCRIPTION:<br><textarea id="questDescInput" rows="3" style="width:95%; background:#000; color:#22c55e; border:1px solid #22c55e; font-family:inherit; font-size:18px; padding:5px; outline:none;">${this.questEditData.description}</textarea>`;
-                    setTimeout(() => document.getElementById('questDescInput').focus(), 100);
+                    setTimeout(() => {
+                        const textarea = document.getElementById('questDescInput');
+                        textarea.focus();
+                        textarea.addEventListener('keydown', (e) => {
+                            if ((e.key === 'Tab' && !e.shiftKey || e.key === 'ArrowDown') && textarea.selectionStart === textarea.value.length) {
+                                e.preventDefault();
+                                this.questEditData.description = textarea.value;
+                                this.questEditStep++;
+                                this.showQuestEditStep();
+                            } else if ((e.key === 'Tab' && e.shiftKey || e.key === 'ArrowUp') && textarea.selectionStart === 0) {
+                                e.preventDefault();
+                                this.questEditData.description = textarea.value;
+                                this.questEditStep--;
+                                this.showQuestEditStep();
+                            }
+                        });
+                    }, 100);
                     
                 } else if (this.questEditStep === 5) {
                     // Tasks input
                     const tasksText = this.questEditData.tasks.map(t => t.title).join('\n');
                     content.innerHTML = `MISSION: ${this.questEditData.title}<br>DEADLINE: ${this.questEditData.deadline}<br>CYCLE: ${this.questEditData.cycle}<br>DESCRIPTION: ${this.questEditData.description}<br>&gt; TASKS (1行1タスク):<br><textarea id="questTasksInput" rows="8" style="width:95%; background:#000; color:#22c55e; border:1px solid #22c55e; font-family:inherit; font-size:18px; padding:5px; outline:none;">${tasksText}</textarea>`;
-                    setTimeout(() => document.getElementById('questTasksInput').focus(), 100);
+                    setTimeout(() => {
+                        const textarea = document.getElementById('questTasksInput');
+                        textarea.focus();
+                        textarea.addEventListener('keydown', (e) => {
+                            if ((e.key === 'Tab' && e.shiftKey || e.key === 'ArrowUp') && textarea.selectionStart === 0) {
+                                e.preventDefault();
+                                this.questEditStep--;
+                                this.showQuestEditStep();
+                            }
+                        });
+                    }, 100);
                 }
                 
-                // Setup buttons
-                if (this.isEditingQuest) {
-                    document.getElementById('btnQuestSave').onclick = () => this.questEditUpdateExisting();
-                } else {
-                    document.getElementById('btnQuestSave').onclick = () => this.questEditNext();
+                // Setup quest command input
+                const questCommandInput = document.getElementById('questCommandInput');
+                if (questCommandInput) {
+                    questCommandInput.value = '';
+                    const oldHandler = questCommandInput.onkeydown;
+                    questCommandInput.onkeydown = null;
+                    questCommandInput.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            const cmd = questCommandInput.value.trim().toLowerCase();
+                            if (cmd === 's') {
+                                if (this.isEditingQuest) {
+                                    this.questEditUpdateExisting();
+                                } else {
+                                    this.questEditNext();
+                                }
+                            } else if (cmd === 'c') {
+                                this.questEditCancel();
+                            } else if (cmd === 't') {
+                                this.goHome();
+                            } else if (cmd === 'b') {
+                                this.showQuestList();
+                            }
+                            questCommandInput.value = '';
+                        }
+                    });
                 }
-                document.getElementById('btnQuestCancel').onclick = () => this.questEditCancel();
-                document.getElementById('btnQuestTop').onclick = () => this.goHome();
             },
 
             questEditNext() {
