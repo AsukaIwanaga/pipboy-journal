@@ -1,0 +1,3 @@
+pw: 00000000
+token: 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
+gist id: ae2a360fa971c041941debed2ab3b239
