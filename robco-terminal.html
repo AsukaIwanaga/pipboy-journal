@@ -52,6 +52,7 @@
         .menu-item {
             cursor: pointer;
             display: block;
+            line-height: 1.2;
         }
 
         .menu-item:hover, .menu-item.selected {
@@ -91,6 +92,17 @@
             bottom: 30px;
             left: 30px;
             font-size: 18px;
+            display: flex;
+            justify-content: space-between;
+            width: calc(100% - 60px);
+        }
+
+        .bottom-left-buttons {
+            text-align: left;
+        }
+
+        .bottom-left-cursor {
+            text-align: right;
         }
 
         #terminalOutput {
@@ -108,18 +120,14 @@
 <body>
     <!-- Login Screen -->
     <div class="screen active" id="loginScreen">
-        <div class="login-box" style="max-width:100%; padding:50px;">
-            <div class="terminal-text">
-WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK
-GITHUB GISTへのログインが必要です
+        <div class="terminal-text" style="padding:50px;">
+<!-- Vault Boy GIF -->
+<div style="text-align:center; margin-bottom:30px;">
+    <img src="assets/vaultboy.gif" style="width:150px; height:150px; image-rendering: crisp-edges;">
+</div>
 
-ENTER ID: <input type="text" id="githubToken" placeholder="" style="width:400px;">
-ENTER PW: <input type="password" id="gistId" placeholder="(初回は空欄)" style="width:400px;">
-
-<button onclick="term.login()" style="background:#22c55e; color:#000; border:none; padding:5px 20px; font-family:inherit; font-size:18px; cursor:pointer; margin-top:10px;">[CONNECT]</button>  <span style="font-size:14px; color:#16a34a; margin-left:20px;">-ver. 26-02-25 11:38</span>
-
-<div id="loginLog" style="margin-top:20px; color:#dc2626; font-size:14px;"></div>
-            </div>
+<div id="loginDisplay"></div>
+<div id="loginInputLine" style="display:none;">&gt; <span id="loginInput"></span><span class="cursor"></span></div>
         </div>
     </div>
 
@@ -152,7 +160,8 @@ ASUKA IWANAGA PRIVATE TERMINAL
 <div id="logList" style="margin-top:20px;"></div>
         </div>
         <div class="bottom-left">
-<span class="menu-item" onclick="term.goHome()">[TOP]</span> &gt; <span class="cursor"></span>
+<span class="bottom-left-buttons"><span class="menu-item" onclick="term.goHome()">[TOP]</span></span>
+<span class="bottom-left-cursor">&gt; <span class="cursor"></span></span>
         </div>
     </div>
 
@@ -165,7 +174,8 @@ ASUKA IWANAGA PRIVATE TERMINAL
 <div id="logContent" style="margin-top:20px;"></div>
         </div>
         <div class="bottom-left" id="logViewCursor">
-<span class="menu-item" onclick="term.showLogList()">[BACK]</span> <span class="menu-item" onclick="term.goHome()">[TOP]</span> &gt; <span class="cursor"></span>
+<span class="bottom-left-buttons"><span class="menu-item" onclick="term.showLogList()">[BACK]</span> <span class="menu-item" onclick="term.goHome()">[TOP]</span></span>
+<span class="bottom-left-cursor">&gt; <span class="cursor"></span></span>
         </div>
     </div>
 
@@ -178,7 +188,8 @@ ASUKA IWANAGA PRIVATE TERMINAL
 <div id="memoList" style="margin-top:20px;"></div>
         </div>
         <div class="bottom-left">
-<span class="menu-item" onclick="term.goHome()">[TOP]</span> &gt; <span class="cursor"></span>
+<span class="bottom-left-buttons"><span class="menu-item" onclick="term.goHome()">[TOP]</span></span>
+<span class="bottom-left-cursor">&gt; <span class="cursor"></span></span>
         </div>
     </div>
 
@@ -191,7 +202,8 @@ ASUKA IWANAGA PRIVATE TERMINAL
 <div id="questList" style="margin-top:20px;"></div>
         </div>
         <div class="bottom-left">
-<span class="menu-item" onclick="term.goHome()">[TOP]</span> &gt; <span class="cursor"></span>
+<span class="bottom-left-buttons"><span class="menu-item" onclick="term.goHome()">[TOP]</span></span>
+<span class="bottom-left-cursor">&gt; <span class="cursor"></span></span>
         </div>
     </div>
 
@@ -204,7 +216,8 @@ ASUKA IWANAGA PRIVATE TERMINAL
 <div id="questContent" style="margin-top:20px;"></div>
         </div>
         <div class="bottom-left" id="questViewCursor">
-<span class="menu-item" onclick="term.showQuestList()">[BACK]</span> <span class="menu-item" onclick="term.goHome()">[TOP]</span> &gt; <span class="cursor"></span>
+<span class="bottom-left-buttons"><span class="menu-item" onclick="term.showQuestList()">[BACK]</span> <span class="menu-item" onclick="term.goHome()">[TOP]</span></span>
+<span class="bottom-left-cursor">&gt; <span class="cursor"></span></span>
         </div>
     </div>
 
@@ -215,13 +228,16 @@ WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK
 ASUKA IWANAGA PRIVATE TERMINAL
 
 <div id="terminalModeTitle"></div>
-&gt; <textarea id="terminalInput" rows="15" style="width:95%; background:#000; color:#22c55e; border:none; font-family:inherit; font-size:18px; padding:0; outline:none; resize:none;"></textarea>
+<div style="display:flex; align-items:flex-start;">&gt; <textarea id="terminalInput" rows="15" style="width:95%; background:#000; color:#22c55e; border:none; font-family:inherit; font-size:18px; padding:0; outline:none; resize:none; line-height:1.4;"></textarea></div>
         </div>
-        <div class="bottom-left" id="terminalNav" style="position:fixed; bottom:60px; left:30px; font-size:18px;">
-<span class="menu-item" id="btnBack" tabindex="0">[BACK]</span> <span class="menu-item" id="btnTop" tabindex="0">[TOP]</span>
+        <div style="position:fixed; bottom:90px; left:30px; right:30px; display:flex; justify-content:flex-end; font-size:18px; gap:15px;" id="terminalFunctionButtons">
+<span class="menu-item selected" id="btnSave" tabindex="0">[SAVE]</span><span class="menu-item" id="btnCancel" tabindex="0">[CANCEL]</span><span class="menu-item" id="btnHelp" tabindex="0">[HELP]</span>
         </div>
-        <div class="bottom-left" id="terminalButtons" style="position:fixed; bottom:30px; left:30px; font-size:18px;">
-&gt; <span class="menu-item selected" id="btnSave" tabindex="0">[SAVE]</span> <span class="menu-item" id="btnCancel" tabindex="0">[CANCEL]</span> <span class="menu-item" id="btnHelp" tabindex="0">[HELP]</span>
+        <div style="position:fixed; bottom:60px; left:30px; font-size:18px;" id="terminalGlobalButtons">
+<span class="menu-item" id="btnTop" tabindex="0">[TOP]</span>
+        </div>
+        <div style="position:fixed; bottom:30px; left:30px; right:30px; display:flex; justify-content:flex-end; font-size:18px;" id="terminalMessage">
+&gt; <span class="cursor"></span>
         </div>
     </div>
 
@@ -248,17 +264,210 @@ ASUKA IWANAGA PRIVATE TERMINAL
             init() {
                 this.loadData();
                 
-                if (this.githubToken) {
-                    document.getElementById('githubToken').value = this.githubToken;
-                }
-                if (this.gistId) {
-                    document.getElementById('gistId').value = this.gistId;
+                // Check if already logged in
+                if (this.githubToken && this.gistId) {
+                    // Auto-login with stored credentials
+                    this.startLoginSequence(true);
+                } else {
+                    // Start login sequence
+                    this.startLoginSequence(false);
                 }
 
                 document.addEventListener('keydown', (e) => this.handleKeyboard(e));
             },
 
+            loginStep: 0,
+            loginInputBuffer: '',
+            loginIdValue: '',
+            loginPwValue: '',
+
+            startLoginSequence(autoLogin) {
+                const display = document.getElementById('loginDisplay');
+                const inputLine = document.getElementById('loginInputLine');
+                
+                const welcomeText = `WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK
+-ver. 26-02-25 11:38
+ログインが必要です
+github gist
+`;
+
+                display.textContent = '';
+                inputLine.style.display = 'none';
+                
+                if (autoLogin) {
+                    // Auto-login with stored credentials
+                    this.typeText(welcomeText, display, () => {
+                        const autoMsg = document.createElement('div');
+                        autoMsg.textContent = '\n認証情報を検証中...';
+                        display.appendChild(autoMsg);
+                        
+                        setTimeout(() => {
+                            this.loginIdValue = this.githubToken;
+                            this.loginPwValue = this.gistId;
+                            this.executeLogin();
+                        }, 1000);
+                    });
+                } else {
+                    // Manual login
+                    this.typeText(welcomeText, display, () => {
+                        this.loginStep = 1; // Start with ID input
+                        this.showLoginPrompt();
+                    });
+                }
+            },
+
+            showLoginPrompt() {
+                const display = document.getElementById('loginDisplay');
+                const inputLine = document.getElementById('loginInputLine');
+                
+                if (this.loginStep === 1) {
+                    const idPrompt = document.createElement('div');
+                    idPrompt.textContent = 'ID';
+                    display.appendChild(idPrompt);
+                    inputLine.style.display = 'block';
+                    document.getElementById('loginInput').textContent = '';
+                    this.loginInputBuffer = '';
+                } else if (this.loginStep === 2) {
+                    const pwPrompt = document.createElement('div');
+                    pwPrompt.textContent = 'PW';
+                    display.appendChild(pwPrompt);
+                    inputLine.style.display = 'block';
+                    document.getElementById('loginInput').textContent = '';
+                    this.loginInputBuffer = '';
+                }
+            },
+
+            handleLoginInput(e) {
+                if (this.loginStep === 0) return;
+
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    
+                    if (this.loginStep === 1) {
+                        // ID entered
+                        this.loginIdValue = this.loginInputBuffer;
+                        const inputLine = document.getElementById('loginInputLine');
+                        const display = document.getElementById('loginDisplay');
+                        
+                        const idLine = document.createElement('div');
+                        idLine.textContent = '> ' + this.loginInputBuffer;
+                        display.appendChild(idLine);
+                        
+                        inputLine.style.display = 'none';
+                        this.loginStep = 2;
+                        this.showLoginPrompt();
+                        
+                    } else if (this.loginStep === 2) {
+                        // PW entered
+                        this.loginPwValue = this.loginInputBuffer;
+                        const inputLine = document.getElementById('loginInputLine');
+                        const display = document.getElementById('loginDisplay');
+                        
+                        const pwLine = document.createElement('div');
+                        pwLine.textContent = '> ' + '*'.repeat(this.loginInputBuffer.length);
+                        display.appendChild(pwLine);
+                        
+                        inputLine.style.display = 'none';
+                        this.loginStep = 0;
+                        
+                        // Execute login
+                        this.executeLogin();
+                    }
+                } else if (e.key === 'Backspace') {
+                    e.preventDefault();
+                    if (this.loginInputBuffer.length > 0) {
+                        this.loginInputBuffer = this.loginInputBuffer.slice(0, -1);
+                        document.getElementById('loginInput').textContent = this.loginInputBuffer;
+                    }
+                } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                    e.preventDefault();
+                    this.loginInputBuffer += e.key;
+                    document.getElementById('loginInput').textContent = this.loginInputBuffer;
+                }
+            },
+
+            async executeLogin() {
+                const display = document.getElementById('loginDisplay');
+                
+                const loadingMsg = document.createElement('div');
+                loadingMsg.textContent = '\nLOADING...';
+                display.appendChild(loadingMsg);
+                
+                const progressDiv = document.createElement('div');
+                progressDiv.id = 'loginProgress';
+                display.appendChild(progressDiv);
+                
+                // Simulate loading progress
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += 10;
+                    const filled = Math.floor(progress / 10);
+                    const empty = 10 - filled;
+                    progressDiv.textContent = '[' + '█'.repeat(filled) + '_'.repeat(empty) + '] ' + progress + '%';
+                    
+                    if (progress >= 100) {
+                        clearInterval(interval);
+                        
+                        // Validate and login
+                        if (!this.loginIdValue) {
+                            const errorMsg = document.createElement('div');
+                            errorMsg.textContent = '\n> ERROR: IDを入力してください';
+                            errorMsg.style.color = '#dc2626';
+                            display.appendChild(errorMsg);
+                            
+                            setTimeout(() => {
+                                this.startLoginSequence(false);
+                            }, 2000);
+                            return;
+                        }
+                        
+                        // Save credentials
+                        this.githubToken = this.loginIdValue;
+                        this.gistId = this.loginPwValue;
+                        localStorage.setItem('termToken', this.loginIdValue);
+                        if (this.loginPwValue) {
+                            localStorage.setItem('termGistId', this.loginPwValue);
+                        }
+                        
+                        // Try to pull from Gist if ID exists
+                        if (this.gistId) {
+                            this.pullFromGist().then(() => {
+                                this.showPipboyBoot();
+                            }).catch(() => {
+                                this.showPipboyBoot();
+                            });
+                        } else {
+                            this.showPipboyBoot();
+                        }
+                    }
+                }, 100);
+            },
+
+            showPipboyBoot() {
+                const display = document.getElementById('loginDisplay');
+                display.innerHTML = '';
+                
+                const bootText = `
+ROBCO INDUSTRIES UNIFIED OPERATING SYSTEM
+COPYRIGHT 2075-2077 ROBCO INDUSTRIES
+-Server 1-
+
+INITIALIZING...`;
+                
+                this.typeText(bootText, display, () => {
+                    setTimeout(() => {
+                        this.showLoading();
+                    }, 500);
+                });
+            },
+
             handleKeyboard(e) {
+                // Handle login input
+                if (this.currentScreen === 'loginScreen' && this.loginStep > 0) {
+                    this.handleLoginInput(e);
+                    return;
+                }
+                
                 // Don't interfere with textarea
                 if (e.target.id === 'terminalInput') {
                     return; // Let textarea handle all keys normally
@@ -280,7 +489,10 @@ ASUKA IWANAGA PRIVATE TERMINAL
                         const nextBtn = document.getElementById(buttons[nextIndex]);
                         
                         // Update selected class
-                        document.querySelectorAll('#terminalButtons .menu-item').forEach(b => b.classList.remove('selected'));
+                        buttons.forEach(id => {
+                            const btn = document.getElementById(id);
+                            if (btn) btn.classList.remove('selected');
+                        });
                         nextBtn.classList.add('selected');
                         nextBtn.focus();
                         return;
@@ -351,13 +563,14 @@ ASUKA IWANAGA PRIVATE TERMINAL
                 const content = textarea.value.trim();
                 
                 if (!content && this.terminalMode === 'log_edit' && !this.currentLog) {
-                    alert('内容を入力してください');
+                    const msg = document.getElementById('terminalMessage');
+                    msg.innerHTML = '&gt; 内容を入力してください <span class="cursor"></span>';
                     return;
                 }
                 
-                // Show saving progress
-                const buttons = document.getElementById('terminalButtons');
-                buttons.innerHTML = '&gt; SAVING... <span id="saveProgress">[__________] 0%</span>';
+                // Show saving progress in message area
+                const msg = document.getElementById('terminalMessage');
+                msg.innerHTML = '&gt; SAVING... <span id="saveProgress">[__________] 0%</span>';
                 
                 let progress = 0;
                 const interval = setInterval(() => {
@@ -366,10 +579,7 @@ ASUKA IWANAGA PRIVATE TERMINAL
                     const empty = 10 - filled;
                     const progressBar = '[' + '█'.repeat(filled) + '_'.repeat(empty) + '] ' + progress + '%';
                     
-                    const progressEl = document.getElementById('saveProgress');
-                    if (progressEl) {
-                        progressEl.textContent = progressBar;
-                    }
+                    msg.innerHTML = '&gt; SAVING... ' + progressBar;
                     
                     if (progress >= 100) {
                         clearInterval(interval);
@@ -388,27 +598,67 @@ ASUKA IWANAGA PRIVATE TERMINAL
                             }
                             this.saveData();
                             this.syncData();
-                            setTimeout(() => this.showLogList(), 500);
                             
                         } else if (this.terminalMode === 'memo_edit') {
                             this.currentMemo.text = content;
                             this.currentMemo.timestamp = Date.now();
                             this.saveData();
                             this.syncData();
-                            setTimeout(() => this.showMemoList(), 500);
                         }
+                        
+                        // Show confirmation with properly bound handlers
+                        const listName = this.terminalMode === 'log_edit' ? 'LOG一覧' : 'MEMO一覧';
+                        msg.innerHTML = `&gt; 保存が完了しました。<br>&gt; ${listName}へ戻りますか？ <span class="menu-item selected" id="btnSaveYes" tabindex="0">[YES]</span>   <span class="menu-item" id="btnSaveNo" tabindex="0">[NO]</span>`;
+                        
+                        // Use setTimeout to ensure DOM is updated
+                        setTimeout(() => {
+                            const yesBtn = document.getElementById('btnSaveYes');
+                            const noBtn = document.getElementById('btnSaveNo');
+                            
+                            if (yesBtn) {
+                                yesBtn.onclick = () => {
+                                    if (this.terminalMode === 'log_edit') {
+                                        this.showLogList();
+                                    } else if (this.terminalMode === 'memo_edit') {
+                                        this.showMemoList();
+                                    }
+                                };
+                            }
+                            
+                            if (noBtn) {
+                                noBtn.onclick = () => {
+                                    msg.innerHTML = '&gt; <span class="cursor"></span>';
+                                };
+                            }
+                        }, 10);
                     }
                 }, 100);
             },
 
             terminalCancel() {
-                if (confirm('変更を破棄しますか？')) {
-                    if (this.terminalMode === 'log_edit') {
-                        this.showLogList();
-                    } else if (this.terminalMode === 'memo_edit') {
-                        this.showMemoList();
+                const msg = document.getElementById('terminalMessage');
+                msg.innerHTML = '&gt; 変更を破棄して戻りますか？ <span class="menu-item selected" id="btnCancelYes" tabindex="0">[YES]</span>   <span class="menu-item" id="btnCancelNo" tabindex="0">[NO]</span>';
+                
+                setTimeout(() => {
+                    const yesBtn = document.getElementById('btnCancelYes');
+                    const noBtn = document.getElementById('btnCancelNo');
+                    
+                    if (yesBtn) {
+                        yesBtn.onclick = () => {
+                            if (this.terminalMode === 'log_edit') {
+                                this.showLogList();
+                            } else if (this.terminalMode === 'memo_edit') {
+                                this.showMemoList();
+                            }
+                        };
                     }
-                }
+                    
+                    if (noBtn) {
+                        noBtn.onclick = () => {
+                            msg.innerHTML = '&gt; <span class="cursor"></span>';
+                        };
+                    }
+                }, 10);
             },
 
             updateMenuItems() {
@@ -453,35 +703,6 @@ ASUKA IWANAGA PRIVATE TERMINAL
                     case 'questViewScreen':
                         this.showQuestList();
                         break;
-                }
-            },
-
-            async login() {
-                const token = document.getElementById('githubToken').value.trim();
-                const gistId = document.getElementById('gistId').value.trim();
-                const log = document.getElementById('loginLog');
-
-                if (!token) {
-                    const now = new Date();
-                    log.textContent = `> トークンを入力してください ${now.getMonth()+1}/${now.getDate()} ${now.getHours()}:${now.getMinutes()}`;
-                    return;
-                }
-
-                this.githubToken = token;
-                this.gistId = gistId;
-                localStorage.setItem('termToken', token);
-                if (gistId) localStorage.setItem('termGistId', gistId);
-
-                log.textContent = '> 接続中...';
-
-                try {
-                    if (gistId) {
-                        await this.pullFromGist();
-                    }
-                    this.showLoading();
-                } catch (error) {
-                    const now = new Date();
-                    log.textContent = `> 接続に失敗しました ${now.getMonth()+1}/${now.getDate()} ${now.getHours()}:${now.getMinutes()}`;
                 }
             },
 
@@ -551,14 +772,28 @@ ASUKA IWANAGA PRIVATE TERMINAL
                 document.getElementById('terminalModeTitle').textContent = 'LOG ENTRY MODE';
                 document.getElementById('terminalInput').value = '';
                 
-                // Setup nav buttons
-                document.getElementById('btnBack').onclick = () => this.showLogList();
-                document.getElementById('btnTop').onclick = () => this.goHome();
-                
-                // Setup action buttons
-                document.getElementById('terminalButtons').innerHTML = '&gt; <span class="menu-item selected" id="btnSave" tabindex="0">[SAVE]</span> <span class="menu-item" id="btnCancel" tabindex="0">[CANCEL]</span> <span class="menu-item" id="btnHelp" tabindex="0">[HELP]</span>';
+                // Setup button handlers
                 document.getElementById('btnSave').onclick = () => this.terminalSave();
                 document.getElementById('btnCancel').onclick = () => this.terminalCancel();
+                document.getElementById('btnTop').onclick = () => {
+                    const msg = document.getElementById('terminalMessage');
+                    msg.innerHTML = '&gt; 変更を破棄してTOPへ戻りますか？ <span class="menu-item selected" id="btnTopYes" tabindex="0">[YES]</span>   <span class="menu-item" id="btnTopNo" tabindex="0">[NO]</span>';
+                    
+                    setTimeout(() => {
+                        const yesBtn = document.getElementById('btnTopYes');
+                        const noBtn = document.getElementById('btnTopNo');
+                        
+                        if (yesBtn) {
+                            yesBtn.onclick = () => this.goHome();
+                        }
+                        
+                        if (noBtn) {
+                            noBtn.onclick = () => {
+                                msg.innerHTML = '&gt; <span class="cursor"></span>';
+                            };
+                        }
+                    }, 10);
+                };
                 document.getElementById('btnHelp').onclick = () => this.terminalShowHelp();
                 
                 // Focus textarea
@@ -575,10 +810,10 @@ ASUKA IWANAGA PRIVATE TERMINAL
                 const cursor = document.getElementById('logViewCursor');
                 
                 content.textContent = '';
-                cursor.innerHTML = '<span class="menu-item" onclick="term.showLogList()">[BACK]</span> <span class="menu-item" onclick="term.goHome()">[TOP]</span> &gt; LOADING...<span class="cursor"></span>';
+                cursor.innerHTML = '<span class="bottom-left-buttons"><span class="menu-item" onclick="term.showLogList()">[BACK]</span> <span class="menu-item" onclick="term.goHome()">[TOP]</span></span> <span class="bottom-left-cursor">&gt; LOADING...<span class="cursor"></span></span>';
                 
                 this.typeText(log.text, content, () => {
-                    cursor.innerHTML = '<span class="menu-item" onclick="term.showLogList()">[BACK]</span> <span class="menu-item" onclick="term.goHome()">[TOP]</span> &gt; <span class="cursor"></span>';
+                    cursor.innerHTML = '<span class="bottom-left-buttons"><span class="menu-item" onclick="term.showLogList()">[BACK]</span> <span class="menu-item" onclick="term.goHome()">[TOP]</span></span> <span class="bottom-left-cursor">&gt; <span class="cursor"></span></span>';
                 });
             },
 
@@ -620,14 +855,28 @@ ASUKA IWANAGA PRIVATE TERMINAL
                 document.getElementById('terminalModeTitle').textContent = `MEMO: ${title}`;
                 document.getElementById('terminalInput').value = '';
                 
-                // Setup nav buttons
-                document.getElementById('btnBack').onclick = () => this.showMemoList();
-                document.getElementById('btnTop').onclick = () => this.goHome();
-                
-                // Setup action buttons
-                document.getElementById('terminalButtons').innerHTML = '&gt; <span class="menu-item selected" id="btnSave" tabindex="0">[SAVE]</span> <span class="menu-item" id="btnCancel" tabindex="0">[CANCEL]</span> <span class="menu-item" id="btnHelp" tabindex="0">[HELP]</span>';
+                // Setup button handlers
                 document.getElementById('btnSave').onclick = () => this.terminalSave();
                 document.getElementById('btnCancel').onclick = () => this.terminalCancel();
+                document.getElementById('btnTop').onclick = () => {
+                    const msg = document.getElementById('terminalMessage');
+                    msg.innerHTML = '&gt; 変更を破棄してTOPへ戻りますか？ <span class="menu-item selected" id="btnTopYes" tabindex="0">[YES]</span>   <span class="menu-item" id="btnTopNo" tabindex="0">[NO]</span>';
+                    
+                    setTimeout(() => {
+                        const yesBtn = document.getElementById('btnTopYes');
+                        const noBtn = document.getElementById('btnTopNo');
+                        
+                        if (yesBtn) {
+                            yesBtn.onclick = () => this.goHome();
+                        }
+                        
+                        if (noBtn) {
+                            noBtn.onclick = () => {
+                                msg.innerHTML = '&gt; <span class="cursor"></span>';
+                            };
+                        }
+                    }, 10);
+                };
                 document.getElementById('btnHelp').onclick = () => this.terminalShowHelp();
                 
                 // Focus textarea
@@ -643,14 +892,28 @@ ASUKA IWANAGA PRIVATE TERMINAL
                 document.getElementById('terminalModeTitle').textContent = `MEMO: ${this.currentMemo.title}`;
                 document.getElementById('terminalInput').value = this.currentMemo.text;
                 
-                // Setup nav buttons
-                document.getElementById('btnBack').onclick = () => this.showMemoList();
-                document.getElementById('btnTop').onclick = () => this.goHome();
-                
-                // Setup action buttons
-                document.getElementById('terminalButtons').innerHTML = '&gt; <span class="menu-item selected" id="btnSave" tabindex="0">[SAVE]</span> <span class="menu-item" id="btnCancel" tabindex="0">[CANCEL]</span> <span class="menu-item" id="btnHelp" tabindex="0">[HELP]</span>';
+                // Setup button handlers
                 document.getElementById('btnSave').onclick = () => this.terminalSave();
                 document.getElementById('btnCancel').onclick = () => this.terminalCancel();
+                document.getElementById('btnTop').onclick = () => {
+                    const msg = document.getElementById('terminalMessage');
+                    msg.innerHTML = '&gt; 変更を破棄してTOPへ戻りますか？ <span class="menu-item selected" id="btnTopYes" tabindex="0">[YES]</span>   <span class="menu-item" id="btnTopNo" tabindex="0">[NO]</span>';
+                    
+                    setTimeout(() => {
+                        const yesBtn = document.getElementById('btnTopYes');
+                        const noBtn = document.getElementById('btnTopNo');
+                        
+                        if (yesBtn) {
+                            yesBtn.onclick = () => this.goHome();
+                        }
+                        
+                        if (noBtn) {
+                            noBtn.onclick = () => {
+                                msg.innerHTML = '&gt; <span class="cursor"></span>';
+                            };
+                        }
+                    }, 10);
+                };
                 document.getElementById('btnHelp').onclick = () => this.terminalShowHelp();
                 
                 // Focus textarea
@@ -730,10 +993,10 @@ ASUKA IWANAGA PRIVATE TERMINAL
                 });
                 
                 content.textContent = '';
-                cursor.innerHTML = '<span class="menu-item" onclick="term.showQuestList()">[BACK]</span> <span class="menu-item" onclick="term.goHome()">[TOP]</span> &gt; LOADING...<span class="cursor"></span>';
+                cursor.innerHTML = '<span class="bottom-left-buttons"><span class="menu-item" onclick="term.showQuestList()">[BACK]</span> <span class="menu-item" onclick="term.goHome()">[TOP]</span></span> <span class="bottom-left-cursor">&gt; LOADING...<span class="cursor"></span></span>';
                 
                 this.typeText(text, content, () => {
-                    cursor.innerHTML = '<span class="menu-item" onclick="term.showQuestList()">[BACK]</span> <span class="menu-item" onclick="term.goHome()">[TOP]</span> &gt; <span class="cursor"></span>';
+                    cursor.innerHTML = '<span class="bottom-left-buttons"><span class="menu-item" onclick="term.showQuestList()">[BACK]</span> <span class="menu-item" onclick="term.goHome()">[TOP]</span></span> <span class="bottom-left-cursor">&gt; <span class="cursor"></span></span>';
                 });
             },
 
