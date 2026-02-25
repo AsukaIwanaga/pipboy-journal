@@ -33,6 +33,9 @@
             font-size: 18px;
             white-space: pre-wrap;
             word-wrap: break-word;
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
+            padding-bottom: 20px;
         }
 
         .cursor {
@@ -53,6 +56,8 @@
             cursor: pointer;
             display: block;
             line-height: 1.2;
+            margin: 0;
+            padding: 0;
         }
 
         .menu-item:hover, .menu-item.selected {
@@ -307,9 +312,20 @@ ASUKA IWANAGA PRIVATE TERMINAL
             currentMemoTitle: '',
             currentMemoIndex: -1,
             currentLogIndex: -1,
+            
+            // Quest repeat settings
+            questSettings: {
+                dailyHour: 0,      // デフォルト: 0時
+                weeklyDay: 1,      // デフォルト: 月曜
+                monthlyDate: 1,    // デフォルト: 1日
+                sortOrder: 'created' // デフォルト: 作成日順 (created/deadline/title)
+            },
 
             init() {
                 this.loadData();
+                
+                // Check and reset recurring quests
+                this.checkQuestResets();
                 
                 // Initialize audio context on first user interaction
                 const enableAudio = () => {
@@ -522,10 +538,7 @@ github gistにログインしてください
 
             showPipboyBoot() {
                 const display = document.getElementById('loginDisplay');
-                display.innerHTML = `
-<div style="text-align:center; margin-bottom:30px;">
-    <img src="assets/vaultboy.gif" style="width:150px; height:150px; image-rendering: crisp-edges;">
-</div>`;
+                display.innerHTML = '';
                 
                 const bootText = `
 ROBCO INDUSTRIES UNIFIED OPERATING SYSTEM
@@ -534,12 +547,32 @@ COPYRIGHT 2075-2077 ROBCO INDUSTRIES
 
 INITIALIZING...`;
                 
-                this.playSound('welcome.mp3', 0.6);
-                
                 this.typeText(bootText, display, () => {
                     setTimeout(() => {
+                        this.showWelcomeScreen();
+                    }, 500);
+                });
+            },
+
+            showWelcomeScreen() {
+                const display = document.getElementById('loginDisplay');
+                display.innerHTML = `
+<div style="text-align:center; margin-bottom:30px;">
+    <img src="assets/vaultboy.gif" style="width:150px; height:150px; image-rendering: crisp-edges;">
+</div>`;
+                
+                this.playSound('welcome.mp3', 0.6);
+                
+                const welcomeText = `
+ROBCO INDUSTRIES UNIFIED OPERATING SYSTEM
+COPYRIGHT 2075-2077 ROBCO INDUSTRIES
+
+WELCOME TO TERMLINK`;
+                
+                this.typeText(welcomeText, display, () => {
+                    setTimeout(() => {
                         this.showLoading();
-                    }, 8000); // Changed to 8 seconds
+                    }, 8000);
                 });
             },
 
@@ -967,7 +1000,7 @@ INITIALIZING...`;
             goHome() {
                 this.showScreen('homeScreen');
                 const menu = document.getElementById('homeMenu');
-                menu.innerHTML = '<div class="menu-item">[LOG]</div>\n<div class="menu-item">[MEMO]</div>\n<div class="menu-item">[QUEST]</div>\n<div class="menu-item">[SOMEDAY]</div>';
+                menu.innerHTML = `<div class="menu-item">[LOG]</div><div class="menu-item">[MEMO]</div><div class="menu-item">[QUEST]</div><div class="menu-item">[SOMEDAY]</div>`;
 
                 const items = menu.querySelectorAll('.menu-item');
                 items[0].onclick = () => this.showLogList();
@@ -1254,23 +1287,144 @@ INITIALIZING...`;
                 this.showScreen('questListScreen');
                 const list = document.getElementById('questList');
                 
-                let html = '<div class="menu-item">[+ 新規作成]</div>';
-                this.quests.forEach((quest, i) => {
+                // Separate completed and incomplete quests
+                const incomplete = this.quests.filter(q => 
+                    q.tasks.length === 0 || q.tasks.some(t => !t.completed)
+                );
+                const complete = this.quests.filter(q => 
+                    q.tasks.length > 0 && q.tasks.every(t => t.completed)
+                );
+                
+                // Sort completed quests
+                if (this.questSettings.sortOrder === 'deadline') {
+                    complete.sort((a, b) => a.deadline.localeCompare(b.deadline));
+                } else if (this.questSettings.sortOrder === 'title') {
+                    complete.sort((a, b) => a.title.localeCompare(b.title));
+                } else {
+                    // created order - use timestamp
+                    complete.sort((a, b) => a.timestamp - b.timestamp);
+                }
+                
+                let html = '<div class="menu-item">[+ 新規作成]</div><div class="menu-item">[SETTING]</div>';
+                
+                incomplete.forEach((quest, i) => {
                     const completed = quest.tasks.filter(t => t.completed).length;
                     const total = quest.tasks.length;
                     const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
                     const cycleStr = quest.cycle !== 'NONE' ? ` cyc:${quest.cycle}` : '';
-                    html += `<div class="menu-item">[${quest.title} ddl:${quest.deadline}${cycleStr} task:${percent}%]</div>`;
+                    html += `<div class="menu-item" data-quest-id="${quest.id}">[${quest.title} ddl:${quest.deadline}${cycleStr} task:${percent}%]</div>`;
                 });
+                
+                if (complete.length > 0) {
+                    html += '<br><br><br><br><br>';
+                    html += '<div style="text-align:center;">--- 完了ミッション ---</div>';
+                    complete.forEach((quest, i) => {
+                        const cycleStr = quest.cycle !== 'NONE' ? ` cyc:${quest.cycle}` : '';
+                        html += `<div class="menu-item" data-quest-id="${quest.id}">[${quest.title} ddl:${quest.deadline}${cycleStr} task:100%]</div>`;
+                    });
+                }
+                
                 list.innerHTML = html;
 
                 const items = list.querySelectorAll('.menu-item');
                 items[0].onclick = () => this.newQuest();
-                this.quests.forEach((quest, i) => {
-                    items[i + 1].onclick = () => this.viewQuest(i);
-                });
+                items[1].onclick = () => this.showQuestSettings();
+                
+                // Set onclick for all quests
+                for (let i = 2; i < items.length; i++) {
+                    const questId = items[i].getAttribute('data-quest-id');
+                    if (questId) {
+                        const questIndex = this.quests.findIndex(q => q.id === questId);
+                        if (questIndex !== -1) {
+                            items[i].onclick = () => this.viewQuest(questIndex);
+                        }
+                    }
+                }
 
                 this.updateMenuItems();
+            },
+
+            showQuestSettings() {
+                this.showScreen('questListScreen');
+                const list = document.getElementById('questList');
+                
+                const days = ['日', '月', '火', '水', '木', '金', '土'];
+                
+                let html = '<div style="margin-bottom:20px;">QUEST REPEAT SETTINGS</div>';
+                html += `<div>DAILY: 毎日 <input type="number" id="dailyHour" min="0" max="23" value="${this.questSettings.dailyHour}" style="width:50px; background:#000; color:#22c55e; border:1px solid #22c55e; padding:2px;"> 時</div>`;
+                html += `<div style="margin-top:10px;">WEEKLY: 毎週 <select id="weeklyDay" style="background:#000; color:#22c55e; border:1px solid #22c55e; padding:2px;">`;
+                for (let i = 0; i < 7; i++) {
+                    const selected = i === this.questSettings.weeklyDay ? ' selected' : '';
+                    html += `<option value="${i}"${selected}>${days[i]}曜日</option>`;
+                }
+                html += `</select></div>`;
+                html += `<div style="margin-top:10px;">MONTHLY: 毎月 <input type="number" id="monthlyDate" min="1" max="31" value="${this.questSettings.monthlyDate}" style="width:50px; background:#000; color:#22c55e; border:1px solid #22c55e; padding:2px;"> 日</div>`;
+                
+                html += `<div style="margin-top:20px;">完了ミッション並び順:</div>`;
+                html += `<div><select id="sortOrder" style="background:#000; color:#22c55e; border:1px solid #22c55e; padding:2px;">`;
+                html += `<option value="created"${this.questSettings.sortOrder === 'created' ? ' selected' : ''}>作成日順</option>`;
+                html += `<option value="deadline"${this.questSettings.sortOrder === 'deadline' ? ' selected' : ''}>締切順</option>`;
+                html += `<option value="title"${this.questSettings.sortOrder === 'title' ? ' selected' : ''}>あいうえお順</option>`;
+                html += `</select></div>`;
+                
+                html += '<div class="menu-item" style="margin-top:20px;">[SAVE]</div>';
+                html += '<div class="menu-item">[BACK]</div>';
+                
+                list.innerHTML = html;
+                
+                const items = list.querySelectorAll('.menu-item');
+                items[0].onclick = () => {
+                    this.questSettings.dailyHour = parseInt(document.getElementById('dailyHour').value);
+                    this.questSettings.weeklyDay = parseInt(document.getElementById('weeklyDay').value);
+                    this.questSettings.monthlyDate = parseInt(document.getElementById('monthlyDate').value);
+                    this.questSettings.sortOrder = document.getElementById('sortOrder').value;
+                    this.saveData();
+                    alert('設定を保存しました');
+                    this.showQuestList();
+                };
+                items[1].onclick = () => this.showQuestList();
+                
+                this.updateMenuItems();
+            },
+
+            checkQuestResets() {
+                const now = new Date();
+                const lastCheck = localStorage.getItem('lastQuestCheck');
+                const lastCheckDate = lastCheck ? new Date(parseInt(lastCheck)) : new Date(0);
+                
+                this.quests.forEach(quest => {
+                    let shouldReset = false;
+                    
+                    if (quest.cycle === 'DAILY') {
+                        // Check if we passed the daily reset hour
+                        const resetTime = new Date(now);
+                        resetTime.setHours(this.questSettings.dailyHour, 0, 0, 0);
+                        
+                        if (now >= resetTime && lastCheckDate < resetTime) {
+                            shouldReset = true;
+                        }
+                    } else if (quest.cycle === 'WEEKLY') {
+                        // Check if we passed the weekly reset day
+                        if (now.getDay() === this.questSettings.weeklyDay && lastCheckDate.getDay() !== this.questSettings.weeklyDay) {
+                            shouldReset = true;
+                        }
+                    } else if (quest.cycle === 'MONTHLY') {
+                        // Check if we passed the monthly reset date
+                        if (now.getDate() === this.questSettings.monthlyDate && lastCheckDate.getDate() !== this.questSettings.monthlyDate) {
+                            shouldReset = true;
+                        }
+                    }
+                    
+                    if (shouldReset) {
+                        // Reset all tasks to uncompleted
+                        quest.tasks.forEach(task => {
+                            task.completed = false;
+                        });
+                    }
+                });
+                
+                localStorage.setItem('lastQuestCheck', now.getTime().toString());
+                this.saveData();
             },
 
             newQuest() {
@@ -1709,12 +1863,17 @@ INITIALIZING...`;
                 this.logs = JSON.parse(localStorage.getItem('termLogs') || '[]');
                 this.memos = JSON.parse(localStorage.getItem('termMemos') || '[]');
                 this.quests = JSON.parse(localStorage.getItem('termQuests') || '[]');
+                const savedSettings = localStorage.getItem('questSettings');
+                if (savedSettings) {
+                    this.questSettings = JSON.parse(savedSettings);
+                }
             },
 
             saveData() {
                 localStorage.setItem('termLogs', JSON.stringify(this.logs));
                 localStorage.setItem('termMemos', JSON.stringify(this.memos));
                 localStorage.setItem('termQuests', JSON.stringify(this.quests));
+                localStorage.setItem('questSettings', JSON.stringify(this.questSettings));
             },
 
             async syncData() {
