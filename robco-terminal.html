@@ -214,8 +214,12 @@ ASUKA IWANAGA PRIVATE TERMINAL
 WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK
 ASUKA IWANAGA PRIVATE TERMINAL
 
-<div id="terminalOutput"></div>
-<div id="terminalInputLine">&gt; <span id="terminalInputText"></span><span class="cursor"></span></div>
+<div id="terminalModeTitle"></div>
+
+<div id="terminalTextArea" style="margin-top:10px;">&gt; <textarea id="terminalInput" rows="15" style="width:95%; background:#000; color:#22c55e; border:1px solid #22c55e; font-family:inherit; font-size:18px; padding:5px;"></textarea></div>
+        </div>
+        <div class="bottom-right" id="terminalButtons">
+&gt; <span class="menu-item selected" id="btnSave" tabindex="0">[SAVE]</span> <span class="menu-item" id="btnCancel" tabindex="0">[CANCEL]</span> <span class="menu-item" id="btnHelp" tabindex="0">[HELP]</span>
         </div>
     </div>
 
@@ -254,15 +258,50 @@ ASUKA IWANAGA PRIVATE TERMINAL
             },
 
             handleKeyboard(e) {
-                // Terminal edit mode - completely different handling
-                if (this.currentScreen === 'terminalEditScreen') {
-                    this.handleTerminalInput(e);
+                // Don't interfere with textarea
+                if (e.target.id === 'terminalInput') {
+                    return; // Let textarea handle all keys normally
+                }
+                
+                // Don't interfere with other input fields
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
                     return;
                 }
 
-                // Don't interfere with input fields
-                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
-                    return;
+                // Handle button selection
+                if (this.currentScreen === 'terminalEditScreen') {
+                    if (e.key === 'Tab') {
+                        e.preventDefault();
+                        const buttons = ['btnSave', 'btnCancel', 'btnHelp'];
+                        const current = document.activeElement.id;
+                        const currentIndex = buttons.indexOf(current);
+                        const nextIndex = (currentIndex + 1) % buttons.length;
+                        const nextBtn = document.getElementById(buttons[nextIndex]);
+                        
+                        // Update selected class
+                        document.querySelectorAll('#terminalButtons .menu-item').forEach(b => b.classList.remove('selected'));
+                        nextBtn.classList.add('selected');
+                        nextBtn.focus();
+                        return;
+                    }
+                    
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        if (e.target.id === 'btnSave') {
+                            e.preventDefault();
+                            this.terminalSave();
+                            return;
+                        }
+                        if (e.target.id === 'btnCancel') {
+                            e.preventDefault();
+                            this.terminalCancel();
+                            return;
+                        }
+                        if (e.target.id === 'btnHelp') {
+                            e.preventDefault();
+                            this.terminalShowHelp();
+                            return;
+                        }
+                    }
                 }
 
                 switch(e.key) {
@@ -285,131 +324,79 @@ ASUKA IWANAGA PRIVATE TERMINAL
                 }
             },
 
-            handleTerminalInput(e) {
-                const inputText = document.getElementById('terminalInputText');
-                
-                switch(e.key) {
-                    case 'Enter':
-                        e.preventDefault();
-                        this.terminalExecuteLine();
-                        break;
-                    case 'Backspace':
-                        e.preventDefault();
-                        if (this.terminalCurrentLine.length > 0) {
-                            this.terminalCurrentLine = this.terminalCurrentLine.slice(0, -1);
-                            inputText.textContent = this.terminalCurrentLine;
-                        }
-                        break;
-                    case 'Escape':
-                        e.preventDefault();
-                        this.terminalCancel();
-                        break;
-                    default:
-                        if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
-                            e.preventDefault();
-                            this.terminalCurrentLine += e.key;
-                            inputText.textContent = this.terminalCurrentLine;
-                            if (this.terminalCurrentLine.length % 5 === 0) {
-                                this.playPip();
-                            }
-                        }
-                }
-            },
-
-            terminalExecuteLine() {
-                const line = this.terminalCurrentLine.trim();
-                const output = document.getElementById('terminalOutput');
-                
-                // Echo current line
-                const lineDiv = document.createElement('div');
-                lineDiv.textContent = '> ' + this.terminalCurrentLine;
-                output.appendChild(lineDiv);
-                
-                // Process commands
-                if (line.toLowerCase() === ':save' || line.toLowerCase() === ':s') {
-                    this.terminalSave();
-                    return;
-                } else if (line.toLowerCase() === ':cancel' || line.toLowerCase() === ':c' || line.toLowerCase() === ':q') {
-                    this.terminalCancel();
-                    return;
-                } else if (line.toLowerCase() === ':help' || line.toLowerCase() === ':h') {
-                    this.terminalShowHelp();
-                } else if (line !== '') {
-                    this.terminalBuffer.push(this.terminalCurrentLine);
-                }
-                
-                // Clear current line
-                this.terminalCurrentLine = '';
-                document.getElementById('terminalInputText').textContent = '';
-                
-                // Auto scroll
-                output.scrollTop = output.scrollHeight;
-            },
-
             terminalShowHelp() {
-                const output = document.getElementById('terminalOutput');
-                const help = document.createElement('div');
-                help.textContent = `
-COMMANDS:
-  :save または :s    - 保存して終了
-  :cancel または :c  - キャンセルして戻る
-  :help または :h    - このヘルプを表示
-
-入力を続けてください。各行がEnterで確定されます。
-`;
-                output.appendChild(help);
+                alert('HELP:\n\n' +
+                      'テキストエリアに内容を入力してください。\n' +
+                      'Enterキーで改行できます。\n\n' +
+                      'Tabキーで [SAVE] [CANCEL] [HELP] を移動できます。\n\n' +
+                      '[SAVE] - 保存して終了\n' +
+                      '[CANCEL] - キャンセルして戻る\n' +
+                      '[HELP] - このヘルプを表示');
             },
 
             terminalSave() {
-                const content = this.terminalBuffer.join('\n');
+                const textarea = document.getElementById('terminalInput');
+                const content = textarea.value.trim();
                 
-                if (this.terminalMode === 'log_edit') {
-                    if (this.currentLog) {
-                        this.currentLog.text = content;
-                        this.currentLog.timestamp = Date.now();
-                    } else {
-                        this.logs.push({
-                            id: Date.now().toString(),
-                            text: content,
-                            timestamp: Date.now()
-                        });
-                    }
-                    this.saveData();
-                    this.syncData();
-                    
-                    const output = document.getElementById('terminalOutput');
-                    const msg = document.createElement('div');
-                    msg.textContent = '\n> 保存しました...';
-                    output.appendChild(msg);
-                    setTimeout(() => this.showLogList(), 1000);
-                    
-                } else if (this.terminalMode === 'memo_edit') {
-                    this.currentMemo.text = content;
-                    this.currentMemo.timestamp = Date.now();
-                    this.saveData();
-                    this.syncData();
-                    
-                    const output = document.getElementById('terminalOutput');
-                    const msg = document.createElement('div');
-                    msg.textContent = '\n> 保存しました...';
-                    output.appendChild(msg);
-                    setTimeout(() => this.showMemoList(), 1000);
+                if (!content && this.terminalMode === 'log_edit' && !this.currentLog) {
+                    alert('内容を入力してください');
+                    return;
                 }
+                
+                // Show saving progress
+                const buttons = document.getElementById('terminalButtons');
+                buttons.innerHTML = '&gt; SAVING... <span id="saveProgress">[__________] 0%</span>';
+                
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += 10;
+                    const filled = Math.floor(progress / 10);
+                    const empty = 10 - filled;
+                    const progressBar = '[' + '█'.repeat(filled) + '_'.repeat(empty) + '] ' + progress + '%';
+                    
+                    const progressEl = document.getElementById('saveProgress');
+                    if (progressEl) {
+                        progressEl.textContent = progressBar;
+                    }
+                    
+                    if (progress >= 100) {
+                        clearInterval(interval);
+                        
+                        // Actually save the data
+                        if (this.terminalMode === 'log_edit') {
+                            if (this.currentLog) {
+                                this.currentLog.text = content;
+                                this.currentLog.timestamp = Date.now();
+                            } else {
+                                this.logs.push({
+                                    id: Date.now().toString(),
+                                    text: content,
+                                    timestamp: Date.now()
+                                });
+                            }
+                            this.saveData();
+                            this.syncData();
+                            setTimeout(() => this.showLogList(), 500);
+                            
+                        } else if (this.terminalMode === 'memo_edit') {
+                            this.currentMemo.text = content;
+                            this.currentMemo.timestamp = Date.now();
+                            this.saveData();
+                            this.syncData();
+                            setTimeout(() => this.showMemoList(), 500);
+                        }
+                    }
+                }, 100);
             },
 
             terminalCancel() {
-                const output = document.getElementById('terminalOutput');
-                const msg = document.createElement('div');
-                msg.textContent = '\n> キャンセルしました...';
-                output.appendChild(msg);
-                
-                setTimeout(() => {
+                if (confirm('変更を破棄しますか？')) {
                     if (this.terminalMode === 'log_edit') {
                         this.showLogList();
                     } else if (this.terminalMode === 'memo_edit') {
                         this.showMemoList();
                     }
-                }, 1000);
+                }
             },
 
             updateMenuItems() {
@@ -579,17 +566,19 @@ COMMANDS:
             newLog() {
                 this.currentLog = null;
                 this.terminalMode = 'log_edit';
-                this.terminalBuffer = [];
-                this.terminalCurrentLine = '';
                 this.showScreen('terminalEditScreen');
                 
-                const output = document.getElementById('terminalOutput');
-                output.innerHTML = `LOG ENTRY MODE
-コマンド: :save (保存), :cancel (中止), :help (ヘルプ)
-内容を入力してください:
-
-`;
-                document.getElementById('terminalInputText').textContent = '';
+                document.getElementById('terminalModeTitle').textContent = 'LOG ENTRY MODE';
+                document.getElementById('terminalInput').value = '';
+                document.getElementById('terminalButtons').innerHTML = '&gt; <span class="menu-item selected" id="btnSave" tabindex="0">[SAVE]</span> <span class="menu-item" id="btnCancel" tabindex="0">[CANCEL]</span> <span class="menu-item" id="btnHelp" tabindex="0">[HELP]</span>';
+                
+                // Setup button handlers
+                document.getElementById('btnSave').onclick = () => this.terminalSave();
+                document.getElementById('btnCancel').onclick = () => this.terminalCancel();
+                document.getElementById('btnHelp').onclick = () => this.terminalShowHelp();
+                
+                // Focus textarea
+                setTimeout(() => document.getElementById('terminalInput').focus(), 100);
             },
 
             viewLog(index) {
@@ -644,38 +633,38 @@ COMMANDS:
                 this.memos.push(this.currentMemo);
                 
                 this.terminalMode = 'memo_edit';
-                this.terminalBuffer = [];
-                this.terminalCurrentLine = '';
                 this.showScreen('terminalEditScreen');
                 
-                const output = document.getElementById('terminalOutput');
-                output.innerHTML = `MEMO: ${title}
-コマンド: :save (保存), :cancel (中止), :help (ヘルプ)
-内容を入力してください:
-
-`;
-                document.getElementById('terminalInputText').textContent = '';
+                document.getElementById('terminalModeTitle').textContent = `MEMO: ${title}`;
+                document.getElementById('terminalInput').value = '';
+                document.getElementById('terminalButtons').innerHTML = '&gt; <span class="menu-item selected" id="btnSave" tabindex="0">[SAVE]</span> <span class="menu-item" id="btnCancel" tabindex="0">[CANCEL]</span> <span class="menu-item" id="btnHelp" tabindex="0">[HELP]</span>';
+                
+                // Setup button handlers
+                document.getElementById('btnSave').onclick = () => this.terminalSave();
+                document.getElementById('btnCancel').onclick = () => this.terminalCancel();
+                document.getElementById('btnHelp').onclick = () => this.terminalShowHelp();
+                
+                // Focus textarea
+                setTimeout(() => document.getElementById('terminalInput').focus(), 100);
             },
 
             editMemo(index) {
                 this.currentMemo = this.memos[index];
                 
                 this.terminalMode = 'memo_edit';
-                this.terminalBuffer = this.currentMemo.text.split('\n');
-                this.terminalCurrentLine = '';
                 this.showScreen('terminalEditScreen');
                 
-                const output = document.getElementById('terminalOutput');
-                output.innerHTML = `MEMO: ${this.currentMemo.title}
-コマンド: :save (保存), :cancel (中止), :help (ヘルプ)
-
-現在の内容:
-${this.currentMemo.text}
-
-続けて編集してください:
-
-`;
-                document.getElementById('terminalInputText').textContent = '';
+                document.getElementById('terminalModeTitle').textContent = `MEMO: ${this.currentMemo.title}`;
+                document.getElementById('terminalInput').value = this.currentMemo.text;
+                document.getElementById('terminalButtons').innerHTML = '&gt; <span class="menu-item selected" id="btnSave" tabindex="0">[SAVE]</span> <span class="menu-item" id="btnCancel" tabindex="0">[CANCEL]</span> <span class="menu-item" id="btnHelp" tabindex="0">[HELP]</span>';
+                
+                // Setup button handlers
+                document.getElementById('btnSave').onclick = () => this.terminalSave();
+                document.getElementById('btnCancel').onclick = () => this.terminalCancel();
+                document.getElementById('btnHelp').onclick = () => this.terminalShowHelp();
+                
+                // Focus textarea
+                setTimeout(() => document.getElementById('terminalInput').focus(), 100);
             },
 
             showQuestList() {
