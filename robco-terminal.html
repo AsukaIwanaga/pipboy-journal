@@ -121,11 +121,6 @@
     <!-- Login Screen -->
     <div class="screen active" id="loginScreen">
         <div class="terminal-text" style="padding:50px;">
-<!-- Vault Boy GIF -->
-<div style="text-align:center; margin-bottom:30px;">
-    <img src="assets/vaultboy.gif" style="width:150px; height:150px; image-rendering: crisp-edges;">
-</div>
-
 <div id="loginDisplay"></div>
 <div id="loginInputLine" style="display:none;">&gt; <span id="loginInput"></span><span class="cursor"></span></div>
         </div>
@@ -221,6 +216,26 @@ ASUKA IWANAGA PRIVATE TERMINAL
         </div>
     </div>
 
+    <!-- Quest Edit Screen -->
+    <div class="screen" id="questEditScreen">
+        <div class="terminal-text">
+WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK
+ASUKA IWANAGA PRIVATE TERMINAL
+
+<div id="questEditTitle">QUEST ENTRY MODE</div>
+<div id="questEditContent" style="margin-top:10px;"></div>
+        </div>
+        <div style="position:fixed; bottom:90px; left:30px; right:30px; display:flex; justify-content:flex-end; font-size:18px; gap:15px;" id="questFunctionButtons">
+<span class="menu-item selected" id="btnQuestSave" tabindex="0">[SAVE]</span><span class="menu-item" id="btnQuestCancel" tabindex="0">[CANCEL]</span>
+        </div>
+        <div style="position:fixed; bottom:60px; left:30px; font-size:18px;" id="questGlobalButtons">
+<span class="menu-item" id="btnQuestTop" tabindex="0">[TOP]</span>
+        </div>
+        <div style="position:fixed; bottom:30px; left:30px; right:30px; display:flex; justify-content:flex-end; font-size:18px;" id="questMessage">
+&gt; <span class="cursor"></span>
+        </div>
+    </div>
+
     <!-- Terminal Edit Screen -->
     <div class="screen" id="terminalEditScreen">
         <div class="terminal-text">
@@ -250,6 +265,7 @@ ASUKA IWANAGA PRIVATE TERMINAL
             currentLog: null,
             currentMemo: null,
             currentQuest: null,
+            currentQuestIndex: -1,
             githubToken: localStorage.getItem('termToken') || '',
             gistId: localStorage.getItem('termGistId') || '',
             audioContext: null,
@@ -260,14 +276,44 @@ ASUKA IWANAGA PRIVATE TERMINAL
             terminalMode: null,
             terminalBuffer: [],
             terminalCurrentLine: '',
+            
+            // Quest edit system
+            questEditStep: 0,
+            questEditData: {},
+            isEditingQuest: false,
 
             init() {
                 this.loadData();
                 
+                // Initialize audio context on first user interaction
+                const enableAudio = () => {
+                    if (!this.audioContext) {
+                        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    }
+                    // Resume audio context if suspended
+                    if (this.audioContext.state === 'suspended') {
+                        this.audioContext.resume();
+                    }
+                    document.removeEventListener('click', enableAudio);
+                    document.removeEventListener('keydown', enableAudio);
+                };
+                document.addEventListener('click', enableAudio);
+                document.addEventListener('keydown', enableAudio);
+                
                 // Check if already logged in
                 if (this.githubToken && this.gistId) {
-                    // Auto-login with stored credentials
-                    this.startLoginSequence(true);
+                    // Validate credentials are not empty strings
+                    if (this.githubToken.trim() && this.gistId.trim()) {
+                        // Auto-login with stored credentials
+                        this.startLoginSequence(true);
+                    } else {
+                        // Invalid credentials, clear and start fresh
+                        localStorage.removeItem('termToken');
+                        localStorage.removeItem('termGistId');
+                        this.githubToken = '';
+                        this.gistId = '';
+                        this.startLoginSequence(false);
+                    }
                 } else {
                     // Start login sequence
                     this.startLoginSequence(false);
@@ -285,8 +331,11 @@ ASUKA IWANAGA PRIVATE TERMINAL
                 const display = document.getElementById('loginDisplay');
                 const inputLine = document.getElementById('loginInputLine');
                 
+                const now = new Date();
+                const version = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+                
                 const welcomeText = `WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK
--ver. 26-02-25 15:56
+-ver. ${version}
 
 github gistにログインしてください
 `;
@@ -459,6 +508,8 @@ COPYRIGHT 2075-2077 ROBCO INDUSTRIES
 
 INITIALIZING...`;
                 
+                this.playSound('welcome.mp3', 0.6);
+                
                 this.typeText(bootText, display, () => {
                     setTimeout(() => {
                         this.showLoading();
@@ -484,63 +535,101 @@ INITIALIZING...`;
                 }
 
                 // Handle button selection in terminal edit screen
-                if (this.currentScreen === 'terminalEditScreen') {
+                if (this.currentScreen === 'terminalEditScreen' || this.currentScreen === 'questViewScreen') {
                     if (e.key === 'Tab') {
                         e.preventDefault();
-                        const buttons = ['btnSave', 'btnCancel', 'btnHelp', 'btnTop'];
-                        const current = document.activeElement.id;
-                        const currentIndex = buttons.indexOf(current);
-                        const nextIndex = (currentIndex + 1) % buttons.length;
-                        const nextBtn = document.getElementById(buttons[nextIndex]);
                         
-                        // Update selected class
-                        buttons.forEach(id => {
-                            const btn = document.getElementById(id);
-                            if (btn) btn.classList.remove('selected');
-                        });
-                        if (nextBtn) {
-                            nextBtn.classList.add('selected');
-                            nextBtn.focus();
+                        // Check if we're in a confirmation dialog (YES/NO buttons)
+                        const yesBtn = document.getElementById('btnSaveYes') || document.getElementById('btnCancelYes') || document.getElementById('btnTopYes') || document.getElementById('btnDelQuestYes');
+                        const noBtn = document.getElementById('btnSaveNo') || document.getElementById('btnCancelNo') || document.getElementById('btnTopNo') || document.getElementById('btnDelQuestNo');
+                        
+                        if (yesBtn && noBtn) {
+                            // In confirmation dialog - toggle between YES and NO
+                            if (yesBtn.classList.contains('selected')) {
+                                yesBtn.classList.remove('selected');
+                                noBtn.classList.add('selected');
+                                noBtn.focus();
+                            } else {
+                                noBtn.classList.remove('selected');
+                                yesBtn.classList.add('selected');
+                                yesBtn.focus();
+                            }
+                            return;
+                        }
+                        
+                        // Normal button navigation (only for terminalEditScreen)
+                        if (this.currentScreen === 'terminalEditScreen') {
+                            const buttons = ['btnSave', 'btnCancel', 'btnHelp', 'btnTop'];
+                            const current = document.activeElement.id;
+                            const currentIndex = buttons.indexOf(current);
+                            const nextIndex = (currentIndex + 1) % buttons.length;
+                            const nextBtn = document.getElementById(buttons[nextIndex]);
+                            
+                            // Update selected class
+                            buttons.forEach(id => {
+                                const btn = document.getElementById(id);
+                                if (btn) btn.classList.remove('selected');
+                            });
+                            if (nextBtn) {
+                                nextBtn.classList.add('selected');
+                                nextBtn.focus();
+                            }
                         }
                         return;
                     }
                     
                     if (e.key === 'Enter' || e.key === ' ') {
-                        if (e.target.id === 'btnSave') {
+                        // Check for confirmation buttons first
+                        if (e.target.id === 'btnSaveYes' || e.target.id === 'btnCancelYes' || e.target.id === 'btnTopYes' || e.target.id === 'btnDelQuestYes') {
                             e.preventDefault();
-                            this.terminalSave();
+                            e.target.click();
                             return;
                         }
-                        if (e.target.id === 'btnCancel') {
+                        if (e.target.id === 'btnSaveNo' || e.target.id === 'btnCancelNo' || e.target.id === 'btnTopNo' || e.target.id === 'btnDelQuestNo') {
                             e.preventDefault();
-                            this.terminalCancel();
+                            e.target.click();
                             return;
                         }
-                        if (e.target.id === 'btnHelp') {
-                            e.preventDefault();
-                            this.terminalShowHelp();
-                            return;
-                        }
-                        if (e.target.id === 'btnTop') {
-                            e.preventDefault();
-                            const msg = document.getElementById('terminalMessage');
-                            msg.innerHTML = '&gt; 変更を破棄してTOPへ戻りますか？ <span class="menu-item selected" id="btnTopYes" tabindex="0">[YES]</span>   <span class="menu-item" id="btnTopNo" tabindex="0">[NO]</span>';
-                            
-                            setTimeout(() => {
-                                const yesBtn = document.getElementById('btnTopYes');
-                                const noBtn = document.getElementById('btnTopNo');
+                        
+                        // Only process other handlers for terminalEditScreen
+                        if (this.currentScreen === 'terminalEditScreen') {
+                            // Normal button handlers
+                            if (e.target.id === 'btnSave') {
+                                e.preventDefault();
+                                this.terminalSave();
+                                return;
+                            }
+                            if (e.target.id === 'btnCancel') {
+                                e.preventDefault();
+                                this.terminalCancel();
+                                return;
+                            }
+                            if (e.target.id === 'btnHelp') {
+                                e.preventDefault();
+                                this.terminalShowHelp();
+                                return;
+                            }
+                            if (e.target.id === 'btnTop') {
+                                e.preventDefault();
+                                const msg = document.getElementById('terminalMessage');
+                                msg.innerHTML = '&gt; 変更を破棄してTOPへ戻りますか？ <span class="menu-item selected" id="btnTopYes" tabindex="0">[YES]</span>   <span class="menu-item" id="btnTopNo" tabindex="0">[NO]</span>';
                                 
-                                if (yesBtn) {
-                                    yesBtn.onclick = () => this.goHome();
-                                }
-                                
-                                if (noBtn) {
-                                    noBtn.onclick = () => {
-                                        msg.innerHTML = '&gt; <span class="cursor"></span>';
-                                    };
-                                }
-                            }, 10);
-                            return;
+                                setTimeout(() => {
+                                    const yesBtn = document.getElementById('btnTopYes');
+                                    const noBtn = document.getElementById('btnTopNo');
+                                    
+                                    if (yesBtn) {
+                                        yesBtn.onclick = () => this.goHome();
+                                    }
+                                    
+                                    if (noBtn) {
+                                        noBtn.onclick = () => {
+                                            msg.innerHTML = '&gt; <span class="cursor"></span>';
+                                        };
+                                    }
+                                }, 10);
+                                return;
+                            }
                         }
                     }
                 }
@@ -548,11 +637,27 @@ INITIALIZING...`;
                 switch(e.key) {
                     case 'ArrowUp':
                         e.preventDefault();
-                        this.moveSelection(-1);
+                        if (e.shiftKey && this.currentScreen === 'questViewScreen') {
+                            // Reorder task up
+                            this.moveTaskUp();
+                        } else if (e.shiftKey && this.currentScreen === 'questListScreen') {
+                            // Reorder quest up
+                            this.moveQuestUp();
+                        } else {
+                            this.moveSelection(-1);
+                        }
                         break;
                     case 'ArrowDown':
                         e.preventDefault();
-                        this.moveSelection(1);
+                        if (e.shiftKey && this.currentScreen === 'questViewScreen') {
+                            // Reorder task down
+                            this.moveTaskDown();
+                        } else if (e.shiftKey && this.currentScreen === 'questListScreen') {
+                            // Reorder quest down
+                            this.moveQuestDown();
+                        } else {
+                            this.moveSelection(1);
+                        }
                         break;
                     case 'ArrowLeft':
                         e.preventDefault();
@@ -563,6 +668,30 @@ INITIALIZING...`;
                         // Only select if there's a menu item selected
                         if (this.menuItems.length > 0) {
                             this.selectCurrentItem();
+                        }
+                        break;
+                    case ' ':
+                        if (this.currentScreen === 'questViewScreen' && this.currentQuest) {
+                            e.preventDefault();
+                            // Toggle task completion
+                            const taskIndex = this.selectedMenuItem;
+                            if (taskIndex >= 0 && taskIndex < this.currentQuest.tasks.length) {
+                                this.toggleTask(taskIndex);
+                            }
+                        }
+                        break;
+                    case 'd':
+                    case 'D':
+                        if (this.currentScreen === 'questViewScreen' && this.currentQuest) {
+                            e.preventDefault();
+                            this.deleteQuest(this.currentQuestIndex);
+                        }
+                        break;
+                    case 'e':
+                    case 'E':
+                        if (this.currentScreen === 'questViewScreen' && this.currentQuest) {
+                            e.preventDefault();
+                            this.editQuest(this.currentQuestIndex);
                         }
                         break;
                     case 'Enter':
@@ -758,10 +887,7 @@ INITIALIZING...`;
                         document.getElementById('loadingText').style.display = 'none';
                         progressBar.style.display = 'none';
                         document.getElementById('welcomeText').textContent = 'ようこそ';
-                        
-                        this.playSound('welcome.mp3', 0.6);
-                        
-                        setTimeout(() => this.goHome(), 5000);
+                        setTimeout(() => this.goHome(), 2000);
                     }
                 }, 40); // Changed from 80ms to 40ms (2x speed)
             },
@@ -983,38 +1109,140 @@ INITIALIZING...`;
             },
 
             newQuest() {
-                const title = prompt('クエストのタイトル:');
-                if (!title) return;
-                const deadline = prompt('期限 (YYYY-MM-DD):');
-                if (!deadline) return;
-                const cycle = prompt('サイクル (NONE/WEEKLY/MONTHLY):') || 'NONE';
-                const description = prompt('説明:') || '';
-                const tasksInput = prompt('タスク (カンマ区切り):') || '';
+                this.questEditStep = 1; // 1:title, 2:deadline, 3:cycle, 4:description, 5:tasks
+                this.questEditData = {
+                    title: '',
+                    deadline: '',
+                    cycle: 'ONCE',
+                    description: '',
+                    tasks: []
+                };
+                this.showQuestEditStep();
+            },
+
+            showQuestEditStep() {
+                this.showScreen('questEditScreen');
+                const content = document.getElementById('questEditContent');
+                const titleDiv = document.getElementById('questEditTitle');
                 
-                const tasks = tasksInput.split(',').filter(t => t.trim()).map(t => ({
-                    id: Date.now().toString() + Math.random(),
-                    title: t.trim(),
-                    completed: false
-                }));
+                titleDiv.textContent = this.isEditingQuest ? 'QUEST EDIT MODE' : 'QUEST ENTRY MODE';
                 
-                this.quests.push({
-                    id: Date.now().toString(),
-                    title,
-                    deadline,
-                    cycle: cycle.toUpperCase(),
-                    description,
-                    tasks,
-                    timestamp: Date.now()
-                });
+                if (this.questEditStep === 1) {
+                    // Title input
+                    content.innerHTML = 'MISSION: <input type="text" id="questTitleInput" value="' + this.questEditData.title + '" style="width:500px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;">';
+                    setTimeout(() => document.getElementById('questTitleInput').focus(), 100);
+                    
+                } else if (this.questEditStep === 2) {
+                    // Deadline input
+                    content.innerHTML = `MISSION: ${this.questEditData.title}<br>DEADLINE: <input type="text" id="questDeadlineInput" value="${this.questEditData.deadline}" placeholder="YYYY-MM-DD" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;">`;
+                    setTimeout(() => document.getElementById('questDeadlineInput').focus(), 100);
+                    
+                } else if (this.questEditStep === 3) {
+                    // Cycle selection
+                    const cycles = ['ONCE', 'DAILY', 'WEEKLY', 'MONTHLY'];
+                    let html = `MISSION: ${this.questEditData.title}<br>DEADLINE: ${this.questEditData.deadline}<br>CYCLE:<br>`;
+                    cycles.forEach((c, i) => {
+                        const selected = c === this.questEditData.cycle ? ' class="menu-item selected"' : ' class="menu-item"';
+                        html += `<div${selected} id="cycle${i}">[${c}]</div>`;
+                    });
+                    content.innerHTML = html;
+                    
+                    cycles.forEach((c, i) => {
+                        document.getElementById(`cycle${i}`).onclick = () => {
+                            this.questEditData.cycle = c;
+                            this.questEditStep++;
+                            this.showQuestEditStep();
+                        };
+                    });
+                    this.updateMenuItems();
+                    
+                } else if (this.questEditStep === 4) {
+                    // Description input
+                    content.innerHTML = `MISSION: ${this.questEditData.title}<br>DEADLINE: ${this.questEditData.deadline}<br>CYCLE: ${this.questEditData.cycle}<br>DESCRIPTION:<br><textarea id="questDescInput" rows="3" style="width:95%; background:#000; color:#22c55e; border:1px solid #22c55e; font-family:inherit; font-size:18px; padding:5px; outline:none;">${this.questEditData.description}</textarea>`;
+                    setTimeout(() => document.getElementById('questDescInput').focus(), 100);
+                    
+                } else if (this.questEditStep === 5) {
+                    // Tasks input
+                    const tasksText = this.questEditData.tasks.map(t => t.title).join('\n');
+                    content.innerHTML = `MISSION: ${this.questEditData.title}<br>DEADLINE: ${this.questEditData.deadline}<br>CYCLE: ${this.questEditData.cycle}<br>DESCRIPTION: ${this.questEditData.description}<br>TASKS (1行1タスク):<br><textarea id="questTasksInput" rows="8" style="width:95%; background:#000; color:#22c55e; border:1px solid #22c55e; font-family:inherit; font-size:18px; padding:5px; outline:none;">${tasksText}</textarea>`;
+                    setTimeout(() => document.getElementById('questTasksInput').focus(), 100);
+                }
                 
-                this.saveData();
-                this.syncData();
-                this.showQuestList();
+                // Setup buttons
+                if (this.isEditingQuest) {
+                    document.getElementById('btnQuestSave').onclick = () => this.questEditUpdateExisting();
+                } else {
+                    document.getElementById('btnQuestSave').onclick = () => this.questEditNext();
+                }
+                document.getElementById('btnQuestCancel').onclick = () => this.questEditCancel();
+                document.getElementById('btnQuestTop').onclick = () => this.goHome();
+            },
+
+            questEditNext() {
+                if (this.questEditStep === 1) {
+                    const title = document.getElementById('questTitleInput').value.trim();
+                    if (!title) {
+                        alert('ミッション名を入力してください');
+                        return;
+                    }
+                    this.questEditData.title = title;
+                    this.questEditStep++;
+                    this.showQuestEditStep();
+                    
+                } else if (this.questEditStep === 2) {
+                    const deadline = document.getElementById('questDeadlineInput').value.trim();
+                    if (!deadline.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                        alert('YYYY-MM-DD形式で入力してください');
+                        return;
+                    }
+                    this.questEditData.deadline = deadline;
+                    this.questEditStep++;
+                    this.showQuestEditStep();
+                    
+                } else if (this.questEditStep === 4) {
+                    this.questEditData.description = document.getElementById('questDescInput').value.trim();
+                    this.questEditStep++;
+                    this.showQuestEditStep();
+                    
+                } else if (this.questEditStep === 5) {
+                    // Save quest
+                    const tasksText = document.getElementById('questTasksInput').value.trim();
+                    const tasks = tasksText.split('\n').filter(t => t.trim()).map(t => ({
+                        id: Date.now().toString() + Math.random(),
+                        title: t.trim(),
+                        completed: false
+                    }));
+                    
+                    this.quests.push({
+                        id: Date.now().toString(),
+                        title: this.questEditData.title,
+                        deadline: this.questEditData.deadline,
+                        cycle: this.questEditData.cycle,
+                        description: this.questEditData.description,
+                        tasks: tasks,
+                        timestamp: Date.now()
+                    });
+                    
+                    this.saveData();
+                    this.syncData();
+                    this.playSound('register.mp3', 0.5);
+                    this.isEditingQuest = false;
+                    this.showQuestList();
+                }
+            },
+
+            questEditCancel() {
+                const action = this.isEditingQuest ? '編集' : '作成';
+                if (confirm(`クエストの${action}を中止しますか？`)) {
+                    this.isEditingQuest = false;
+                    this.showQuestList();
+                }
             },
 
             viewQuest(index) {
                 const quest = this.quests[index];
                 this.currentQuest = quest;
+                this.currentQuestIndex = index;
                 
                 this.showScreen('questViewScreen');
                 const content = document.getElementById('questContent');
@@ -1024,19 +1252,200 @@ INITIALIZING...`;
                 const total = quest.tasks.length;
                 const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
                 
-                let text = `MISSION: ${quest.title}\nDDL: ${quest.deadline}\nCYC: ${quest.cycle}\nTGT: ${percent}%\nDES: ${quest.description}\n\nTASK:`;
+                let html = `<div>MISSION: ${quest.title}</div>`;
+                html += `<div>DDL: ${quest.deadline}</div>`;
+                html += `<div>CYC: ${quest.cycle}</div>`;
+                html += `<div>TGT: ${percent}%</div>`;
+                html += `<div>DES: ${quest.description}</div>`;
+                html += `<br><div>TASK:</div>`;
                 
-                quest.tasks.forEach(task => {
+                quest.tasks.forEach((task, i) => {
                     const checkbox = task.completed ? '[X]' : '[ ]';
-                    text += `\n       ${checkbox} ${task.title}`;
+                    html += `<div class="menu-item" id="task${i}">       ${checkbox} ${task.title}</div>`;
                 });
                 
-                content.textContent = '';
-                cursor.innerHTML = '<span class="bottom-left-buttons"><span class="menu-item" onclick="term.showQuestList()">[BACK]</span> <span class="menu-item" onclick="term.goHome()">[TOP]</span></span> <span class="bottom-left-cursor">&gt; LOADING...<span class="cursor"></span></span>';
+                content.innerHTML = html;
+                cursor.innerHTML = '<span class="bottom-left-buttons"><span class="menu-item" onclick="term.showQuestList()">[BACK]</span> <span class="menu-item" onclick="term.goHome()">[TOP]</span></span> <span class="bottom-left-cursor">&gt; [Space:CHECK] [E:EDIT] [D:DELETE] <span class="cursor"></span></span>';
                 
-                this.typeText(text, content, () => {
-                    cursor.innerHTML = '<span class="bottom-left-buttons"><span class="menu-item" onclick="term.showQuestList()">[BACK]</span> <span class="menu-item" onclick="term.goHome()">[TOP]</span></span> <span class="bottom-left-cursor">&gt; <span class="cursor"></span></span>';
-                });
+                this.updateMenuItems();
+            },
+
+            toggleTask(taskIndex) {
+                if (!this.currentQuest) return;
+                
+                this.currentQuest.tasks[taskIndex].completed = !this.currentQuest.tasks[taskIndex].completed;
+                
+                // Check if all tasks completed
+                const allCompleted = this.currentQuest.tasks.every(t => t.completed);
+                if (allCompleted && this.currentQuest.tasks.length > 0) {
+                    this.playSound('celebrate.mp3', 0.6);
+                }
+                
+                this.saveData();
+                this.syncData();
+                this.viewQuest(this.currentQuestIndex);
+            },
+
+            deleteQuest(index) {
+                const msg = document.getElementById('questViewCursor');
+                msg.innerHTML = '&gt; このクエストを削除しますか？ <span class="menu-item selected" id="btnDelQuestYes" tabindex="0">[YES]</span>   <span class="menu-item" id="btnDelQuestNo" tabindex="0">[NO]</span>';
+                
+                setTimeout(() => {
+                    const yesBtn = document.getElementById('btnDelQuestYes');
+                    const noBtn = document.getElementById('btnDelQuestNo');
+                    
+                    if (yesBtn) {
+                        yesBtn.onclick = () => {
+                            this.quests.splice(index, 1);
+                            this.saveData();
+                            this.syncData();
+                            this.showQuestList();
+                        };
+                    }
+                    
+                    if (noBtn) {
+                        noBtn.onclick = () => {
+                            this.viewQuest(index);
+                        };
+                    }
+                }, 10);
+            },
+
+            moveTaskUp() {
+                if (!this.currentQuest || this.selectedMenuItem <= 0) return;
+                
+                const tasks = this.currentQuest.tasks;
+                const index = this.selectedMenuItem;
+                
+                [tasks[index - 1], tasks[index]] = [tasks[index], tasks[index - 1]];
+                this.selectedMenuItem--;
+                
+                this.saveData();
+                this.syncData();
+                this.viewQuest(this.currentQuestIndex);
+            },
+
+            moveTaskDown() {
+                if (!this.currentQuest || this.selectedMenuItem >= this.currentQuest.tasks.length - 1) return;
+                
+                const tasks = this.currentQuest.tasks;
+                const index = this.selectedMenuItem;
+                
+                [tasks[index], tasks[index + 1]] = [tasks[index + 1], tasks[index]];
+                this.selectedMenuItem++;
+                
+                this.saveData();
+                this.syncData();
+                this.viewQuest(this.currentQuestIndex);
+            },
+
+            moveQuestUp() {
+                if (this.selectedMenuItem <= 1) return; // 0 is [+ 新規作成]
+                
+                const questIndex = this.selectedMenuItem - 1;
+                if (questIndex <= 0) return;
+                
+                [this.quests[questIndex - 1], this.quests[questIndex]] = [this.quests[questIndex], this.quests[questIndex - 1]];
+                this.selectedMenuItem--;
+                
+                this.saveData();
+                this.syncData();
+                this.showQuestList();
+            },
+
+            moveQuestDown() {
+                if (this.selectedMenuItem === 0 || this.selectedMenuItem >= this.quests.length) return;
+                
+                const questIndex = this.selectedMenuItem - 1;
+                if (questIndex >= this.quests.length - 1) return;
+                
+                [this.quests[questIndex], this.quests[questIndex + 1]] = [this.quests[questIndex + 1], this.quests[questIndex]];
+                this.selectedMenuItem++;
+                
+                this.saveData();
+                this.syncData();
+                this.showQuestList();
+            },
+
+            editQuest(index) {
+                const quest = this.quests[index];
+                this.currentQuestIndex = index;
+                this.questEditStep = 1;
+                this.questEditData = {
+                    title: quest.title,
+                    deadline: quest.deadline,
+                    cycle: quest.cycle,
+                    description: quest.description,
+                    tasks: [...quest.tasks]
+                };
+                this.isEditingQuest = true;
+                this.showQuestEditStep();
+            },
+
+            updateQuestEditButtons() {
+                document.getElementById('btnQuestSave').onclick = () => {
+                    if (this.isEditingQuest) {
+                        this.questEditUpdateExisting();
+                    } else {
+                        this.questEditNext();
+                    }
+                };
+            },
+
+            questEditUpdateExisting() {
+                if (this.questEditStep === 1) {
+                    const title = document.getElementById('questTitleInput').value.trim();
+                    if (!title) {
+                        alert('ミッション名を入力してください');
+                        return;
+                    }
+                    this.questEditData.title = title;
+                    this.questEditStep++;
+                    this.showQuestEditStep();
+                    
+                } else if (this.questEditStep === 2) {
+                    const deadline = document.getElementById('questDeadlineInput').value.trim();
+                    if (!deadline.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                        alert('YYYY-MM-DD形式で入力してください');
+                        return;
+                    }
+                    this.questEditData.deadline = deadline;
+                    this.questEditStep++;
+                    this.showQuestEditStep();
+                    
+                } else if (this.questEditStep === 4) {
+                    this.questEditData.description = document.getElementById('questDescInput').value.trim();
+                    this.questEditStep++;
+                    this.showQuestEditStep();
+                    
+                } else if (this.questEditStep === 5) {
+                    // Update existing quest
+                    const tasksText = document.getElementById('questTasksInput').value.trim();
+                    const tasks = tasksText.split('\n').filter(t => t.trim()).map((t, i) => {
+                        // Preserve existing task completion status if possible
+                        const existingTask = this.questEditData.tasks[i];
+                        return {
+                            id: existingTask ? existingTask.id : (Date.now().toString() + Math.random()),
+                            title: t.trim(),
+                            completed: existingTask ? existingTask.completed : false
+                        };
+                    });
+                    
+                    this.quests[this.currentQuestIndex] = {
+                        ...this.quests[this.currentQuestIndex],
+                        title: this.questEditData.title,
+                        deadline: this.questEditData.deadline,
+                        cycle: this.questEditData.cycle,
+                        description: this.questEditData.description,
+                        tasks: tasks
+                    };
+                    
+                    this.saveData();
+                    this.syncData();
+                    this.playSound('register.mp3', 0.5);
+                    this.isEditingQuest = false;
+                    this.showQuestList();
+                }
             },
 
             typeText(text, element, callback) {
