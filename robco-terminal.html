@@ -269,14 +269,11 @@ ASUKA IWANAGA PRIVATE TERMINAL
 <div id="terminalModeTitle"></div>
 <div style="display:flex; align-items:flex-start;">&gt; <textarea id="terminalInput" rows="15" style="width:95%; background:#000; color:#22c55e; border:none; font-family:inherit; font-size:18px; padding:0; outline:none; resize:none; line-height:1.4;"></textarea></div>
         </div>
-        <div style="position:fixed; bottom:90px; left:30px; right:30px; display:flex; justify-content:flex-end; font-size:18px; gap:15px;" id="terminalFunctionButtons">
-<span class="menu-item selected" id="btnSave" tabindex="0">[SAVE]</span><span class="menu-item" id="btnCancel" tabindex="0">[CANCEL]</span><span class="menu-item" id="btnHelp" tabindex="0">[HELP]</span>
+        <div style="position:fixed; bottom:60px; left:30px; font-size:18px;">
+s:SAVE  c:CANCEL  h:HELP  t:TOP  b:BACK
         </div>
-        <div style="position:fixed; bottom:60px; left:30px; font-size:18px;" id="terminalGlobalButtons">
-<span class="menu-item" id="btnTop" tabindex="0">[TOP]</span>
-        </div>
-        <div style="position:fixed; bottom:30px; left:30px; right:30px; display:flex; justify-content:flex-end; font-size:18px;" id="terminalMessage">
-&gt; <span class="cursor"></span>
+        <div style="position:fixed; bottom:30px; left:30px; right:30px; display:flex; justify-content:flex-end; font-size:18px;">
+&gt; <input type="text" id="commandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>
         </div>
     </div>
 
@@ -320,6 +317,10 @@ ASUKA IWANAGA PRIVATE TERMINAL
                 monthlyDate: 1,    // デフォルト: 1日
                 sortOrder: 'created' // デフォルト: 作成日順 (created/deadline/title)
             },
+            
+            // Change tracking
+            originalContent: '',
+            hasUnsavedChanges: false,
 
             init() {
                 this.loadData();
@@ -780,6 +781,9 @@ WELCOME TO TERMLINK`;
                         if (this.currentScreen === 'questViewScreen' && this.currentQuest) {
                             e.preventDefault();
                             this.deleteQuest(this.currentQuestIndex);
+                        } else if (this.currentScreen === 'logViewScreen' && this.currentLog) {
+                            e.preventDefault();
+                            this.deleteCurrentLog();
                         }
                         break;
                     case 'e':
@@ -1037,33 +1041,81 @@ WELCOME TO TERMLINK`;
             newLog() {
                 this.currentLog = null;
                 this.terminalMode = 'log_edit';
+                this.originalContent = '';
+                this.hasUnsavedChanges = false;
+                
                 this.showScreen('terminalEditScreen');
                 
                 document.getElementById('terminalModeTitle').textContent = 'LOG ENTRY MODE';
-                document.getElementById('terminalInput').value = '';
+                const textarea = document.getElementById('terminalInput');
+                textarea.value = '';
                 
-                // Setup button handlers
-                document.getElementById('btnSave').onclick = () => this.terminalSave();
-                document.getElementById('btnCancel').onclick = () => this.terminalCancel();
-                document.getElementById('btnTop').onclick = () => {
-                    const msg = document.getElementById('terminalMessage');
-                    msg.innerHTML = '&gt; 変更を破棄してTOPへ戻りますか？ <span class="menu-item selected" id="btnTopYes" tabindex="0">[YES]</span>   <span class="menu-item" id="btnTopNo" tabindex="0">[NO]</span>';
-                    
+                // Track changes
+                textarea.addEventListener('input', () => {
+                    this.hasUnsavedChanges = (textarea.value !== this.originalContent);
+                });
+                
+                // Setup command input
+                this.setupCommandInput();
+                
+                // Focus textarea
+                setTimeout(() => textarea.focus(), 100);
+            },
+
+            setupCommandInput() {
+                const commandInput = document.getElementById('commandInput');
+                if (!commandInput) return;
+                
+                commandInput.value = '';
+                commandInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        const cmd = commandInput.value.trim().toLowerCase();
+                        this.handleCommand(cmd);
+                        commandInput.value = '';
+                    }
+                });
+            },
+
+            handleCommand(cmd) {
+                const commandInput = document.getElementById('commandInput');
+                
+                if (cmd === 's') {
+                    this.terminalSave();
+                } else if (cmd === 'c') {
+                    this.terminalCancel();
+                } else if (cmd === 'h') {
+                    this.terminalShowHelp();
+                } else if (cmd === 't') {
+                    if (this.hasUnsavedChanges) {
+                        commandInput.parentElement.innerHTML = '&gt; 保存をしますか？する場合はsと入力してください: <input type="text" id="commandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
+                        this.setupCommandInput();
+                        document.getElementById('commandInput').focus();
+                    } else {
+                        this.goHome();
+                    }
+                } else if (cmd === 'b') {
+                    if (this.hasUnsavedChanges) {
+                        commandInput.parentElement.innerHTML = '&gt; 保存をしますか？する場合はsと入力してください: <input type="text" id="commandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
+                        this.setupCommandInput();
+                        document.getElementById('commandInput').focus();
+                    } else {
+                        this.goBack();
+                    }
+                } else if (cmd === 'y') {
+                    // Handle in context
+                } else if (cmd === 'n') {
+                    // Handle in context
+                } else if (cmd) {
+                    commandInput.parentElement.innerHTML = '&gt; 無効なコマンドです <input type="text" id="commandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
+                    this.setupCommandInput();
                     setTimeout(() => {
-                        const yesBtn = document.getElementById('btnTopYes');
-                        const noBtn = document.getElementById('btnTopNo');
-                        
-                        if (yesBtn) {
-                            yesBtn.onclick = () => this.goHome();
-                        }
-                        
-                        if (noBtn) {
-                            noBtn.onclick = () => {
-                                msg.innerHTML = '&gt; <span class="cursor"></span>';
-                            };
-                        }
-                    }, 10);
-                };
+                        commandInput.parentElement.innerHTML = '&gt; <input type="text" id="commandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
+                        this.setupCommandInput();
+                        document.getElementById('commandInput').focus();
+                    }, 2000);
+                }
+            },
                 document.getElementById('btnHelp').onclick = () => this.terminalShowHelp();
                 
                 // Focus textarea
@@ -1167,7 +1219,6 @@ WELCOME TO TERMLINK`;
             showMemoEditStep() {
                 this.showScreen('terminalEditScreen');
                 const content = document.getElementById('terminalModeTitle');
-                const textarea = document.getElementById('terminalInput');
                 
                 if (this.memoEditStep === 1) {
                     content.textContent = 'MEMO ENTRY MODE';
@@ -1176,14 +1227,10 @@ WELCOME TO TERMLINK`;
                         const input = document.getElementById('memoTitleInput');
                         input.focus();
                         input.addEventListener('keydown', (e) => {
-                            if (e.key === 'Enter') {
+                            if (e.key === 'Enter' || e.key === 'ArrowDown' || (e.key === 'Tab' && !e.shiftKey)) {
                                 e.preventDefault();
                                 const title = input.value.trim();
-                                if (!title) {
-                                    alert('タイトルを入力してください');
-                                    return;
-                                }
-                                this.currentMemoTitle = title;
+                                this.currentMemoTitle = title || '';
                                 this.memoEditStep = 2;
                                 this.showMemoEditContent();
                             }
@@ -1191,55 +1238,47 @@ WELCOME TO TERMLINK`;
                     }, 100);
                 }
                 
-                // Setup buttons
-                document.getElementById('btnSave').onclick = () => {
-                    if (this.memoEditStep === 1) {
-                        const title = document.getElementById('memoTitleInput').value.trim();
-                        if (!title) {
-                            alert('タイトルを入力してください');
-                            return;
-                        }
-                        this.currentMemoTitle = title;
-                        this.memoEditStep = 2;
-                        this.showMemoEditContent();
-                    } else {
-                        this.terminalSave();
-                    }
-                };
-                document.getElementById('btnCancel').onclick = () => this.terminalCancel();
-                document.getElementById('btnTop').onclick = () => {
-                    const msg = document.getElementById('terminalMessage');
-                    msg.innerHTML = '&gt; 変更を破棄してTOPへ戻りますか？ <span class="menu-item selected" id="btnTopYes" tabindex="0">[YES]</span>   <span class="menu-item" id="btnTopNo" tabindex="0">[NO]</span>';
-                    
-                    setTimeout(() => {
-                        const yesBtn = document.getElementById('btnTopYes');
-                        const noBtn = document.getElementById('btnTopNo');
-                        
-                        if (yesBtn) {
-                            yesBtn.onclick = () => this.goHome();
-                        }
-                        
-                        if (noBtn) {
-                            noBtn.onclick = () => {
-                                msg.innerHTML = '&gt; <span class="cursor"></span>';
-                            };
-                        }
-                    }, 10);
-                };
-                document.getElementById('btnHelp').onclick = () => this.terminalShowHelp();
+                this.setupCommandInput();
             },
 
             showMemoEditContent() {
                 document.getElementById('terminalModeTitle').textContent = `MEMO: ${this.currentMemoTitle}`;
                 document.getElementById('terminalInput').parentElement.innerHTML = '&gt; <textarea id="terminalInput" rows="15" style="width:95%; background:#000; color:#22c55e; border:none; font-family:inherit; font-size:18px; padding:0; outline:none; resize:none; line-height:1.4;"></textarea>';
                 
+                const textarea = document.getElementById('terminalInput');
+                
                 if (this.memoEditMode === 'edit') {
-                    document.getElementById('terminalInput').value = this.currentMemo.text;
+                    textarea.value = this.currentMemo.text;
+                    this.originalContent = this.currentMemo.text;
+                } else {
+                    this.originalContent = '';
                 }
                 
+                this.hasUnsavedChanges = false;
                 this.terminalMode = 'memo_edit';
                 
-                setTimeout(() => document.getElementById('terminalInput').focus(), 100);
+                // Track changes
+                textarea.addEventListener('input', () => {
+                    this.hasUnsavedChanges = (textarea.value !== this.originalContent);
+                });
+                
+                // Arrow up to go back to title
+                textarea.addEventListener('keydown', (e) => {
+                    if ((e.key === 'ArrowUp' || (e.key === 'Tab' && e.shiftKey)) && textarea.selectionStart === 0) {
+                        e.preventDefault();
+                        this.memoEditStep = 1;
+                        this.showMemoEditStep();
+                    } else if (e.key === 'ArrowDown' || (e.key === 'Tab' && !e.shiftKey)) {
+                        // Check if at end of text
+                        if (textarea.selectionStart === textarea.value.length) {
+                            e.preventDefault();
+                            document.getElementById('commandInput').focus();
+                        }
+                    }
+                });
+                
+                this.setupCommandInput();
+                setTimeout(() => textarea.focus(), 100);
             },
 
             editMemo(index) {
@@ -1453,13 +1492,11 @@ WELCOME TO TERMLINK`;
                         const input = document.getElementById('questTitleInput');
                         input.focus();
                         input.addEventListener('keydown', (e) => {
-                            if (e.key === 'Enter') {
+                            if (e.key === 'Enter' || e.key === 'ArrowDown' || (e.key === 'Tab' && !e.shiftKey)) {
                                 e.preventDefault();
-                                if (this.isEditingQuest) {
-                                    this.questEditUpdateExisting();
-                                } else {
-                                    this.questEditNext();
-                                }
+                                this.questEditData.title = input.value.trim() || '';
+                                this.questEditStep++;
+                                this.showQuestEditStep();
                             }
                         });
                     }, 100);
@@ -1471,13 +1508,16 @@ WELCOME TO TERMLINK`;
                         const input = document.getElementById('questDeadlineInput');
                         input.focus();
                         input.addEventListener('keydown', (e) => {
-                            if (e.key === 'Enter') {
+                            if (e.key === 'Enter' || e.key === 'ArrowDown' || (e.key === 'Tab' && !e.shiftKey)) {
                                 e.preventDefault();
-                                if (this.isEditingQuest) {
-                                    this.questEditUpdateExisting();
-                                } else {
-                                    this.questEditNext();
-                                }
+                                this.questEditData.deadline = input.value.trim() || '';
+                                this.questEditStep++;
+                                this.showQuestEditStep();
+                            } else if (e.key === 'ArrowUp' || (e.key === 'Tab' && e.shiftKey)) {
+                                e.preventDefault();
+                                this.questEditData.deadline = input.value.trim() || '';
+                                this.questEditStep--;
+                                this.showQuestEditStep();
                             }
                         });
                     }, 100);
