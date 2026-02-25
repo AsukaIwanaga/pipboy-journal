@@ -169,7 +169,7 @@ ASUKA IWANAGA PRIVATE TERMINAL
 <div id="logContent" style="margin-top:20px;"></div>
         </div>
         <div class="bottom-left" id="logViewCursor">
-<span class="bottom-left-buttons"><span class="menu-item" onclick="term.showLogList()">[BACK]</span> <span class="menu-item" onclick="term.goHome()">[TOP]</span></span>
+<span class="bottom-left-buttons"><span class="menu-item" onclick="term.showLogList()">[BACK]</span> <span class="menu-item" onclick="term.goHome()">[TOP]</span> <span class="menu-item" onclick="term.deleteCurrentLog()">[DELETE]</span></span>
 <span class="bottom-left-cursor">&gt; <span class="cursor"></span></span>
         </div>
     </div>
@@ -185,6 +185,25 @@ ASUKA IWANAGA PRIVATE TERMINAL
         <div class="bottom-left">
 <span class="bottom-left-buttons"><span class="menu-item" onclick="term.goHome()">[TOP]</span></span>
 <span class="bottom-left-cursor">&gt; <span class="cursor"></span></span>
+        </div>
+    </div>
+
+    <!-- Memo View Screen -->
+    <div class="screen" id="memoViewScreen">
+        <div class="terminal-text">
+WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK
+ASUKA IWANAGA PRIVATE TERMINAL
+
+<div id="memoContent" style="margin-top:20px;"></div>
+        </div>
+        <div style="position:fixed; bottom:90px; left:30px; right:30px; display:flex; justify-content:flex-end; font-size:18px; gap:15px;" id="memoViewButtons">
+<span class="menu-item selected" id="btnMemoEdit" tabindex="0">[EDIT]</span><span class="menu-item" id="btnMemoHelp" tabindex="0">[HELP]</span>
+        </div>
+        <div style="position:fixed; bottom:60px; left:30px; font-size:18px;">
+<span class="menu-item" id="btnMemoBack" tabindex="0">[BACK]</span> <span class="menu-item" id="btnMemoTop" tabindex="0">[TOP]</span>
+        </div>
+        <div style="position:fixed; bottom:30px; left:30px; right:30px; display:flex; justify-content:flex-end; font-size:18px;" id="memoViewMessage">
+&gt; <span class="cursor"></span>
         </div>
     </div>
 
@@ -281,6 +300,13 @@ ASUKA IWANAGA PRIVATE TERMINAL
             questEditStep: 0,
             questEditData: {},
             isEditingQuest: false,
+            
+            // Memo edit system
+            memoEditMode: null,
+            memoEditStep: 0,
+            currentMemoTitle: '',
+            currentMemoIndex: -1,
+            currentLogIndex: -1,
 
             init() {
                 this.loadData();
@@ -497,7 +523,7 @@ github gistにログインしてください
             showPipboyBoot() {
                 const display = document.getElementById('loginDisplay');
                 display.innerHTML = `
-<div style="text-align:center; margin-bottom:20px;">
+<div style="text-align:center; margin-bottom:30px;">
     <img src="assets/vaultboy.gif" style="width:150px; height:150px; image-rendering: crisp-edges;">
 </div>`;
                 
@@ -513,7 +539,7 @@ INITIALIZING...`;
                 this.typeText(bootText, display, () => {
                     setTimeout(() => {
                         this.showLoading();
-                    }, 5000); // Changed from 500ms to 5000ms (5 seconds)
+                    }, 8000); // Changed to 8 seconds
                 });
             },
 
@@ -535,13 +561,13 @@ INITIALIZING...`;
                 }
 
                 // Handle button selection in terminal edit screen
-                if (this.currentScreen === 'terminalEditScreen' || this.currentScreen === 'questViewScreen') {
+                if (this.currentScreen === 'terminalEditScreen' || this.currentScreen === 'questViewScreen' || this.currentScreen === 'memoViewScreen') {
                     if (e.key === 'Tab') {
                         e.preventDefault();
                         
                         // Check if we're in a confirmation dialog (YES/NO buttons)
-                        const yesBtn = document.getElementById('btnSaveYes') || document.getElementById('btnCancelYes') || document.getElementById('btnTopYes') || document.getElementById('btnDelQuestYes');
-                        const noBtn = document.getElementById('btnSaveNo') || document.getElementById('btnCancelNo') || document.getElementById('btnTopNo') || document.getElementById('btnDelQuestNo');
+                        const yesBtn = document.getElementById('btnSaveYes') || document.getElementById('btnCancelYes') || document.getElementById('btnTopYes') || document.getElementById('btnDelQuestYes') || document.getElementById('btnDelLogYes');
+                        const noBtn = document.getElementById('btnSaveNo') || document.getElementById('btnCancelNo') || document.getElementById('btnTopNo') || document.getElementById('btnDelQuestNo') || document.getElementById('btnDelLogNo');
                         
                         if (yesBtn && noBtn) {
                             // In confirmation dialog - toggle between YES and NO
@@ -553,6 +579,26 @@ INITIALIZING...`;
                                 noBtn.classList.remove('selected');
                                 yesBtn.classList.add('selected');
                                 yesBtn.focus();
+                            }
+                            return;
+                        }
+                        
+                        // Memo view screen navigation
+                        if (this.currentScreen === 'memoViewScreen') {
+                            const buttons = ['btnMemoEdit', 'btnMemoHelp', 'btnMemoBack', 'btnMemoTop'];
+                            const current = document.activeElement.id;
+                            const currentIndex = buttons.indexOf(current);
+                            const nextIndex = (currentIndex + 1) % buttons.length;
+                            const nextBtn = document.getElementById(buttons[nextIndex]);
+                            
+                            // Update selected class
+                            buttons.forEach(id => {
+                                const btn = document.getElementById(id);
+                                if (btn) btn.classList.remove('selected');
+                            });
+                            if (nextBtn) {
+                                nextBtn.classList.add('selected');
+                                nextBtn.focus();
                             }
                             return;
                         }
@@ -579,38 +625,54 @@ INITIALIZING...`;
                     }
                     
                     if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault(); // Prevent space from scrolling page
+                        
                         // Check for confirmation buttons first
-                        if (e.target.id === 'btnSaveYes' || e.target.id === 'btnCancelYes' || e.target.id === 'btnTopYes' || e.target.id === 'btnDelQuestYes') {
-                            e.preventDefault();
+                        if (e.target.id === 'btnSaveYes' || e.target.id === 'btnCancelYes' || e.target.id === 'btnTopYes' || e.target.id === 'btnDelQuestYes' || e.target.id === 'btnDelLogYes') {
                             e.target.click();
                             return;
                         }
-                        if (e.target.id === 'btnSaveNo' || e.target.id === 'btnCancelNo' || e.target.id === 'btnTopNo' || e.target.id === 'btnDelQuestNo') {
-                            e.preventDefault();
+                        if (e.target.id === 'btnSaveNo' || e.target.id === 'btnCancelNo' || e.target.id === 'btnTopNo' || e.target.id === 'btnDelQuestNo' || e.target.id === 'btnDelLogNo') {
                             e.target.click();
                             return;
+                        }
+                        
+                        // Memo view screen handlers
+                        if (this.currentScreen === 'memoViewScreen') {
+                            if (e.target.id === 'btnMemoEdit') {
+                                e.target.click();
+                                return;
+                            }
+                            if (e.target.id === 'btnMemoHelp') {
+                                e.target.click();
+                                return;
+                            }
+                            if (e.target.id === 'btnMemoBack') {
+                                e.target.click();
+                                return;
+                            }
+                            if (e.target.id === 'btnMemoTop') {
+                                e.target.click();
+                                return;
+                            }
                         }
                         
                         // Only process other handlers for terminalEditScreen
                         if (this.currentScreen === 'terminalEditScreen') {
                             // Normal button handlers
                             if (e.target.id === 'btnSave') {
-                                e.preventDefault();
                                 this.terminalSave();
                                 return;
                             }
                             if (e.target.id === 'btnCancel') {
-                                e.preventDefault();
                                 this.terminalCancel();
                                 return;
                             }
                             if (e.target.id === 'btnHelp') {
-                                e.preventDefault();
                                 this.terminalShowHelp();
                                 return;
                             }
                             if (e.target.id === 'btnTop') {
-                                e.preventDefault();
                                 const msg = document.getElementById('terminalMessage');
                                 msg.innerHTML = '&gt; 変更を破棄してTOPへ戻りますか？ <span class="menu-item selected" id="btnTopYes" tabindex="0">[YES]</span>   <span class="menu-item" id="btnTopNo" tabindex="0">[NO]</span>';
                                 
@@ -757,8 +819,18 @@ INITIALIZING...`;
                             this.syncData();
                             
                         } else if (this.terminalMode === 'memo_edit') {
-                            this.currentMemo.text = content;
-                            this.currentMemo.timestamp = Date.now();
+                            if (this.currentMemo) {
+                                this.currentMemo.text = content;
+                                this.currentMemo.timestamp = Date.now();
+                            } else {
+                                // New memo
+                                this.memos.push({
+                                    id: Date.now().toString(),
+                                    title: this.currentMemoTitle,
+                                    text: content,
+                                    timestamp: Date.now()
+                                });
+                            }
                             this.saveData();
                             this.syncData();
                         }
@@ -969,17 +1041,45 @@ INITIALIZING...`;
                 const sorted = [...this.logs].sort((a, b) => b.timestamp - a.timestamp);
                 const log = sorted[index];
                 this.currentLog = log;
+                this.currentLogIndex = index;
                 
                 this.showScreen('logViewScreen');
                 const content = document.getElementById('logContent');
                 const cursor = document.getElementById('logViewCursor');
                 
                 content.textContent = '';
-                cursor.innerHTML = '<span class="bottom-left-buttons"><span class="menu-item" onclick="term.showLogList()">[BACK]</span> <span class="menu-item" onclick="term.goHome()">[TOP]</span></span> <span class="bottom-left-cursor">&gt; LOADING...<span class="cursor"></span></span>';
+                cursor.innerHTML = '<span class="bottom-left-buttons"><span class="menu-item" onclick="term.showLogList()">[BACK]</span> <span class="menu-item" onclick="term.goHome()">[TOP]</span> <span class="menu-item" onclick="term.deleteCurrentLog()">[DELETE]</span></span> <span class="bottom-left-cursor">&gt; LOADING...<span class="cursor"></span></span>';
                 
                 this.typeText(log.text, content, () => {
-                    cursor.innerHTML = '<span class="bottom-left-buttons"><span class="menu-item" onclick="term.showLogList()">[BACK]</span> <span class="menu-item" onclick="term.goHome()">[TOP]</span></span> <span class="bottom-left-cursor">&gt; <span class="cursor"></span></span>';
+                    cursor.innerHTML = '<span class="bottom-left-buttons"><span class="menu-item" onclick="term.showLogList()">[BACK]</span> <span class="menu-item" onclick="term.goHome()">[TOP]</span> <span class="menu-item" onclick="term.deleteCurrentLog()">[DELETE]</span></span> <span class="bottom-left-cursor">&gt; <span class="cursor"></span></span>';
                 });
+            },
+
+            deleteCurrentLog() {
+                const cursor = document.getElementById('logViewCursor');
+                cursor.innerHTML = '&gt; このログを削除しますか？ <span class="menu-item selected" id="btnDelLogYes" tabindex="0">[YES]</span>   <span class="menu-item" id="btnDelLogNo" tabindex="0">[NO]</span>';
+                
+                setTimeout(() => {
+                    const yesBtn = document.getElementById('btnDelLogYes');
+                    const noBtn = document.getElementById('btnDelLogNo');
+                    
+                    if (yesBtn) {
+                        yesBtn.onclick = () => {
+                            // Find and delete the current log
+                            const logId = this.currentLog.id;
+                            this.logs = this.logs.filter(l => l.id !== logId);
+                            this.saveData();
+                            this.syncData();
+                            this.showLogList();
+                        };
+                    }
+                    
+                    if (noBtn) {
+                        noBtn.onclick = () => {
+                            this.viewLog(this.currentLogIndex);
+                        };
+                    }
+                }, 10);
             },
 
             showMemoList() {
@@ -996,32 +1096,83 @@ INITIALIZING...`;
                 const items = list.querySelectorAll('.menu-item');
                 items[0].onclick = () => this.newMemo();
                 this.memos.forEach((memo, i) => {
-                    items[i + 1].onclick = () => this.editMemo(i);
+                    items[i + 1].onclick = () => this.viewMemo(i);
                 });
 
                 this.updateMenuItems();
             },
 
+            viewMemo(index) {
+                const memo = this.memos[index];
+                this.currentMemo = memo;
+                this.currentMemoIndex = index;
+                
+                this.showScreen('memoViewScreen');
+                const content = document.getElementById('memoContent');
+                const message = document.getElementById('memoViewMessage');
+                
+                content.textContent = '';
+                message.innerHTML = '&gt; 記録を読み込み中...<span class="cursor"></span>';
+                
+                this.typeText(memo.text, content, () => {
+                    message.innerHTML = '&gt; <span class="cursor"></span>';
+                });
+                
+                // Setup buttons
+                document.getElementById('btnMemoEdit').onclick = () => this.editMemo(index);
+                document.getElementById('btnMemoHelp').onclick = () => this.terminalShowHelp();
+                document.getElementById('btnMemoBack').onclick = () => this.showMemoList();
+                document.getElementById('btnMemoTop').onclick = () => this.goHome();
+            },
+
             newMemo() {
-                const title = prompt('メモのタイトル:');
-                if (!title) return;
-                
-                this.currentMemo = {
-                    id: Date.now().toString(),
-                    title: title,
-                    text: '',
-                    timestamp: Date.now()
-                };
-                this.memos.push(this.currentMemo);
-                
-                this.terminalMode = 'memo_edit';
+                this.memoEditMode = 'new';
+                this.memoEditStep = 1; // 1: title, 2: content
+                this.showMemoEditStep();
+            },
+
+            showMemoEditStep() {
                 this.showScreen('terminalEditScreen');
+                const content = document.getElementById('terminalModeTitle');
+                const textarea = document.getElementById('terminalInput');
                 
-                document.getElementById('terminalModeTitle').textContent = `MEMO: ${title}`;
-                document.getElementById('terminalInput').value = '';
+                if (this.memoEditStep === 1) {
+                    content.textContent = 'MEMO ENTRY MODE';
+                    document.getElementById('terminalInput').parentElement.innerHTML = '&gt; TITLE: <input type="text" id="memoTitleInput" style="width:500px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;">';
+                    setTimeout(() => {
+                        const input = document.getElementById('memoTitleInput');
+                        input.focus();
+                        input.addEventListener('keydown', (e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                const title = input.value.trim();
+                                if (!title) {
+                                    alert('タイトルを入力してください');
+                                    return;
+                                }
+                                this.currentMemoTitle = title;
+                                this.memoEditStep = 2;
+                                this.showMemoEditContent();
+                            }
+                        });
+                    }, 100);
+                }
                 
-                // Setup button handlers
-                document.getElementById('btnSave').onclick = () => this.terminalSave();
+                // Setup buttons
+                document.getElementById('btnSave').onclick = () => {
+                    if (this.memoEditStep === 1) {
+                        const title = document.getElementById('memoTitleInput').value.trim();
+                        if (!title) {
+                            alert('タイトルを入力してください');
+                            return;
+                        }
+                        this.currentMemoTitle = title;
+                        this.memoEditStep = 2;
+                        this.showMemoEditContent();
+                    } else {
+                        this.terminalSave();
+                    }
+                };
                 document.getElementById('btnCancel').onclick = () => this.terminalCancel();
                 document.getElementById('btnTop').onclick = () => {
                     const msg = document.getElementById('terminalMessage');
@@ -1043,18 +1194,32 @@ INITIALIZING...`;
                     }, 10);
                 };
                 document.getElementById('btnHelp').onclick = () => this.terminalShowHelp();
+            },
+
+            showMemoEditContent() {
+                document.getElementById('terminalModeTitle').textContent = `MEMO: ${this.currentMemoTitle}`;
+                document.getElementById('terminalInput').parentElement.innerHTML = '&gt; <textarea id="terminalInput" rows="15" style="width:95%; background:#000; color:#22c55e; border:none; font-family:inherit; font-size:18px; padding:0; outline:none; resize:none; line-height:1.4;"></textarea>';
                 
-                // Focus textarea
+                if (this.memoEditMode === 'edit') {
+                    document.getElementById('terminalInput').value = this.currentMemo.text;
+                }
+                
+                this.terminalMode = 'memo_edit';
+                
                 setTimeout(() => document.getElementById('terminalInput').focus(), 100);
             },
 
             editMemo(index) {
                 this.currentMemo = this.memos[index];
+                this.currentMemoTitle = this.currentMemo.title;
+                this.memoEditMode = 'edit';
+                this.memoEditStep = 2; // Skip title, go straight to content
                 
                 this.terminalMode = 'memo_edit';
                 this.showScreen('terminalEditScreen');
                 
                 document.getElementById('terminalModeTitle').textContent = `MEMO: ${this.currentMemo.title}`;
+                document.getElementById('terminalInput').parentElement.innerHTML = '&gt; <textarea id="terminalInput" rows="15" style="width:95%; background:#000; color:#22c55e; border:none; font-family:inherit; font-size:18px; padding:0; outline:none; resize:none; line-height:1.4;"></textarea>';
                 document.getElementById('terminalInput').value = this.currentMemo.text;
                 
                 // Setup button handlers
@@ -1129,18 +1294,44 @@ INITIALIZING...`;
                 
                 if (this.questEditStep === 1) {
                     // Title input
-                    content.innerHTML = 'MISSION: <input type="text" id="questTitleInput" value="' + this.questEditData.title + '" style="width:500px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;">';
-                    setTimeout(() => document.getElementById('questTitleInput').focus(), 100);
+                    content.innerHTML = '&gt; MISSION: <input type="text" id="questTitleInput" value="' + this.questEditData.title + '" style="width:500px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;">';
+                    setTimeout(() => {
+                        const input = document.getElementById('questTitleInput');
+                        input.focus();
+                        input.addEventListener('keydown', (e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                if (this.isEditingQuest) {
+                                    this.questEditUpdateExisting();
+                                } else {
+                                    this.questEditNext();
+                                }
+                            }
+                        });
+                    }, 100);
                     
                 } else if (this.questEditStep === 2) {
                     // Deadline input
-                    content.innerHTML = `MISSION: ${this.questEditData.title}<br>DEADLINE: <input type="text" id="questDeadlineInput" value="${this.questEditData.deadline}" placeholder="YYYY-MM-DD" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;">`;
-                    setTimeout(() => document.getElementById('questDeadlineInput').focus(), 100);
+                    content.innerHTML = `MISSION: ${this.questEditData.title}<br>&gt; DEADLINE: <input type="text" id="questDeadlineInput" value="${this.questEditData.deadline}" placeholder="YYYY-MM-DD" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;">`;
+                    setTimeout(() => {
+                        const input = document.getElementById('questDeadlineInput');
+                        input.focus();
+                        input.addEventListener('keydown', (e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                if (this.isEditingQuest) {
+                                    this.questEditUpdateExisting();
+                                } else {
+                                    this.questEditNext();
+                                }
+                            }
+                        });
+                    }, 100);
                     
                 } else if (this.questEditStep === 3) {
                     // Cycle selection
                     const cycles = ['ONCE', 'DAILY', 'WEEKLY', 'MONTHLY'];
-                    let html = `MISSION: ${this.questEditData.title}<br>DEADLINE: ${this.questEditData.deadline}<br>CYCLE:<br>`;
+                    let html = `MISSION: ${this.questEditData.title}<br>DEADLINE: ${this.questEditData.deadline}<br>&gt; CYCLE:<br>`;
                     cycles.forEach((c, i) => {
                         const selected = c === this.questEditData.cycle ? ' class="menu-item selected"' : ' class="menu-item"';
                         html += `<div${selected} id="cycle${i}">[${c}]</div>`;
@@ -1158,13 +1349,13 @@ INITIALIZING...`;
                     
                 } else if (this.questEditStep === 4) {
                     // Description input
-                    content.innerHTML = `MISSION: ${this.questEditData.title}<br>DEADLINE: ${this.questEditData.deadline}<br>CYCLE: ${this.questEditData.cycle}<br>DESCRIPTION:<br><textarea id="questDescInput" rows="3" style="width:95%; background:#000; color:#22c55e; border:1px solid #22c55e; font-family:inherit; font-size:18px; padding:5px; outline:none;">${this.questEditData.description}</textarea>`;
+                    content.innerHTML = `MISSION: ${this.questEditData.title}<br>DEADLINE: ${this.questEditData.deadline}<br>CYCLE: ${this.questEditData.cycle}<br>&gt; DESCRIPTION:<br><textarea id="questDescInput" rows="3" style="width:95%; background:#000; color:#22c55e; border:1px solid #22c55e; font-family:inherit; font-size:18px; padding:5px; outline:none;">${this.questEditData.description}</textarea>`;
                     setTimeout(() => document.getElementById('questDescInput').focus(), 100);
                     
                 } else if (this.questEditStep === 5) {
                     // Tasks input
                     const tasksText = this.questEditData.tasks.map(t => t.title).join('\n');
-                    content.innerHTML = `MISSION: ${this.questEditData.title}<br>DEADLINE: ${this.questEditData.deadline}<br>CYCLE: ${this.questEditData.cycle}<br>DESCRIPTION: ${this.questEditData.description}<br>TASKS (1行1タスク):<br><textarea id="questTasksInput" rows="8" style="width:95%; background:#000; color:#22c55e; border:1px solid #22c55e; font-family:inherit; font-size:18px; padding:5px; outline:none;">${tasksText}</textarea>`;
+                    content.innerHTML = `MISSION: ${this.questEditData.title}<br>DEADLINE: ${this.questEditData.deadline}<br>CYCLE: ${this.questEditData.cycle}<br>DESCRIPTION: ${this.questEditData.description}<br>&gt; TASKS (1行1タスク):<br><textarea id="questTasksInput" rows="8" style="width:95%; background:#000; color:#22c55e; border:1px solid #22c55e; font-family:inherit; font-size:18px; padding:5px; outline:none;">${tasksText}</textarea>`;
                     setTimeout(() => document.getElementById('questTasksInput').focus(), 100);
                 }
                 
