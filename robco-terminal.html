@@ -226,9 +226,8 @@ ASUKA IWANAGA PRIVATE TERMINAL
 
 <div id="questContent" style="margin-top:20px;"></div>
         </div>
-        <div class="bottom-left" id="questViewCursor">
-<span class="bottom-left-buttons"><span class="menu-item" onclick="term.showQuestList()">[BACK]</span> <span class="menu-item" onclick="term.goHome()">[TOP]</span></span>
-<span class="bottom-left-cursor">&gt; <span class="cursor"></span></span>
+        <div style="position:fixed; bottom:30px; right:30px; font-size:18px;">
+&gt; e:EDIT d:DELETE b:BACK t:TOP <input type="text" id="questViewCommandInput" style="width:50px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>
         </div>
     </div>
 
@@ -308,6 +307,7 @@ ASUKA IWANAGA PRIVATE TERMINAL
             cancelConfirmMode: false,
             questSettingConfirm: false,
             logDeleteConfirm: false,
+            questDeleteConfirm: false,
 
             init() {
                 this.loadData();
@@ -1172,6 +1172,18 @@ WELCOME TO TERMLINK`;
                             this.showLogList();
                         } else if (cmd === 't') {
                             this.goHome();
+                        } else if (cmd) {
+                            // Invalid command
+                            newInput.parentElement.innerHTML = '&gt; 無効なコマンドです <input type="text" id="logViewCommandInput" style="width:50px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
+                            this.setupLogViewCommandInput();
+                            setTimeout(() => {
+                                const currentInput = document.getElementById('logViewCommandInput');
+                                if (currentInput) {
+                                    currentInput.parentElement.innerHTML = '&gt; d:DELETE b:BACK t:TOP <input type="text" id="logViewCommandInput" style="width:50px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
+                                    this.setupLogViewCommandInput();
+                                }
+                            }, 2000);
+                            return;
                         }
                         newInput.value = '';
                     }
@@ -1677,6 +1689,17 @@ WELCOME TO TERMLINK`;
                             this.goHome();
                         } else if (cmd === 'b') {
                             this.goHome();
+                        } else if (cmd) {
+                            // Invalid command
+                            newInput.parentElement.innerHTML = '&gt; 無効なコマンドです <input type="text" id="questListCommandInput" style="width:50px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
+                            this.setupQuestListCommandInput();
+                            setTimeout(() => {
+                                const currentInput = document.getElementById('questListCommandInput');
+                                if (currentInput) {
+                                    currentInput.parentElement.innerHTML = '&gt; t:TOP b:BACK <input type="text" id="questListCommandInput" style="width:50px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
+                                    this.setupQuestListCommandInput();
+                                }
+                            }, 2000);
                         }
                         newInput.value = '';
                     }
@@ -1953,7 +1976,6 @@ WELCOME TO TERMLINK`;
                 
                 this.showScreen('questViewScreen');
                 const content = document.getElementById('questContent');
-                const cursor = document.getElementById('questViewCursor');
                 
                 const completed = quest.tasks.filter(t => t.completed).length;
                 const total = quest.tasks.length;
@@ -1972,9 +1994,66 @@ WELCOME TO TERMLINK`;
                 });
                 
                 content.innerHTML = html;
-                cursor.innerHTML = '<span class="bottom-left-buttons"><span class="menu-item" onclick="term.showQuestList()">[BACK]</span> <span class="menu-item" onclick="term.goHome()">[TOP]</span></span> <span class="bottom-left-cursor">&gt; [Space:CHECK] [E:EDIT] [D:DELETE] <span class="cursor"></span></span>';
                 
                 this.updateMenuItems();
+                this.setupQuestViewCommandInput();
+            },
+
+            setupQuestViewCommandInput() {
+                const commandInput = document.getElementById('questViewCommandInput');
+                if (!commandInput) return;
+                
+                commandInput.value = '';
+                const newInput = commandInput.cloneNode(true);
+                commandInput.parentNode.replaceChild(newInput, commandInput);
+                newInput.focus();
+                
+                newInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        const cmd = newInput.value.trim().toLowerCase();
+                        
+                        // Handle delete confirmation
+                        if (this.questDeleteConfirm) {
+                            if (cmd === 'y') {
+                                this.questDeleteConfirm = false;
+                                this.quests.splice(this.currentQuestIndex, 1);
+                                this.saveData();
+                                this.syncData();
+                                this.showQuestList();
+                                return;
+                            } else if (cmd === 'n') {
+                                this.questDeleteConfirm = false;
+                                newInput.parentElement.innerHTML = '&gt; e:EDIT d:DELETE b:BACK t:TOP <input type="text" id="questViewCommandInput" style="width:50px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
+                                this.setupQuestViewCommandInput();
+                                return;
+                            }
+                        }
+                        
+                        if (cmd === 'e') {
+                            this.editQuest(this.currentQuestIndex);
+                        } else if (cmd === 'd') {
+                            this.deleteQuest(this.currentQuestIndex);
+                        } else if (cmd === 'b') {
+                            this.showQuestList();
+                        } else if (cmd === 't') {
+                            this.goHome();
+                        } else if (cmd) {
+                            // Invalid command
+                            newInput.parentElement.innerHTML = '&gt; 無効なコマンドです <input type="text" id="questViewCommandInput" style="width:50px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
+                            this.setupQuestViewCommandInput();
+                            setTimeout(() => {
+                                const currentInput = document.getElementById('questViewCommandInput');
+                                if (currentInput) {
+                                    currentInput.parentElement.innerHTML = '&gt; e:EDIT d:DELETE b:BACK t:TOP <input type="text" id="questViewCommandInput" style="width:50px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
+                                    this.setupQuestViewCommandInput();
+                                }
+                            }, 2000);
+                            return;
+                        }
+                        newInput.value = '';
+                    }
+                });
             },
 
             toggleTask(taskIndex) {
@@ -1994,28 +2073,12 @@ WELCOME TO TERMLINK`;
             },
 
             deleteQuest(index) {
-                const msg = document.getElementById('questViewCursor');
-                msg.innerHTML = '&gt; このクエストを削除しますか？ <span class="menu-item selected" id="btnDelQuestYes" tabindex="0">[YES]</span>   <span class="menu-item" id="btnDelQuestNo" tabindex="0">[NO]</span>';
-                
-                setTimeout(() => {
-                    const yesBtn = document.getElementById('btnDelQuestYes');
-                    const noBtn = document.getElementById('btnDelQuestNo');
-                    
-                    if (yesBtn) {
-                        yesBtn.onclick = () => {
-                            this.quests.splice(index, 1);
-                            this.saveData();
-                            this.syncData();
-                            this.showQuestList();
-                        };
-                    }
-                    
-                    if (noBtn) {
-                        noBtn.onclick = () => {
-                            this.viewQuest(index);
-                        };
-                    }
-                }, 10);
+                const commandInput = document.getElementById('questViewCommandInput');
+                if (commandInput) {
+                    commandInput.parentElement.innerHTML = '&gt; このクエストを削除しますか？ y:YES  n:NO % <input type="text" id="questViewCommandInput" style="width:50px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
+                    this.questDeleteConfirm = true;
+                    this.setupQuestViewCommandInput();
+                }
             },
 
             moveTaskUp() {
