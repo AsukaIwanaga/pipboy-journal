@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ROBCO INDUSTRIES (TM) TERMLINK　ver.02-27 -1:53</title>
+    <title>ROBCO INDUSTRIES (TM) TERMLINK</title>
     <style>
         * {
             margin: 0;
@@ -132,7 +132,7 @@
 
     <!-- Loading Screen -->
     <div class="screen" id="loadingScreen">
-        <div class="terminal-text" style="padding-top:30vh; text-align:center;">
+        <div class="terminal-text" style="padding-top:20vh; text-align:center;">
 <span id="loadingText">LOADING...</span>
 <div id="progressBar" style="margin-top:20px;"></div>
 <div id="welcomeText" style="margin-top:40px; font-size:24px;"></div>
@@ -503,7 +503,7 @@ ASUKA IWANAGA PRIVATE TERMINAL
                 const bootText = `
 ROBCO INDUSTRIES UNIFIED OPERATING SYSTEM
 COPYRIGHT 2075-2077 ROBCO INDUSTRIES
-
+2026-02-27 02:04
 WELCOME TO TERMLINK`;
                 
                 this.typeText(bootText, display, () => {
@@ -1487,6 +1487,7 @@ WELCOME TO TERMLINK`;
                 items[4].onclick = () => this.showQuestList();
                 
                 this.updateMenuItems();
+                this.setupQuestListCommandInput();
             },
 
             showMonthlySetting() {
@@ -1667,8 +1668,17 @@ WELCOME TO TERMLINK`;
                                 this.questSettingConfirm = false;
                                 this.showQuestSettings();
                             }
+                            newInput.value = '';
                             return;
                         }
+                        
+                        // Handle regular commands
+                        if (cmd === 't') {
+                            this.goHome();
+                        } else if (cmd === 'b') {
+                            this.goHome();
+                        }
+                        newInput.value = '';
                     }
                 });
             },
