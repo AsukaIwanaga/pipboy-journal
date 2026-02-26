@@ -174,9 +174,11 @@ ASUKA IWANAGA PRIVATE TERMINAL
 
 <div id="logContent" style="margin-top:20px;"></div>
         </div>
-        <div class="bottom-left" id="logViewCursor">
-<span class="bottom-left-buttons"><span class="menu-item" onclick="term.showLogList()">[BACK]</span> <span class="menu-item" onclick="term.goHome()">[TOP]</span> <span class="menu-item" onclick="term.deleteCurrentLog()">[DELETE]</span></span>
-<span class="bottom-left-cursor">&gt; <span class="cursor"></span></span>
+        <div style="position:fixed; bottom:60px; left:30px;">
+d:DELETE  b:BACK  t:TOP
+        </div>
+        <div style="position:fixed; bottom:30px; right:30px;">
+&gt; <input type="text" id="logViewCommandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>
         </div>
     </div>
 
@@ -323,6 +325,7 @@ s:SAVE  c:CANCEL  h:HELP  t:TOP  b:BACK
             savedConfirmMode: false,
             cancelConfirmMode: false,
             questSettingConfirm: false,
+            logDeleteConfirm: false,
 
             init() {
                 this.loadData();
@@ -1140,41 +1143,66 @@ WELCOME TO TERMLINK`;
                 
                 this.showScreen('logViewScreen');
                 const content = document.getElementById('logContent');
-                const cursor = document.getElementById('logViewCursor');
                 
                 content.textContent = '';
-                cursor.innerHTML = '<span class="bottom-left-buttons"><span class="menu-item" onclick="term.showLogList()">[BACK]</span> <span class="menu-item" onclick="term.goHome()">[TOP]</span> <span class="menu-item" onclick="term.deleteCurrentLog()">[DELETE]</span></span> <span class="bottom-left-cursor">&gt; LOADING...<span class="cursor"></span></span>';
                 
                 this.typeText(log.text, content, () => {
-                    cursor.innerHTML = '<span class="bottom-left-buttons"><span class="menu-item" onclick="term.showLogList()">[BACK]</span> <span class="menu-item" onclick="term.goHome()">[TOP]</span> <span class="menu-item" onclick="term.deleteCurrentLog()">[DELETE]</span></span> <span class="bottom-left-cursor">&gt; <span class="cursor"></span></span>';
+                    // Setup command input after typing completes
+                    this.setupLogViewCommandInput();
+                });
+            },
+
+            setupLogViewCommandInput() {
+                const commandInput = document.getElementById('logViewCommandInput');
+                if (!commandInput) return;
+                
+                commandInput.value = '';
+                const newInput = commandInput.cloneNode(true);
+                commandInput.parentNode.replaceChild(newInput, commandInput);
+                newInput.focus();
+                
+                newInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        const cmd = newInput.value.trim().toLowerCase();
+                        
+                        // Handle delete confirmation
+                        if (this.logDeleteConfirm) {
+                            if (cmd === 'y') {
+                                this.logDeleteConfirm = false;
+                                const logId = this.currentLog.id;
+                                this.logs = this.logs.filter(l => l.id !== logId);
+                                this.saveData();
+                                this.syncData();
+                                this.showLogList();
+                                return;
+                            } else if (cmd === 'n') {
+                                this.logDeleteConfirm = false;
+                                newInput.parentElement.innerHTML = '&gt; <input type="text" id="logViewCommandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
+                                this.setupLogViewCommandInput();
+                                return;
+                            }
+                        }
+                        
+                        if (cmd === 'd') {
+                            this.deleteCurrentLog();
+                        } else if (cmd === 'b') {
+                            this.showLogList();
+                        } else if (cmd === 't') {
+                            this.goHome();
+                        }
+                        newInput.value = '';
+                    }
                 });
             },
 
             deleteCurrentLog() {
-                const cursor = document.getElementById('logViewCursor');
-                cursor.innerHTML = '&gt; このログを削除しますか？ <span class="menu-item selected" id="btnDelLogYes" tabindex="0">[YES]</span>   <span class="menu-item" id="btnDelLogNo" tabindex="0">[NO]</span>';
-                
-                setTimeout(() => {
-                    const yesBtn = document.getElementById('btnDelLogYes');
-                    const noBtn = document.getElementById('btnDelLogNo');
-                    
-                    if (yesBtn) {
-                        yesBtn.onclick = () => {
-                            // Find and delete the current log
-                            const logId = this.currentLog.id;
-                            this.logs = this.logs.filter(l => l.id !== logId);
-                            this.saveData();
-                            this.syncData();
-                            this.showLogList();
-                        };
-                    }
-                    
-                    if (noBtn) {
-                        noBtn.onclick = () => {
-                            this.viewLog(this.currentLogIndex);
-                        };
-                    }
-                }, 10);
+                const commandInput = document.getElementById('logViewCommandInput');
+                if (commandInput) {
+                    commandInput.parentElement.innerHTML = '&gt; このログを削除しますか？ y:YES  n:NO % <input type="text" id="logViewCommandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
+                    this.logDeleteConfirm = true;
+                    this.setupLogViewCommandInput();
+                }
             },
 
             showMemoList() {
