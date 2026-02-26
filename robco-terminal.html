@@ -132,7 +132,7 @@
 
     <!-- Loading Screen -->
     <div class="screen" id="loadingScreen">
-        <div class="terminal-text" style="padding-top:45vh; text-align:center;">
+        <div class="terminal-text" style="padding-top:30vh; text-align:center;">
 <span id="loadingText">LOADING...</span>
 <div id="progressBar" style="margin-top:20px;"></div>
 <div id="welcomeText" style="margin-top:40px; font-size:24px;"></div>
@@ -320,6 +320,9 @@ s:SAVE  c:CANCEL  h:HELP  t:TOP  b:BACK
             // Change tracking
             originalContent: '',
             hasUnsavedChanges: false,
+            savedConfirmMode: false,
+            cancelConfirmMode: false,
+            questSettingConfirm: false,
 
             init() {
                 this.loadData();
@@ -792,132 +795,76 @@ WELCOME TO TERMLINK`;
             },
 
             terminalShowHelp() {
-                alert('HELP:\n\n' +
-                      'テキストエリアに内容を入力してください。\n' +
-                      'Enterキーで改行できます。\n\n' +
-                      'Tabキーで [SAVE] [CANCEL] [HELP] を移動できます。\n\n' +
-                      '[SAVE] - 保存して終了\n' +
-                      '[CANCEL] - キャンセルして戻る\n' +
-                      '[HELP] - このヘルプを表示');
+                const commandInput = document.getElementById('commandInput');
+                if (commandInput) {
+                    commandInput.parentElement.innerHTML = '&gt; コマンド: s=保存 c=キャンセル t=TOP b=戻る <input type="text" id="commandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
+                    this.setupCommandInput();
+                }
             },
 
             terminalSave() {
                 const textarea = document.getElementById('terminalInput');
-                const content = textarea.value.trim();
+                const content = textarea ? textarea.value.trim() : '';
                 
                 if (!content && this.terminalMode === 'log_edit' && !this.currentLog) {
-                    const msg = document.getElementById('terminalMessage');
-                    msg.innerHTML = '&gt; 内容を入力してください <span class="cursor"></span>';
+                    const commandInput = document.getElementById('commandInput');
+                    if (commandInput) {
+                        commandInput.parentElement.innerHTML = '&gt; 内容を入力してください <input type="text" id="commandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
+                        this.setupCommandInput();
+                    }
                     return;
                 }
                 
-                // Show saving progress in message area
-                const msg = document.getElementById('terminalMessage');
-                msg.innerHTML = '&gt; SAVING... <span id="saveProgress">[__________] 0%</span>';
-                
-                let progress = 0;
-                const interval = setInterval(() => {
-                    progress += 10;
-                    const filled = Math.floor(progress / 10);
-                    const empty = 10 - filled;
-                    const progressBar = '[' + '█'.repeat(filled) + '_'.repeat(empty) + '] ' + progress + '%';
-                    
-                    msg.innerHTML = '&gt; SAVING... ' + progressBar;
-                    
-                    if (progress >= 100) {
-                        clearInterval(interval);
-                        
-                        // Actually save the data
-                        if (this.terminalMode === 'log_edit') {
-                            if (this.currentLog) {
-                                this.currentLog.text = content;
-                                this.currentLog.timestamp = Date.now();
-                            } else {
-                                this.logs.push({
-                                    id: Date.now().toString(),
-                                    text: content,
-                                    timestamp: Date.now()
-                                });
-                            }
-                            this.saveData();
-                            this.syncData();
-                            
-                        } else if (this.terminalMode === 'memo_edit') {
-                            if (this.currentMemo) {
-                                this.currentMemo.text = content;
-                                this.currentMemo.timestamp = Date.now();
-                            } else {
-                                // New memo
-                                this.memos.push({
-                                    id: Date.now().toString(),
-                                    title: this.currentMemoTitle,
-                                    text: content,
-                                    timestamp: Date.now()
-                                });
-                            }
-                            this.saveData();
-                            this.syncData();
-                        }
-                        
-                        // Play save success sound
-                        this.playSound('register.mp3', 0.5);
-                        
-                        // Show confirmation with properly bound handlers
-                        const listName = this.terminalMode === 'log_edit' ? 'LOG一覧' : 'MEMO一覧';
-                        msg.innerHTML = `&gt; 保存が完了しました。<br>&gt; ${listName}へ戻りますか？ <span class="menu-item selected" id="btnSaveYes" tabindex="0">[YES]</span>   <span class="menu-item" id="btnSaveNo" tabindex="0">[NO]</span>`;
-                        
-                        // Use setTimeout to ensure DOM is updated
-                        setTimeout(() => {
-                            const yesBtn = document.getElementById('btnSaveYes');
-                            const noBtn = document.getElementById('btnSaveNo');
-                            
-                            if (yesBtn) {
-                                yesBtn.onclick = () => {
-                                    console.log('YES clicked, mode:', this.terminalMode);
-                                    if (this.terminalMode === 'log_edit') {
-                                        console.log('Navigating to showLogList');
-                                        this.showLogList();
-                                    } else if (this.terminalMode === 'memo_edit') {
-                                        console.log('Navigating to showMemoList');
-                                        this.showMemoList();
-                                    }
-                                };
-                            }
-                            
-                            if (noBtn) {
-                                noBtn.onclick = () => {
-                                    msg.innerHTML = '&gt; <span class="cursor"></span>';
-                                };
-                            }
-                        }, 10);
+                // Actually save the data
+                if (this.terminalMode === 'log_edit') {
+                    if (this.currentLog) {
+                        this.currentLog.text = content;
+                        this.currentLog.timestamp = Date.now();
+                    } else {
+                        this.logs.push({
+                            id: Date.now().toString(),
+                            text: content,
+                            timestamp: Date.now()
+                        });
                     }
-                }, 100);
+                    this.saveData();
+                    this.syncData();
+                    
+                } else if (this.terminalMode === 'memo_edit') {
+                    if (this.currentMemo) {
+                        this.currentMemo.text = content;
+                        this.currentMemo.timestamp = Date.now();
+                    } else {
+                        this.memos.push({
+                            id: Date.now().toString(),
+                            title: this.currentMemoTitle,
+                            text: content,
+                            timestamp: Date.now()
+                        });
+                    }
+                    this.saveData();
+                    this.syncData();
+                }
+                
+                // Play save sound
+                this.playSound('register.mp3', 0.5);
+                
+                // Show save confirmation
+                const commandInput = document.getElementById('commandInput');
+                if (commandInput) {
+                    commandInput.parentElement.innerHTML = '&gt; 保存しました。選択画面に戻りますか？ y:YES  n:NO % <input type="text" id="commandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
+                    this.setupCommandInput();
+                    this.savedConfirmMode = true;
+                }
             },
 
             terminalCancel() {
-                const msg = document.getElementById('terminalMessage');
-                msg.innerHTML = '&gt; 変更を破棄して戻りますか？ <span class="menu-item selected" id="btnCancelYes" tabindex="0">[YES]</span>   <span class="menu-item" id="btnCancelNo" tabindex="0">[NO]</span>';
-                
-                setTimeout(() => {
-                    const yesBtn = document.getElementById('btnCancelYes');
-                    const noBtn = document.getElementById('btnCancelNo');
-                    
-                    if (yesBtn) {
-                        yesBtn.onclick = () => {
-                            if (this.terminalMode === 'log_edit') {
-                                this.showLogList();
-                            } else if (this.terminalMode === 'memo_edit') {
-                                this.showMemoList();
-                            }
-                        };
-                    }
-                    
-                    if (noBtn) {
-                        noBtn.onclick = () => {
-                            msg.innerHTML = '&gt; <span class="cursor"></span>';
-                        };
-                    }
-                }, 10);
+                const commandInput = document.getElementById('commandInput');
+                if (commandInput) {
+                    commandInput.parentElement.innerHTML = '&gt; キャンセルしました。選択画面に戻りますか？ y:YES  n:NO % <input type="text" id="commandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
+                    this.setupCommandInput();
+                    this.cancelConfirmMode = true;
+                }
             },
 
             updateMenuItems() {
@@ -1105,6 +1052,42 @@ WELCOME TO TERMLINK`;
             handleCommand(cmd) {
                 const commandInput = document.getElementById('commandInput');
                 
+                // Handle y/n for save confirmation
+                if (this.savedConfirmMode) {
+                    if (cmd === 'y') {
+                        this.savedConfirmMode = false;
+                        if (this.terminalMode === 'log_edit') {
+                            this.showLogList();
+                        } else if (this.terminalMode === 'memo_edit') {
+                            this.showMemoList();
+                        }
+                        return;
+                    } else if (cmd === 'n') {
+                        this.savedConfirmMode = false;
+                        commandInput.parentElement.innerHTML = '&gt; <input type="text" id="commandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
+                        this.setupCommandInput();
+                        return;
+                    }
+                }
+                
+                // Handle y/n for cancel confirmation
+                if (this.cancelConfirmMode) {
+                    if (cmd === 'y') {
+                        this.cancelConfirmMode = false;
+                        if (this.terminalMode === 'log_edit') {
+                            this.showLogList();
+                        } else if (this.terminalMode === 'memo_edit') {
+                            this.showMemoList();
+                        }
+                        return;
+                    } else if (cmd === 'n') {
+                        this.cancelConfirmMode = false;
+                        commandInput.parentElement.innerHTML = '&gt; <input type="text" id="commandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
+                        this.setupCommandInput();
+                        return;
+                    }
+                }
+                
                 if (cmd === 's') {
                     this.terminalSave();
                 } else if (cmd === 'c') {
@@ -1113,7 +1096,7 @@ WELCOME TO TERMLINK`;
                     this.terminalShowHelp();
                 } else if (cmd === 't') {
                     if (this.hasUnsavedChanges) {
-                        commandInput.parentElement.innerHTML = '&gt; 保存をしますか？する場合はsと入力してください: <input type="text" id="commandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
+                        commandInput.parentElement.innerHTML = '&gt; 戻る前に現在の状態を保存しますか？ s:SAVE  c:CANCEL % <input type="text" id="commandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
                         this.setupCommandInput();
                         document.getElementById('commandInput').focus();
                     } else {
@@ -1121,23 +1104,28 @@ WELCOME TO TERMLINK`;
                     }
                 } else if (cmd === 'b') {
                     if (this.hasUnsavedChanges) {
-                        commandInput.parentElement.innerHTML = '&gt; 保存をしますか？する場合はsと入力してください: <input type="text" id="commandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
+                        commandInput.parentElement.innerHTML = '&gt; 戻る前に現在の状態を保存しますか？ s:SAVE  c:CANCEL % <input type="text" id="commandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
                         this.setupCommandInput();
                         document.getElementById('commandInput').focus();
                     } else {
                         this.goBack();
                     }
-                } else if (cmd === 'y') {
-                    // Handle in context
-                } else if (cmd === 'n') {
-                    // Handle in context
+                } else if (cmd === 'd') {
+                    // Delete command
+                    if (this.currentScreen === 'questViewScreen' && this.currentQuest) {
+                        this.deleteQuest(this.currentQuestIndex);
+                    } else if (this.currentScreen === 'logViewScreen' && this.currentLog) {
+                        this.deleteCurrentLog();
+                    }
                 } else if (cmd) {
                     commandInput.parentElement.innerHTML = '&gt; 無効なコマンドです <input type="text" id="commandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
                     this.setupCommandInput();
                     setTimeout(() => {
-                        commandInput.parentElement.innerHTML = '&gt; <input type="text" id="commandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
-                        this.setupCommandInput();
-                        document.getElementById('commandInput').focus();
+                        const currentInput = document.getElementById('commandInput');
+                        if (currentInput) {
+                            currentInput.parentElement.innerHTML = '&gt; <input type="text" id="commandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
+                            this.setupCommandInput();
+                        }
                     }, 2000);
                 }
             },
@@ -1493,21 +1481,207 @@ WELCOME TO TERMLINK`;
                 this.showScreen('questListScreen');
                 const list = document.getElementById('questList');
                 
-                const days = ['日', '月', '火', '水', '木', '金', '土'];
-                
-                let html = '<div style="margin-bottom:20px;">QUEST REPEAT SETTINGS</div>';
-                html += `<div>DAILY: 毎日 ${this.questSettings.dailyHour} 時</div>`;
-                html += `<div>WEEKLY: 毎週 ${days[this.questSettings.weeklyDay]}曜日</div>`;
-                html += `<div>MONTHLY: 毎月 ${this.questSettings.monthlyDate} 日</div>`;
-                html += `<div>完了ミッション並び順: ${this.questSettings.sortOrder === 'created' ? '作成日順' : this.questSettings.sortOrder === 'deadline' ? '締切順' : 'あいうえお順'}</div>`;
-                html += '<br><div style="color:#888;">コマンド:</div>';
-                html += '<div style="color:#888;">d [0-23] : DAILY時刻変更</div>';
-                html += '<div style="color:#888;">w [0-6] : WEEKLY曜日変更 (0=日 1=月...)</div>';
-                html += '<div style="color:#888;">m [1-31] : MONTHLY日付変更</div>';
-                html += '<div style="color:#888;">o [c/d/t] : 並び順変更 (c=作成日 d=締切 t=タイトル)</div>';
+                let html = '<div style="margin-bottom:20px;">QUEST SETTING</div>';
+                html += '<div class="menu-item">[MONTHLY]</div>';
+                html += '<div class="menu-item">[WEEKLY]</div>';
+                html += '<div class="menu-item">[DAILY]</div>';
+                html += '<div class="menu-item">[SORT]</div>';
+                html += '<div class="menu-item" style="color:#888;">[戻る]</div>';
                 
                 list.innerHTML = html;
+                
+                const items = list.querySelectorAll('.menu-item');
+                items[0].onclick = () => this.showMonthlySetting();
+                items[1].onclick = () => this.showWeeklySetting();
+                items[2].onclick = () => this.showDailySetting();
+                items[3].onclick = () => this.showSortSetting();
+                items[4].onclick = () => this.showQuestList();
+                
                 this.updateMenuItems();
+            },
+
+            showMonthlySetting() {
+                this.showScreen('questListScreen');
+                const list = document.getElementById('questList');
+                
+                let html = '<div style="margin-bottom:20px;">MONTHLY SETTING</div>';
+                html += '<div class="menu-item" style="color:#888;">[戻る]</div>';
+                html += `<div style="margin-top:20px;">&gt; 生成日は何日ですか？</div>`;
+                
+                list.innerHTML = html;
+                
+                const items = list.querySelectorAll('.menu-item');
+                items[0].onclick = () => this.showQuestSettings();
+                
+                this.updateMenuItems();
+                
+                // Setup command input for date
+                const commandInput = document.getElementById('questListCommandInput');
+                if (commandInput) {
+                    commandInput.value = '';
+                    const newInput = commandInput.cloneNode(true);
+                    commandInput.parentNode.replaceChild(newInput, commandInput);
+                    newInput.focus();
+                    
+                    newInput.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            const date = parseInt(newInput.value.trim());
+                            if (date >= 1 && date <= 31) {
+                                this.questSettings.monthlyDate = date;
+                                this.saveData();
+                                newInput.parentElement.innerHTML = `&gt; ${date}日を設定しました。選択画面へ戻りますか？ y:YES  n:NO % <input type="text" id="questListCommandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>`;
+                                this.questSettingConfirm = true;
+                                this.setupQuestListCommandInput();
+                            }
+                        }
+                    });
+                }
+            },
+
+            showWeeklySetting() {
+                this.showScreen('questListScreen');
+                const list = document.getElementById('questList');
+                const days = ['日', '月', '火', '水', '木', '金', '土'];
+                
+                let html = '<div style="margin-bottom:20px;">WEEKLY SETTING</div>';
+                days.forEach((day, i) => {
+                    html += `<div class="menu-item">[${day}]</div>`;
+                });
+                html += '<div class="menu-item" style="color:#888;">[戻る]</div>';
+                
+                list.innerHTML = html;
+                
+                const items = list.querySelectorAll('.menu-item');
+                days.forEach((day, i) => {
+                    items[i].onclick = () => {
+                        this.questSettings.weeklyDay = i;
+                        this.saveData();
+                        const commandInput = document.getElementById('questListCommandInput');
+                        if (commandInput) {
+                            commandInput.parentElement.innerHTML = `&gt; ${day}曜日に設定しました。選択画面へ戻りますか？ y:YES  n:NO % <input type="text" id="questListCommandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>`;
+                            this.questSettingConfirm = true;
+                            this.setupQuestListCommandInput();
+                        }
+                    };
+                });
+                items[days.length].onclick = () => this.showQuestSettings();
+                
+                this.updateMenuItems();
+            },
+
+            showDailySetting() {
+                this.showScreen('questListScreen');
+                const list = document.getElementById('questList');
+                
+                let html = '<div style="margin-bottom:20px;">DAILY SETTING</div>';
+                html += '<div class="menu-item" style="color:#888;">[戻る]</div>';
+                html += `<div style="margin-top:20px;">&gt; 生成時刻は何時ですか？</div>`;
+                
+                list.innerHTML = html;
+                
+                const items = list.querySelectorAll('.menu-item');
+                items[0].onclick = () => this.showQuestSettings();
+                
+                this.updateMenuItems();
+                
+                // Setup command input for hour
+                const commandInput = document.getElementById('questListCommandInput');
+                if (commandInput) {
+                    commandInput.value = '';
+                    const newInput = commandInput.cloneNode(true);
+                    commandInput.parentNode.replaceChild(newInput, commandInput);
+                    newInput.focus();
+                    
+                    newInput.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            const hour = parseInt(newInput.value.trim());
+                            if (hour >= 0 && hour <= 23) {
+                                this.questSettings.dailyHour = hour;
+                                this.saveData();
+                                newInput.parentElement.innerHTML = `&gt; ${hour}時を設定しました。選択画面へ戻りますか？ y:YES  n:NO % <input type="text" id="questListCommandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>`;
+                                this.questSettingConfirm = true;
+                                this.setupQuestListCommandInput();
+                            }
+                        }
+                    });
+                }
+            },
+
+            showSortSetting() {
+                this.showScreen('questListScreen');
+                const list = document.getElementById('questList');
+                
+                let html = '<div style="margin-bottom:20px;">SORT SETTING</div>';
+                html += '<div class="menu-item">[タイトル昇順]</div>';
+                html += '<div class="menu-item">[締切順]</div>';
+                html += '<div class="menu-item">[作成順]</div>';
+                html += '<div class="menu-item" style="color:#888;">[戻る]</div>';
+                
+                list.innerHTML = html;
+                
+                const items = list.querySelectorAll('.menu-item');
+                items[0].onclick = () => {
+                    this.questSettings.sortOrder = 'title';
+                    this.saveData();
+                    const commandInput = document.getElementById('questListCommandInput');
+                    if (commandInput) {
+                        commandInput.parentElement.innerHTML = '&gt; タイトル昇順に設定しました。選択画面へ戻りますか？ y:YES  n:NO % <input type="text" id="questListCommandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
+                        this.questSettingConfirm = true;
+                        this.setupQuestListCommandInput();
+                    }
+                };
+                items[1].onclick = () => {
+                    this.questSettings.sortOrder = 'deadline';
+                    this.saveData();
+                    const commandInput = document.getElementById('questListCommandInput');
+                    if (commandInput) {
+                        commandInput.parentElement.innerHTML = '&gt; 締切順に設定しました。選択画面へ戻りますか？ y:YES  n:NO % <input type="text" id="questListCommandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
+                        this.questSettingConfirm = true;
+                        this.setupQuestListCommandInput();
+                    }
+                };
+                items[2].onclick = () => {
+                    this.questSettings.sortOrder = 'created';
+                    this.saveData();
+                    const commandInput = document.getElementById('questListCommandInput');
+                    if (commandInput) {
+                        commandInput.parentElement.innerHTML = '&gt; 作成順に設定しました。選択画面へ戻りますか？ y:YES  n:NO % <input type="text" id="questListCommandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
+                        this.questSettingConfirm = true;
+                        this.setupQuestListCommandInput();
+                    }
+                };
+                items[3].onclick = () => this.showQuestSettings();
+                
+                this.updateMenuItems();
+            },
+
+            setupQuestListCommandInput() {
+                const commandInput = document.getElementById('questListCommandInput');
+                if (!commandInput) return;
+                
+                const newInput = commandInput.cloneNode(true);
+                commandInput.parentNode.replaceChild(newInput, commandInput);
+                newInput.focus();
+                
+                newInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        const cmd = newInput.value.trim().toLowerCase();
+                        
+                        if (this.questSettingConfirm) {
+                            if (cmd === 'y') {
+                                this.questSettingConfirm = false;
+                                this.showQuestList();
+                            } else if (cmd === 'n') {
+                                this.questSettingConfirm = false;
+                                this.showQuestSettings();
+                            }
+                            return;
+                        }
+                    }
+                });
             },
 
             checkQuestResets() {
@@ -1674,6 +1848,10 @@ WELCOME TO TERMLINK`;
                                 e.preventDefault();
                                 this.questEditStep--;
                                 this.showQuestEditStep();
+                            } else if ((e.key === 'Tab' && !e.shiftKey) && textarea.selectionStart === textarea.value.length) {
+                                e.preventDefault();
+                                const commandInput = document.getElementById('questCommandInput');
+                                if (commandInput) commandInput.focus();
                             }
                         });
                     }, 100);
