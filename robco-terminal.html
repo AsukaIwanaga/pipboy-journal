@@ -961,6 +961,7 @@ WELCOME TO TERMLINK`;
                     const preview = log.text.substring(0, 30).replace(/\n/g, ' ');
                     html += `<div class="menu-item">[${dateStr}   ---${preview}]</div>`;
                 });
+                html += '<div class="menu-item" style="color:#888;">[戻る]</div>';
                 list.innerHTML = html;
 
                 const items = list.querySelectorAll('.menu-item');
@@ -968,6 +969,7 @@ WELCOME TO TERMLINK`;
                 sorted.forEach((log, i) => {
                     items[i + 1].onclick = () => this.viewLog(i);
                 });
+                items[items.length - 1].onclick = () => this.goHome();
 
                 this.updateMenuItems();
                 
@@ -1184,6 +1186,7 @@ WELCOME TO TERMLINK`;
                     const preview = memo.text.substring(0, 30).replace(/\n/g, ' ');
                     html += `<div class="menu-item">[${memo.title}   ---${preview}]</div>`;
                 });
+                html += '<div class="menu-item" style="color:#888;">[戻る]</div>';
                 list.innerHTML = html;
 
                 const items = list.querySelectorAll('.menu-item');
@@ -1191,6 +1194,7 @@ WELCOME TO TERMLINK`;
                 this.memos.forEach((memo, i) => {
                     items[i + 1].onclick = () => this.viewMemo(i);
                 });
+                items[items.length - 1].onclick = () => this.goHome();
 
                 this.updateMenuItems();
                 
@@ -1396,13 +1400,16 @@ WELCOME TO TERMLINK`;
                     });
                 }
                 
+                html += '<div class="menu-item" style="color:#888;">[戻る]</div>';
+                
                 list.innerHTML = html;
 
                 const items = list.querySelectorAll('.menu-item');
                 items[0].onclick = () => this.newQuest();
                 items[1].onclick = () => this.showQuestSettings();
                 
-                // Set onclick for all quests
+                // Set onclick for quests and back button
+                let backButtonIndex = -1;
                 for (let i = 2; i < items.length; i++) {
                     const questId = items[i].getAttribute('data-quest-id');
                     if (questId) {
@@ -1410,7 +1417,14 @@ WELCOME TO TERMLINK`;
                         if (questIndex !== -1) {
                             items[i].onclick = () => this.viewQuest(questIndex);
                         }
+                    } else if (items[i].textContent === '[戻る]') {
+                        backButtonIndex = i;
                     }
+                }
+                
+                // Set back button handler
+                if (backButtonIndex !== -1) {
+                    items[backButtonIndex].onclick = () => this.goHome();
                 }
 
                 this.updateMenuItems();
@@ -1425,7 +1439,6 @@ WELCOME TO TERMLINK`;
                     newInput.addEventListener('keydown', (e) => {
                         if (e.key === 'ArrowUp') {
                             e.preventDefault();
-                            // Return to last menu item
                             if (this.menuItems.length > 0) {
                                 this.selectedMenuItem = this.menuItems.length - 1;
                                 this.updateMenuSelection();
@@ -1434,42 +1447,8 @@ WELCOME TO TERMLINK`;
                         } else if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
                             const cmd = newInput.value.trim().toLowerCase();
-                            if (cmd === 't') {
+                            if (cmd === 't' || cmd === 'b') {
                                 this.goHome();
-                            } else if (cmd === 'b') {
-                                this.goHome();
-                            } else if (cmd.startsWith('d ')) {
-                                const hour = parseInt(cmd.split(' ')[1]);
-                                if (hour >= 0 && hour <= 23) {
-                                    this.questSettings.dailyHour = hour;
-                                    this.saveData();
-                                    this.showQuestSettings();
-                                }
-                            } else if (cmd.startsWith('w ')) {
-                                const day = parseInt(cmd.split(' ')[1]);
-                                if (day >= 0 && day <= 6) {
-                                    this.questSettings.weeklyDay = day;
-                                    this.saveData();
-                                    this.showQuestSettings();
-                                }
-                            } else if (cmd.startsWith('m ')) {
-                                const date = parseInt(cmd.split(' ')[1]);
-                                if (date >= 1 && date <= 31) {
-                                    this.questSettings.monthlyDate = date;
-                                    this.saveData();
-                                    this.showQuestSettings();
-                                }
-                            } else if (cmd.startsWith('o ')) {
-                                const order = cmd.split(' ')[1];
-                                if (order === 'c') {
-                                    this.questSettings.sortOrder = 'created';
-                                } else if (order === 'd') {
-                                    this.questSettings.sortOrder = 'deadline';
-                                } else if (order === 't') {
-                                    this.questSettings.sortOrder = 'title';
-                                }
-                                this.saveData();
-                                this.showQuestSettings();
                             }
                             newInput.value = '';
                         }
