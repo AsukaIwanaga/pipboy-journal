@@ -1888,57 +1888,144 @@ WELCOME TO TERMLINK`;
                     }, 100);
                     
                 } else if (this.questEditStep === 5) {
-                    // 図3-5: Tasks textarea
-                    const tasksText = this.questEditData.tasks.map(t => t.title).join('\n');
+                    // 図3-5: Tasks as menu items
                     const descPreview = this.questEditData.description.substring(0, 30) + (this.questEditData.description.length > 30 ? '...' : '');
-                    content.innerHTML = `&gt; MISSION: ${this.questEditData.title}<br>&gt; DEADLINE: ${this.questEditData.deadline}<br>&gt; CYCLE: ${this.questEditData.cycle}<br>&gt; DESCRIPTION:<br>[ ${descPreview} ]<br>&gt; TASK:<br><textarea id="questTasksInput" rows="10" style="width:100%; background:#000; color:#22c55e; border:none; font-family:inherit; font-size:18px; padding:0; outline:none; resize:none; line-height:1.4;">${tasksText}</textarea><br><br><div class="menu-item">[戻る]</div><div class="menu-item">[保存]</div>`;
                     
-                    setTimeout(() => {
-                        const textarea = document.getElementById('questTasksInput');
-                        textarea.focus();
-                        
-                        // Allow moving to menu with arrow up from first line
-                        textarea.addEventListener('keydown', (e) => {
-                            if (e.key === 'ArrowUp') {
-                                const cursorPosition = textarea.selectionStart;
-                                const textBeforeCursor = textarea.value.substring(0, cursorPosition);
-                                const isOnFirstLine = !textBeforeCursor.includes('\n');
-                                
-                                // Move to menu when on first line AND at the beginning
-                                if (isOnFirstLine && cursorPosition === 0) {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    // Blur the textarea
-                                    textarea.blur();
-                                    // Focus on last menu item (保存)
-                                    this.updateMenuItems();
-                                    if (this.menuItems.length > 0) {
-                                        this.selectedMenuItem = this.menuItems.length - 1;
-                                        this.updateMenuSelection();
-                                    }
-                                }
-                            }
-                        });
-                        
-                        // Setup menu buttons
-                        this.updateMenuItems();
-                        const items = document.querySelectorAll('.menu-item');
-                        items[0].onclick = () => this.showQuestList();
-                        items[1].onclick = () => this.saveQuest();
-                    }, 100);
+                    let html = '<div class="menu-item">[戻る]</div>';
+                    html += '<div class="menu-item">[保存]</div>';
+                    html += `<div style="margin-top:10px;">&gt; MISSION: ${this.questEditData.title}</div>`;
+                    html += `<div>&gt; DEADLINE: ${this.questEditData.deadline}</div>`;
+                    html += `<div>&gt; CYCLE: ${this.questEditData.cycle}</div>`;
+                    html += `<div>&gt; DESCRIPTION:</div>`;
+                    html += `<div>[ ${descPreview} ]</div>`;
+                    html += `<div style="margin-top:10px;">&gt; TASK:</div>`;
+                    html += '<div class="menu-item">[+ 新規作成]</div>';
+                    
+                    this.questEditData.tasks.forEach((task, i) => {
+                        html += `<div class="menu-item" data-task-index="${i}">[${task.title}]</div>`;
+                    });
+                    
+                    content.innerHTML = html;
+                    
+                    // Setup menu buttons
+                    this.updateMenuItems();
+                    const items = Array.from(content.querySelectorAll('.menu-item'));
+                    
+                    items[0].onclick = () => this.showQuestList();
+                    items[1].onclick = () => this.saveQuest();
+                    items[2].onclick = () => this.addNewTask();
+                    
+                    // Task item clicks
+                    this.questEditData.tasks.forEach((task, i) => {
+                        const taskItem = items[3 + i];
+                        if (taskItem) {
+                            taskItem.onclick = () => this.editTask(i);
+                        }
+                    });
                 }
             },
 
+            addNewTask() {
+                this.showScreen('questEditScreen');
+                const content = document.getElementById('questEditContent');
+                
+                content.innerHTML = `<div style="margin-bottom:10px;">新しいタスクを入力してください</div>`;
+                content.innerHTML += '<div>&gt; TASK: <span id="taskInputDisplay"></span><span class="cursor"></span></div>';
+                
+                const display = document.getElementById('taskInputDisplay');
+                let buffer = '';
+                display.textContent = buffer;
+                
+                const handleTaskInput = (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const taskTitle = buffer.trim();
+                        if (taskTitle) {
+                            this.questEditData.tasks.push({
+                                title: taskTitle,
+                                completed: false
+                            });
+                        }
+                        document.removeEventListener('keydown', handleTaskInput);
+                        this.questEditStep = 5;
+                        this.showQuestEditStep();
+                    } else if (e.key === 'Escape') {
+                        e.preventDefault();
+                        document.removeEventListener('keydown', handleTaskInput);
+                        this.questEditStep = 5;
+                        this.showQuestEditStep();
+                    } else if (e.key === 'Backspace') {
+                        e.preventDefault();
+                        buffer = buffer.slice(0, -1);
+                        display.textContent = buffer;
+                    } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                        e.preventDefault();
+                        buffer += e.key;
+                        display.textContent = buffer;
+                    }
+                };
+                
+                document.addEventListener('keydown', handleTaskInput);
+            },
+
+            editTask(index) {
+                this.showScreen('questEditScreen');
+                const content = document.getElementById('questEditContent');
+                
+                const task = this.questEditData.tasks[index];
+                
+                content.innerHTML = `<div style="margin-bottom:10px;">タスクを編集</div>`;
+                content.innerHTML += '<div class="menu-item">[削除]</div>';
+                content.innerHTML += '<div class="menu-item">[戻る]</div>';
+                content.innerHTML += '<div style="margin-top:10px;">&gt; TASK: <span id="taskInputDisplay"></span><span class="cursor"></span></div>';
+                
+                const display = document.getElementById('taskInputDisplay');
+                let buffer = task.title;
+                display.textContent = buffer;
+                
+                this.updateMenuItems();
+                const items = content.querySelectorAll('.menu-item');
+                items[0].onclick = () => {
+                    this.questEditData.tasks.splice(index, 1);
+                    this.questEditStep = 5;
+                    this.showQuestEditStep();
+                };
+                items[1].onclick = () => {
+                    this.questEditStep = 5;
+                    this.showQuestEditStep();
+                };
+                
+                const handleTaskInput = (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const taskTitle = buffer.trim();
+                        if (taskTitle) {
+                            this.questEditData.tasks[index].title = taskTitle;
+                        }
+                        document.removeEventListener('keydown', handleTaskInput);
+                        this.questEditStep = 5;
+                        this.showQuestEditStep();
+                    } else if (e.key === 'Escape') {
+                        e.preventDefault();
+                        document.removeEventListener('keydown', handleTaskInput);
+                        this.questEditStep = 5;
+                        this.showQuestEditStep();
+                    } else if (e.key === 'Backspace') {
+                        e.preventDefault();
+                        buffer = buffer.slice(0, -1);
+                        display.textContent = buffer;
+                    } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                        e.preventDefault();
+                        buffer += e.key;
+                        display.textContent = buffer;
+                    }
+                };
+                
+                document.addEventListener('keydown', handleTaskInput);
+            },
+
             saveQuest() {
-                // Parse tasks from textarea
-                const tasksInput = document.getElementById('questTasksInput');
-                if (tasksInput) {
-                    const taskLines = tasksInput.value.split('\n').filter(line => line.trim());
-                    this.questEditData.tasks = taskLines.map(title => ({
-                        title: title.trim(),
-                        completed: false
-                    }));
-                }
+                // Tasks are already in this.questEditData.tasks from menu items
                 
                 // Create quest object
                 const quest = {
