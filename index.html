@@ -159,6 +159,13 @@
         </div>
     </div>
 
+    <!-- Changelog Screen -->
+    <div class="screen" id="changelogScreen">
+        <div class="terminal-text" style="padding:30px;">
+<div id="changelogContent"></div>
+        </div>
+    </div>
+
     <!-- Home Screen -->
     <div class="screen" id="homeScreen">
         <div class="terminal-text">
@@ -276,7 +283,7 @@ ASUKA IWANAGA PRIVATE TERMINAL
 
 <div id="terminalModeTitle"></div>
 <div id="terminalEditMenu" style="margin-top:10px; margin-bottom:10px;"></div>
-<div style="margin-top:10px;"><textarea id="terminalInput" rows="20" style="width:100%; background:#000; color:#22c55e; border:none; font-family:inherit; font-size:18px; padding:0; outline:none; resize:none; line-height:1.4;"></textarea></div>
+<div style="margin-top:10px;"><textarea id="terminalInput" rows="20" style="width:100%; background:var(--bg-color); color:var(--text-color); border:none; font-family:inherit; font-size:18px; padding:0; outline:none; resize:none; line-height:1.4;"></textarea></div>
         </div>
         <div style="position:fixed; bottom:30px; left:30px; right:30px; font-size:18px;" id="footerMessages">
 &gt; <span class="cursor"></span>
@@ -286,10 +293,16 @@ ASUKA IWANAGA PRIVATE TERMINAL
     <script>
         /**
          * ROBCO TERMINAL SYSTEM
-         * Version: 2.2.0
+         * Version: 2.2.1
          * Last Updated: 2026-03-06
          * 
          * CHANGELOG:
+         * 
+         * v2.2.1 (2026-03-06)
+         * - ログイン後に変更履歴画面を表示
+         * - 変更履歴を1秒間8行ペースで順次表示
+         * - 自動読み込み表示と3秒後の自動遷移
+         * - バージョン管理システム改善
          * 
          * v2.2.0 (2026-03-06)
          * - MEMOカテゴリをディレクトリシステムに変更
@@ -322,7 +335,67 @@ ASUKA IWANAGA PRIVATE TERMINAL
          * - 基本的なターミナルUI
          */
         
-        const VERSION = '2.2.0';
+        const VERSION = '2.2.1';
+        
+        const CHANGELOG = [
+            {
+                version: '2.2.1',
+                date: '2026-03-06',
+                changes: [
+                    'ログイン後に変更履歴画面を表示',
+                    '変更履歴を1秒間8行ペースで順次表示',
+                    '自動読み込み表示と3秒後の自動遷移',
+                    'バージョン管理システム改善'
+                ]
+            },
+            {
+                version: '2.2.0',
+                date: '2026-03-06',
+                changes: [
+                    'MEMOカテゴリをディレクトリシステムに変更',
+                    'ディレクトリ管理機能追加（作成/名前変更/削除）',
+                    'メモのディレクトリ移動機能追加',
+                    'ディレクトリ削除時に内部メモを「未分類」に自動移動',
+                    'input/textareaのカラーモード対応修正',
+                    'メモ編集画面に[ディレクトリを変更]ボタン追加',
+                    'QUEST CYCLE選択時のフォーカス問題修正'
+                ]
+            },
+            {
+                version: '2.1.1',
+                date: '2026-03-06',
+                changes: [
+                    '新しいQUEST入力UI実装（統一フィールド画面）',
+                    '日本語入力完全対応（MISSION/DEADLINE/DESCRIPTION/TASK）',
+                    'ライトモード/ダークモード切り替え機能追加',
+                    'MEMOカテゴリ機能実装（仕事/プライベート/買い物/未分類）',
+                    'タイプ音の重複再生バグ修正',
+                    'textareaから↓キーで次フィールドへ移動機能追加',
+                    'バージョン表示をセマンティックバージョニングに変更'
+                ]
+            },
+            {
+                version: '2.0.0',
+                date: '2026-03-05',
+                changes: [
+                    '全操作を十字キー+Enterのみに統一',
+                    'コマンド入力を完全削除',
+                    'LOG/MEMO/QUEST詳細画面にメニューボタン追加',
+                    'メッセージログシステム実装（3行フッター）',
+                    '音声自動初期化機能追加'
+                ]
+            },
+            {
+                version: '1.0.0',
+                date: '2026-03-01',
+                changes: [
+                    '初期リリース',
+                    'LOG/MEMO/QUESTシステム実装',
+                    'Gist連携機能',
+                    '基本的なターミナルUI'
+                ]
+            }
+        ];
         
         const term = {
             currentScreen: 'loginScreen',
@@ -732,11 +805,70 @@ WELCOME TO TERMLINK`;
                 // Play welcome sound
                 this.playSound('welcome.mp3', 0.6);
                 
-                // Wait 5 seconds then go home
+                // Wait 5 seconds then show changelog
                 setTimeout(() => {
                     this.addMessage('ようこそ');
-                    this.goHome();
+                    this.showChangelogScreen();
                 }, 5000);
+            },
+
+            showChangelogScreen() {
+                this.showScreen('changelogScreen');
+                const content = document.getElementById('changelogContent');
+                
+                // Build all lines
+                let allLines = [];
+                allLines.push('ROBCO TERMINAL SYSTEM');
+                allLines.push(`バージョン ${VERSION} の変更履歴`);
+                allLines.push('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+                allLines.push('');
+                
+                CHANGELOG.forEach((log, index) => {
+                    allLines.push(`[v${log.version}] ${log.date}`);
+                    log.changes.forEach(change => {
+                        allLines.push(`  - ${change}`);
+                    });
+                    
+                    if (index < CHANGELOG.length - 1) {
+                        allLines.push('');
+                        allLines.push('────────────────────────────────────────');
+                        allLines.push('');
+                    }
+                });
+                
+                allLines.push('');
+                allLines.push('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+                
+                // Display lines progressively (8 lines per second = 125ms per line)
+                let lineIndex = 0;
+                const displayLine = () => {
+                    if (lineIndex < allLines.length) {
+                        const line = allLines[lineIndex];
+                        const div = document.createElement('div');
+                        div.textContent = line;
+                        if (line.startsWith('[v')) {
+                            div.style.fontWeight = 'bold';
+                            div.style.marginTop = '10px';
+                        }
+                        content.appendChild(div);
+                        lineIndex++;
+                        setTimeout(displayLine, 125); // 8 lines/second
+                    } else {
+                        // All lines displayed, show loading message
+                        setTimeout(() => {
+                            const loadingDiv = document.createElement('div');
+                            loadingDiv.innerHTML = '<div style="margin-top:20px;">&gt; 読み込んでいます...<span class="cursor"></span></div>';
+                            content.appendChild(loadingDiv);
+                            
+                            // Wait 3 seconds then go home
+                            setTimeout(() => {
+                                this.goHome();
+                            }, 3000);
+                        }, 500);
+                    }
+                };
+                
+                displayLine();
             },
 
             handleKeyboard(e) {
@@ -2185,8 +2317,34 @@ WELCOME TO TERMLINK`;
 
             handleQuestInputKey(e) {
                 if (this.currentScreen !== 'questEditScreen') return;
-                if (this.questEditMode) return; // Let input/textarea handle it
                 
+                // Handle CYCLE selection FIRST (when in edit mode)
+                if (this.questEditMode && this.questFields && this.questFields[this.questFieldIndex] && this.questFields[this.questFieldIndex].type === 'select') {
+                    const field = this.questFields[this.questFieldIndex];
+                    if (e.key === 'ArrowLeft') {
+                        e.preventDefault();
+                        this.questCycleIndex = (this.questCycleIndex - 1 + field.options.length) % field.options.length;
+                        this.questEditData[field.name] = field.options[this.questCycleIndex];
+                        this.renderQuestInputScreen();
+                        return;
+                    } else if (e.key === 'ArrowRight') {
+                        e.preventDefault();
+                        this.questCycleIndex = (this.questCycleIndex + 1) % field.options.length;
+                        this.questEditData[field.name] = field.options[this.questCycleIndex];
+                        this.renderQuestInputScreen();
+                        return;
+                    } else if (e.key === 'Enter' || e.key === 'Escape') {
+                        e.preventDefault();
+                        this.questEditMode = false;
+                        this.renderQuestInputScreen();
+                        return;
+                    }
+                }
+                
+                // If in edit mode (text/textarea), let input/textarea handle it
+                if (this.questEditMode) return;
+                
+                // Navigation mode
                 if (e.key === 'ArrowUp') {
                     e.preventDefault();
                     this.questFieldIndex = Math.max(0, this.questFieldIndex - 1);
@@ -2213,26 +2371,6 @@ WELCOME TO TERMLINK`;
                 } else if (e.key === 'ArrowLeft' && this.questFieldIndex === this.questFields.length) {
                     e.preventDefault();
                     this.showQuestList();
-                }
-                
-                // Handle CYCLE selection
-                if (this.questEditMode && this.questFields[this.questFieldIndex].type === 'select') {
-                    const field = this.questFields[this.questFieldIndex];
-                    if (e.key === 'ArrowLeft') {
-                        e.preventDefault();
-                        this.questCycleIndex = (this.questCycleIndex - 1 + field.options.length) % field.options.length;
-                        this.questEditData[field.name] = field.options[this.questCycleIndex];
-                        this.renderQuestInputScreen();
-                    } else if (e.key === 'ArrowRight') {
-                        e.preventDefault();
-                        this.questCycleIndex = (this.questCycleIndex + 1) % field.options.length;
-                        this.questEditData[field.name] = field.options[this.questCycleIndex];
-                        this.renderQuestInputScreen();
-                    } else if (e.key === 'Enter' || e.key === 'Escape') {
-                        e.preventDefault();
-                        this.questEditMode = false;
-                        this.renderQuestInputScreen();
-                    }
                 }
             },
 
@@ -2410,92 +2548,6 @@ WELCOME TO TERMLINK`;
                         }, 0);
                     }
                 }
-            },
-
-            handleQuestInputKey(e) {
-                if (this.currentScreen !== 'questEditScreen') return;
-                if (this.questEditMode) return; // Let input/textarea handle it
-                
-                if (e.key === 'ArrowUp') {
-                    e.preventDefault();
-                    this.questFieldIndex = Math.max(0, this.questFieldIndex - 1);
-                    this.renderQuestInputScreen();
-                } else if (e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    this.questFieldIndex = Math.min(this.questFields.length, this.questFieldIndex + 1);
-                    this.renderQuestInputScreen();
-                } else if (e.key === 'Enter' || e.key === 'ArrowRight') {
-                    e.preventDefault();
-                    if (this.questFieldIndex < this.questFields.length) {
-                        const field = this.questFields[this.questFieldIndex];
-                        this.questEditMode = true;
-                        if (field.type === 'select') {
-                            this.questCycleIndex = field.options.indexOf(this.questEditData[field.name] || field.options[0]);
-                            if (this.questCycleIndex === -1) this.questCycleIndex = 0;
-                            this.questEditData[field.name] = field.options[this.questCycleIndex];
-                        }
-                        this.renderQuestInputScreen();
-                    } else {
-                        // Save button
-                        this.saveQuestFromInput();
-                    }
-                } else if (e.key === 'ArrowLeft' && this.questFieldIndex === this.questFields.length) {
-                    e.preventDefault();
-                    this.showQuestList();
-                }
-                
-                // Handle CYCLE selection
-                if (this.questEditMode && this.questFields[this.questFieldIndex].type === 'select') {
-                    const field = this.questFields[this.questFieldIndex];
-                    if (e.key === 'ArrowLeft') {
-                        e.preventDefault();
-                        this.questCycleIndex = (this.questCycleIndex - 1 + field.options.length) % field.options.length;
-                        this.questEditData[field.name] = field.options[this.questCycleIndex];
-                        this.renderQuestInputScreen();
-                    } else if (e.key === 'ArrowRight') {
-                        e.preventDefault();
-                        this.questCycleIndex = (this.questCycleIndex + 1) % field.options.length;
-                        this.questEditData[field.name] = field.options[this.questCycleIndex];
-                        this.renderQuestInputScreen();
-                    } else if (e.key === 'Enter' || e.key === 'Escape') {
-                        e.preventDefault();
-                        this.questEditMode = false;
-                        this.renderQuestInputScreen();
-                    }
-                }
-            },
-
-            saveQuestFromInput() {
-                // Validate
-                if (!this.questEditData.title.trim()) {
-                    this.addMessage('ミッション名を入力してください');
-                    return;
-                }
-                
-                const quest = {
-                    id: this.isEditingQuest ? this.currentQuest.id : Date.now().toString(),
-                    title: this.questEditData.title,
-                    deadline: this.questEditData.deadline,
-                    repeat: this.questEditData.cycle,
-                    cycle: this.questEditData.cycle,
-                    description: this.questEditData.description,
-                    tasks: this.questEditData.tasks,
-                    completed: false,
-                    timestamp: this.isEditingQuest ? this.currentQuest.timestamp : Date.now(),
-                    createdAt: this.isEditingQuest ? this.currentQuest.createdAt : Date.now()
-                };
-                
-                if (this.isEditingQuest) {
-                    this.quests[this.currentQuestIndex] = quest;
-                } else {
-                    this.quests.push(quest);
-                }
-                
-                this.saveData();
-                this.syncData();
-                this.playSound('register.mp3', 0.5);
-                this.addMessage('保存しました');
-                this.showQuestList();
             },
 
             viewQuest(index) {
