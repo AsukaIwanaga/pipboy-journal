@@ -284,6 +284,46 @@ ASUKA IWANAGA PRIVATE TERMINAL
     </div>
 
     <script>
+        /**
+         * ROBCO TERMINAL SYSTEM
+         * Version: 2.2.0
+         * Last Updated: 2026-03-06
+         * 
+         * CHANGELOG:
+         * 
+         * v2.2.0 (2026-03-06)
+         * - MEMOカテゴリをディレクトリシステムに変更
+         * - ディレクトリ管理機能追加（作成/名前変更/削除）
+         * - メモのディレクトリ移動機能追加
+         * - ディレクトリ削除時に内部メモを「未分類」に自動移動
+         * - input/textareaのカラーモード対応修正
+         * - メモ編集画面に[ディレクトリを変更]ボタン追加
+         * 
+         * v2.1.1 (2026-03-06)
+         * - 新しいQUEST入力UI実装（統一フィールド画面）
+         * - 日本語入力完全対応（MISSION/DEADLINE/DESCRIPTION/TASK）
+         * - ライトモード/ダークモード切り替え機能追加
+         * - MEMOカテゴリ機能実装（仕事/プライベート/買い物/未分類）
+         * - タイプ音の重複再生バグ修正
+         * - textareaから↓キーで次フィールドへ移動機能追加
+         * - バージョン表示をセマンティックバージョニングに変更
+         * 
+         * v2.0.0 (2026-03-05)
+         * - 全操作を十字キー+Enterのみに統一
+         * - コマンド入力を完全削除
+         * - LOG/MEMO/QUEST詳細画面にメニューボタン追加
+         * - メッセージログシステム実装（3行フッター）
+         * - 音声自動初期化機能追加
+         * 
+         * v1.0.0 (2026-03-01)
+         * - 初期リリース
+         * - LOG/MEMO/QUESTシステム実装
+         * - Gist連携機能
+         * - 基本的なターミナルUI
+         */
+        
+        const VERSION = '2.2.0';
+        
         const term = {
             currentScreen: 'loginScreen',
             logs: [],
@@ -298,10 +338,11 @@ ASUKA IWANAGA PRIVATE TERMINAL
             audioContext: null,
             selectedMenuItem: 0,
             menuItems: [],
+            typeTextTimeout: null,
             
-            // Memo categories
-            memoCategories: ["仕事", "プライベート", "買い物", "未分類"],
-            currentCategory: null,
+            // Memo directories (formerly categories)
+            memoDirectories: JSON.parse(localStorage.getItem('memoDirectories') || '["仕事", "プライベート", "買い物"]'),
+            currentDirectory: null,
             
             // Terminal input system
             terminalMode: null,
@@ -422,11 +463,8 @@ ASUKA IWANAGA PRIVATE TERMINAL
                     }
                 });
                 
-                const now = new Date();
-                const version = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-                
                 const welcomeText = `WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK
--ver. ${version}
+-ver. ${VERSION}
 
 認証が必要です
 `;
@@ -710,6 +748,12 @@ WELCOME TO TERMLINK`;
                     return;
                 }
                 
+                // Handle quest input screen
+                if (this.currentScreen === 'questEditScreen' && this.questFields) {
+                    this.handleQuestInputKey(e);
+                    return;
+                }
+                
                 // Don't interfere with textarea
                 if (e.target.id === 'terminalInput') {
                     return; // Let textarea handle all keys normally
@@ -790,7 +834,7 @@ WELCOME TO TERMLINK`;
                             id: Date.now().toString(),
                             title: title,
                             text: content,
-                            category: this.currentCategory || '未分類',
+                            category: this.currentDirectory || '未分類',
                             timestamp: Date.now()
                         });
                     }
@@ -799,9 +843,9 @@ WELCOME TO TERMLINK`;
                     this.playSound('register.mp3', 0.5);
                     this.addMessage('保存しました');
                     
-                    // Return to category view if in category
-                    if (this.currentCategory) {
-                        this.showMemosInCategory(this.currentCategory);
+                    // Return to directory view if in directory
+                    if (this.currentDirectory) {
+                        this.showMemosInDirectory(this.currentDirectory);
                     } else {
                         this.showMemoList();
                     }
@@ -1119,8 +1163,8 @@ WELCOME TO TERMLINK`;
                     if (this.terminalMode === 'log_edit') {
                         this.showLogList();
                     } else if (this.terminalMode === 'memo_edit') {
-                        if (this.currentCategory) {
-                            this.showMemosInCategory(this.currentCategory);
+                        if (this.currentDirectory) {
+                            this.showMemosInDirectory(this.currentDirectory);
                         } else {
                             this.showMemoList();
                         }
@@ -1128,7 +1172,7 @@ WELCOME TO TERMLINK`;
                 };
                 items[1].onclick = () => {
                     // Restore the menu without resetting textarea
-                    menu.innerHTML = '<div class="menu-item">[戻る]</div><div class="menu-item">[保存]</div>';
+                    menu.innerHTML = '<div class="menu-item">[戻る]</div><div class="menu-item">[ディレクトリを変更]</div><div class="menu-item">[保存]</div>';
                     const items = menu.querySelectorAll('.menu-item');
                     items[0].onclick = () => {
                         if (this.hasUnsavedChanges) {
@@ -1137,15 +1181,16 @@ WELCOME TO TERMLINK`;
                             if (this.terminalMode === 'log_edit') {
                                 this.showLogList();
                             } else if (this.terminalMode === 'memo_edit') {
-                                if (this.currentCategory) {
-                                    this.showMemosInCategory(this.currentCategory);
+                                if (this.currentDirectory) {
+                                    this.showMemosInDirectory(this.currentDirectory);
                                 } else {
                                     this.showMemoList();
                                 }
                             }
                         }
                     };
-                    items[1].onclick = () => this.terminalSave();
+                    items[1].onclick = () => this.changeMemoDirectory();
+                    items[2].onclick = () => this.terminalSave();
                     this.updateMenuItems();
                 };
                 this.updateMenuItems();
@@ -1194,19 +1239,23 @@ WELCOME TO TERMLINK`;
             },
 
 
+
+            // ========== MEMO DIRECTORY SYSTEM ==========
+            
             showMemoList() {
-                this.currentCategory = null;
+                this.currentDirectory = null;
                 this.showScreen('memoListScreen');
                 const list = document.getElementById('memoList');
                 
-                let html = '<div class="menu-item">[+ 新規作成]</div>';
+                let html = '<div class="menu-item">[+ 新規ディレクトリを作成]</div>';
                 
-                // Show categories with count
-                this.memoCategories.forEach(category => {
-                    const count = this.memos.filter(m => (m.category || '未分類') === category).length;
-                    html += `<div class="menu-item">[📁 ${category}] (${count})</div>`;
+                this.memoDirectories.forEach(dir => {
+                    const count = this.memos.filter(m => m.category === dir).length;
+                    html += `<div class="menu-item">[${dir}] (${count})</div>`;
                 });
                 
+                const uncategorizedCount = this.memos.filter(m => !m.category || m.category === '未分類').length;
+                html += `<div class="menu-item">[未分類] (${uncategorizedCount})</div>`;
                 html += '<div class="menu-item">[全てのメモ]</div>';
                 html += '<div class="menu-item">[戻る]</div>';
                 list.innerHTML = html;
@@ -1214,57 +1263,62 @@ WELCOME TO TERMLINK`;
                 const items = list.querySelectorAll('.menu-item');
                 let index = 0;
                 
-                items[index++].onclick = () => this.showCategorySelect();
-                
-                this.memoCategories.forEach(category => {
-                    items[index++].onclick = () => this.showMemosInCategory(category);
+                items[index++].onclick = () => this.createNewDirectory();
+                this.memoDirectories.forEach(dir => {
+                    items[index++].onclick = () => this.showMemosInDirectory(dir);
                 });
-                
-                items[index++].onclick = () => this.showMemosInCategory(null); // All memos
+                items[index++].onclick = () => this.showMemosInDirectory('未分類');
+                items[index++].onclick = () => this.showMemosInDirectory(null);
                 items[index++].onclick = () => this.goHome();
 
                 this.updateMenuItems();
             },
 
-            showCategorySelect() {
+            createNewDirectory() {
                 this.showScreen('memoListScreen');
                 const list = document.getElementById('memoList');
                 
-                let html = '<div style="margin-bottom:10px;">カテゴリを選択してください</div>';
-                this.memoCategories.forEach(category => {
-                    html += `<div class="menu-item">[${category}]</div>`;
-                });
-                html += '<div class="menu-item">[戻る]</div>';
-                list.innerHTML = html;
-
-                const items = list.querySelectorAll('.menu-item');
-                this.memoCategories.forEach((category, i) => {
-                    items[i].onclick = () => this.newMemoWithCategory(category);
-                });
-                items[items.length - 1].onclick = () => this.showMemoList();
-
-                this.updateMenuItems();
+                list.innerHTML = '<div style="margin-bottom:10px;">新しいディレクトリ名を入力してください</div><div>&gt; <input type="text" id="dirNameInput" style="background:transparent; border:none; color:var(--text-color); font-family:inherit; font-size:18px; outline:none; width:80%;"></div>';
+                
+                setTimeout(() => {
+                    const input = document.getElementById('dirNameInput');
+                    if (input) {
+                        input.focus();
+                        input.addEventListener('keydown', (e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                const dirName = input.value.trim();
+                                if (dirName && !this.memoDirectories.includes(dirName) && dirName !== '未分類') {
+                                    this.memoDirectories.push(dirName);
+                                    this.saveMemoDirectories();
+                                    this.addMessage(`ディレクトリ「${dirName}」を作成しました`);
+                                }
+                                this.showMemoList();
+                            } else if (e.key === 'Escape') {
+                                e.preventDefault();
+                                this.showMemoList();
+                            }
+                        });
+                    }
+                }, 0);
             },
 
-            newMemoWithCategory(category) {
-                this.currentCategory = category;
-                this.newMemo();
-            },
-
-            showMemosInCategory(category) {
-                this.currentCategory = category;
+            showMemosInDirectory(directory) {
+                this.currentDirectory = directory;
                 this.showScreen('memoListScreen');
                 const list = document.getElementById('memoList');
                 
-                const filteredMemos = category 
-                    ? this.memos.filter(m => (m.category || '未分類') === category)
+                const filteredMemos = directory 
+                    ? (directory === '未分類' 
+                        ? this.memos.filter(m => !m.category || m.category === '未分類')
+                        : this.memos.filter(m => m.category === directory))
                     : this.memos;
                 
-                const title = category ? `📁 ${category}` : '全てのメモ';
+                const title = directory ? directory : '全てのメモ';
                 let html = `<div style="margin-bottom:10px;">${title}</div>`;
                 html += '<div class="menu-item">[+ 新規作成]</div>';
                 
-                filteredMemos.forEach((memo, i) => {
+                filteredMemos.forEach((memo) => {
                     const firstLine = memo.text.split('\n')[0].substring(0, 50);
                     const date = new Date(memo.timestamp);
                     const dateStr = `${date.getFullYear()}年${String(date.getMonth()+1).padStart(2,'0')}月${String(date.getDate()).padStart(2,'0')}日`;
@@ -1272,12 +1326,18 @@ WELCOME TO TERMLINK`;
                 });
                 
                 html += '<div class="menu-item">[戻る]</div>';
+                
+                if (directory && directory !== '未分類' && directory !== null) {
+                    html += '<div class="menu-item">[ディレクトリの名前を変更する]</div>';
+                    html += '<div class="menu-item">[ディレクトリを削除]</div>';
+                }
+                
                 list.innerHTML = html;
 
                 const items = list.querySelectorAll('.menu-item');
                 let index = 0;
                 
-                items[index++].onclick = () => category ? this.newMemoWithCategory(category) : this.showCategorySelect();
+                items[index++].onclick = () => directory && directory !== '未分類' ? this.newMemoInDirectory(directory) : this.selectDirectoryForNewMemo();
                 
                 filteredMemos.forEach((memo) => {
                     items[index++].onclick = () => {
@@ -1287,8 +1347,104 @@ WELCOME TO TERMLINK`;
                 });
                 
                 items[index++].onclick = () => this.showMemoList();
+                
+                if (directory && directory !== '未分類' && directory !== null) {
+                    items[index++].onclick = () => this.renameDirectory(directory);
+                    items[index++].onclick = () => this.deleteDirectory(directory);
+                }
 
                 this.updateMenuItems();
+            },
+
+            selectDirectoryForNewMemo() {
+                this.showScreen('memoListScreen');
+                const list = document.getElementById('memoList');
+                
+                let html = '<div style="margin-bottom:10px;">ディレクトリを選択してください</div>';
+                this.memoDirectories.forEach(dir => {
+                    html += `<div class="menu-item">[${dir}]</div>`;
+                });
+                html += '<div class="menu-item">[未分類]</div>';
+                html += '<div class="menu-item">[戻る]</div>';
+                list.innerHTML = html;
+
+                const items = list.querySelectorAll('.menu-item');
+                this.memoDirectories.forEach((dir, i) => {
+                    items[i].onclick = () => this.newMemoInDirectory(dir);
+                });
+                items[this.memoDirectories.length].onclick = () => this.newMemoInDirectory('未分類');
+                items[items.length - 1].onclick = () => this.showMemoList();
+
+                this.updateMenuItems();
+            },
+
+            newMemoInDirectory(directory) {
+                this.currentDirectory = directory;
+                this.newMemo();
+            },
+
+            renameDirectory(oldName) {
+                this.showScreen('memoListScreen');
+                const list = document.getElementById('memoList');
+                
+                list.innerHTML = `<div style="margin-bottom:10px;">新しいディレクトリ名を入力してください</div><div style="margin-bottom:10px;">現在: ${oldName}</div><div>&gt; <input type="text" id="dirNameInput" value="${oldName}" style="background:transparent; border:none; color:var(--text-color); font-family:inherit; font-size:18px; outline:none; width:80%;"></div>`;
+                
+                setTimeout(() => {
+                    const input = document.getElementById('dirNameInput');
+                    if (input) {
+                        input.focus();
+                        input.select();
+                        input.addEventListener('keydown', (e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                const newName = input.value.trim();
+                                if (newName && newName !== oldName && !this.memoDirectories.includes(newName)) {
+                                    const index = this.memoDirectories.indexOf(oldName);
+                                    this.memoDirectories[index] = newName;
+                                    this.memos.forEach(m => {
+                                        if (m.category === oldName) m.category = newName;
+                                    });
+                                    this.saveMemoDirectories();
+                                    this.saveData();
+                                    this.addMessage(`ディレクトリ名を「${newName}」に変更しました`);
+                                }
+                                this.showMemoList();
+                            } else if (e.key === 'Escape') {
+                                e.preventDefault();
+                                this.showMemosInDirectory(oldName);
+                            }
+                        });
+                    }
+                }, 0);
+            },
+
+            deleteDirectory(dirName) {
+                this.showScreen('memoListScreen');
+                const list = document.getElementById('memoList');
+                
+                const memoCount = this.memos.filter(m => m.category === dirName).length;
+                
+                list.innerHTML = `<div style="margin-bottom:10px;">ディレクトリ「${dirName}」を削除しますか？</div><div style="margin-bottom:10px;">このディレクトリ内の${memoCount}個のメモは「未分類」に移動されます</div><div class="menu-item">[はい]</div><div class="menu-item">[いいえ]</div>`;
+                
+                const items = list.querySelectorAll('.menu-item');
+                items[0].onclick = () => {
+                    this.memos.forEach(m => {
+                        if (m.category === dirName) m.category = '未分類';
+                    });
+                    const index = this.memoDirectories.indexOf(dirName);
+                    this.memoDirectories.splice(index, 1);
+                    this.saveMemoDirectories();
+                    this.saveData();
+                    this.addMessage(`ディレクトリ「${dirName}」を削除しました`);
+                    this.showMemoList();
+                };
+                items[1].onclick = () => this.showMemosInDirectory(dirName);
+                
+                this.updateMenuItems();
+            },
+
+            saveMemoDirectories() {
+                localStorage.setItem('memoDirectories', JSON.stringify(this.memoDirectories));
             },
 
             viewMemo(index) {
@@ -1298,21 +1454,19 @@ WELCOME TO TERMLINK`;
                 
                 this.showScreen('memoViewScreen');
                 
-                // Setup menu
                 const menu = document.getElementById('memoViewMenu');
                 menu.innerHTML = '<div class="menu-item">[編集]</div><div class="menu-item">[戻る]</div>';
                 const items = menu.querySelectorAll('.menu-item');
                 items[0].onclick = () => this.editMemo(index);
                 items[1].onclick = () => {
-                    if (this.currentCategory) {
-                        this.showMemosInCategory(this.currentCategory);
+                    if (this.currentDirectory) {
+                        this.showMemosInDirectory(this.currentDirectory);
                     } else {
                         this.showMemoList();
                     }
                 };
                 this.updateMenuItems();
                 
-                // Show content
                 const content = document.getElementById('memoContent');
                 content.textContent = '';
                 this.typeText(memo.text, content);
@@ -1325,38 +1479,35 @@ WELCOME TO TERMLINK`;
                 this.hasUnsavedChanges = false;
                 
                 this.showScreen('terminalEditScreen');
-                
                 document.getElementById('terminalModeTitle').textContent = 'MEMO ENTRY MODE';
                 
-                // Setup button menu FIRST
                 const menu = document.getElementById('terminalEditMenu');
-                menu.innerHTML = '<div class="menu-item">[戻る]</div><div class="menu-item">[保存]</div>';
+                menu.innerHTML = '<div class="menu-item">[戻る]</div><div class="menu-item">[ディレクトリを変更]</div><div class="menu-item">[保存]</div>';
                 const items = menu.querySelectorAll('.menu-item');
                 items[0].onclick = () => {
                     if (this.hasUnsavedChanges) {
                         this.showUnsavedConfirm();
                     } else {
-                        this.showMemoList();
+                        if (this.currentDirectory) {
+                            this.showMemosInDirectory(this.currentDirectory);
+                        } else {
+                            this.showMemoList();
+                        }
                     }
                 };
-                items[1].onclick = () => this.terminalSave();
+                items[1].onclick = () => this.changeMemoDirectory();
+                items[2].onclick = () => this.terminalSave();
                 
-                // Then setup textarea
                 const textarea = document.getElementById('terminalInput');
-                textarea.value = '';
-                textarea.disabled = false;
-                textarea.readOnly = false;
-                
-                // Remove old event listeners by cloning
                 const newTextarea = textarea.cloneNode(true);
                 textarea.parentNode.replaceChild(newTextarea, textarea);
+                newTextarea.value = '';
+                this.originalContent = '';
                 
-                // Track changes on new textarea
                 newTextarea.addEventListener('input', () => {
                     this.hasUnsavedChanges = (newTextarea.value !== this.originalContent);
                 });
                 
-                // Allow up arrow to move to menu from first line
                 newTextarea.addEventListener('keydown', (e) => {
                     if (e.key === 'ArrowUp') {
                         const cursorPosition = newTextarea.selectionStart;
@@ -1366,9 +1517,7 @@ WELCOME TO TERMLINK`;
                         if (isOnFirstLine && cursorPosition === 0) {
                             e.preventDefault();
                             e.stopPropagation();
-                            // Blur the textarea to remove focus
                             newTextarea.blur();
-                            // Focus on last menu item (保存)
                             this.updateMenuItems();
                             if (this.menuItems.length > 0) {
                                 this.selectedMenuItem = this.menuItems.length - 1;
@@ -1378,12 +1527,42 @@ WELCOME TO TERMLINK`;
                     }
                 });
                 
-                // Update menu items and focus on first item
                 this.updateMenuItems();
                 this.selectedMenuItem = 0;
                 this.updateMenuSelection();
+            },
+
+            changeMemoDirectory() {
+                this.showScreen('terminalEditScreen');
+                const titleDiv = document.getElementById('terminalModeTitle');
+                const menu = document.getElementById('terminalEditMenu');
                 
-                console.log('MEMO entry mode - menu focused');
+                titleDiv.textContent = `現在のディレクトリ: ${this.currentDirectory || '未分類'}`;
+                
+                let html = '<div style="margin-bottom:10px;">移動先ディレクトリを選択</div>';
+                this.memoDirectories.forEach(dir => {
+                    html += `<div class="menu-item">[${dir}]</div>`;
+                });
+                html += '<div class="menu-item">[未分類]</div>';
+                html += '<div class="menu-item">[戻る]</div>';
+                menu.innerHTML = html;
+                
+                const items = menu.querySelectorAll('.menu-item');
+                this.memoDirectories.forEach((dir, i) => {
+                    items[i].onclick = () => {
+                        this.currentDirectory = dir;
+                        this.addMessage(`ディレクトリを「${dir}」に変更しました`);
+                        this.newMemo();
+                    };
+                });
+                items[this.memoDirectories.length].onclick = () => {
+                    this.currentDirectory = '未分類';
+                    this.addMessage('ディレクトリを「未分類」に変更しました');
+                    this.newMemo();
+                };
+                items[items.length - 1].onclick = () => this.newMemo();
+                
+                this.updateMenuItems();
             },
 
             editMemo(index) {
@@ -1393,39 +1572,30 @@ WELCOME TO TERMLINK`;
                 this.hasUnsavedChanges = false;
                 
                 this.showScreen('terminalEditScreen');
-                
                 document.getElementById('terminalModeTitle').textContent = 'MEMO EDIT MODE';
                 
-                // Setup button menu FIRST
                 const menu = document.getElementById('terminalEditMenu');
-                menu.innerHTML = '<div class="menu-item">[戻る]</div><div class="menu-item">[保存]</div>';
+                menu.innerHTML = '<div class="menu-item">[戻る]</div><div class="menu-item">[ディレクトリを変更]</div><div class="menu-item">[保存]</div>';
                 const items = menu.querySelectorAll('.menu-item');
                 items[0].onclick = () => {
                     if (this.hasUnsavedChanges) {
                         this.showUnsavedConfirm();
                     } else {
-                        this.showMemoList();
+                        this.viewMemo(index);
                     }
                 };
-                items[1].onclick = () => this.terminalSave();
+                items[1].onclick = () => this.changeMemoDirectoryForEdit(index);
+                items[2].onclick = () => this.terminalSave();
                 
-                // Then setup textarea
                 const textarea = document.getElementById('terminalInput');
-                textarea.value = this.currentMemo.text;
-                textarea.disabled = false;
-                textarea.readOnly = false;
-                
-                // Remove old event listeners by cloning
                 const newTextarea = textarea.cloneNode(true);
                 textarea.parentNode.replaceChild(newTextarea, textarea);
                 newTextarea.value = this.currentMemo.text;
                 
-                // Track changes on new textarea
                 newTextarea.addEventListener('input', () => {
                     this.hasUnsavedChanges = (newTextarea.value !== this.originalContent);
                 });
                 
-                // Allow up arrow to move to menu from first line
                 newTextarea.addEventListener('keydown', (e) => {
                     if (e.key === 'ArrowUp') {
                         const cursorPosition = newTextarea.selectionStart;
@@ -1435,9 +1605,7 @@ WELCOME TO TERMLINK`;
                         if (isOnFirstLine && cursorPosition === 0) {
                             e.preventDefault();
                             e.stopPropagation();
-                            // Blur the textarea to remove focus
                             newTextarea.blur();
-                            // Focus on last menu item (保存)
                             this.updateMenuItems();
                             if (this.menuItems.length > 0) {
                                 this.selectedMenuItem = this.menuItems.length - 1;
@@ -1447,12 +1615,54 @@ WELCOME TO TERMLINK`;
                     }
                 });
                 
-                // Update menu items and focus on first item
                 this.updateMenuItems();
                 this.selectedMenuItem = 0;
                 this.updateMenuSelection();
+            },
+
+            changeMemoDirectoryForEdit(index) {
+                const tempContent = document.getElementById('terminalInput').value;
+                this.showScreen('terminalEditScreen');
+                const titleDiv = document.getElementById('terminalModeTitle');
+                const menu = document.getElementById('terminalEditMenu');
                 
-                console.log('MEMO edit mode - menu focused');
+                titleDiv.textContent = `現在のディレクトリ: ${this.currentMemo.category || '未分類'}`;
+                
+                let html = '<div style="margin-bottom:10px;">移動先ディレクトリを選択</div>';
+                this.memoDirectories.forEach(dir => {
+                    html += `<div class="menu-item">[${dir}]</div>`;
+                });
+                html += '<div class="menu-item">[未分類]</div>';
+                html += '<div class="menu-item">[戻る]</div>';
+                menu.innerHTML = html;
+                
+                const items = menu.querySelectorAll('.menu-item');
+                this.memoDirectories.forEach((dir, i) => {
+                    items[i].onclick = () => {
+                        this.currentMemo.category = dir;
+                        this.memos[index].category = dir;
+                        this.currentDirectory = dir;
+                        this.saveData();
+                        this.addMessage(`ディレクトリを「${dir}」に変更しました`);
+                        this.editMemo(index);
+                        document.getElementById('terminalInput').value = tempContent;
+                    };
+                });
+                items[this.memoDirectories.length].onclick = () => {
+                    this.currentMemo.category = '未分類';
+                    this.memos[index].category = '未分類';
+                    this.currentDirectory = '未分類';
+                    this.saveData();
+                    this.addMessage('ディレクトリを「未分類」に変更しました');
+                    this.editMemo(index);
+                    document.getElementById('terminalInput').value = tempContent;
+                };
+                items[items.length - 1].onclick = () => {
+                    this.editMemo(index);
+                    document.getElementById('terminalInput').value = tempContent;
+                };
+                
+                this.updateMenuItems();
             },
 
             showQuestList() {
@@ -1821,7 +2031,7 @@ WELCOME TO TERMLINK`;
             },
 
             newQuest() {
-                this.questEditStep = 1; // 1:title, 2:deadline, 3:cycle, 4:description, 5:tasks
+                this.isEditingQuest = false;
                 this.questEditData = {
                     title: '',
                     deadline: '',
@@ -1829,284 +2039,461 @@ WELCOME TO TERMLINK`;
                     description: '',
                     tasks: []
                 };
-                this.showQuestEditStep();
+                this.showQuestInputScreen();
             },
 
-            showQuestEditStep() {
+            showQuestInputScreen() {
                 this.showScreen('questEditScreen');
-                const content = document.getElementById('questEditContent');
                 const titleDiv = document.getElementById('questEditTitle');
+                const content = document.getElementById('questEditContent');
                 
                 titleDiv.textContent = this.isEditingQuest ? 'QUEST EDIT MODE' : 'QUEST ENTRY MODE';
                 
-                if (this.questEditStep === 1) {
-                    // 図3-1: Title input
-                    content.innerHTML = '&gt; MISSION: <span id="questTitleDisplay"></span><span class="cursor"></span>';
+                // Define fields
+                this.questFields = [
+                    { name: 'title', label: '> MISSION:', type: 'text' },
+                    { name: 'deadline', label: '> DEADLINE:', type: 'text' },
+                    { name: 'cycle', label: '> CYCLE:', type: 'select', options: ['ONCE', 'WEEKLY', 'MONTHLY'] },
+                    { name: 'description', label: '> DESCRIPTION:', type: 'textarea' },
+                    { name: 'tasks', label: '> TASK:', type: 'textarea' }
+                ];
+                
+                this.questFieldIndex = 0;
+                this.questEditMode = false;
+                this.questCycleIndex = this.questFields[2].options.indexOf(this.questEditData.cycle);
+                
+                this.renderQuestInputScreen();
+            },
+
+            renderQuestInputScreen() {
+                const content = document.getElementById('questEditContent');
+                let html = '';
+                
+                this.questFields.forEach((field, index) => {
+                    const isSelected = index === this.questFieldIndex && !this.questEditMode;
+                    const isEditing = index === this.questFieldIndex && this.questEditMode;
                     
-                    const display = document.getElementById('questTitleDisplay');
-                    let buffer = this.questEditData.title;
-                    display.textContent = buffer;
+                    const value = this.questEditData[field.name];
                     
-                    const handleTitleKey = (e) => {
-                        if (e.key === 'Enter') {
-                            e.preventDefault();
-                            this.questEditData.title = buffer.trim();
-                            if (!this.questEditData.title) return;
-                            document.removeEventListener('keydown', handleTitleKey);
-                            this.questEditStep++;
-                            this.showQuestEditStep();
-                        } else if (e.key === 'Backspace') {
-                            e.preventDefault();
-                            buffer = buffer.slice(0, -1);
-                            display.textContent = buffer;
-                        } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
-                            e.preventDefault();
-                            buffer += e.key;
-                            display.textContent = buffer;
+                    if (field.type === 'textarea') {
+                        html += `<div class="field ${isSelected ? 'menu-item selected' : 'field'}" style="margin-bottom:5px;">`;
+                        html += `<span>${field.label}</span>`;
+                        html += `</div>`;
+                        
+                        if (isEditing) {
+                            html += `<textarea id="quest-textarea-${field.name}" rows="5" style="width:100%; background:transparent; border:none; color:var(--text-color); font-family:inherit; font-size:18px; outline:none; resize:none; line-height:1.4;">${Array.isArray(value) ? value.map(t => t.title).join('\n') : value}</textarea>`;
+                        } else {
+                            const preview = Array.isArray(value) ? value.map(t => t.title).join('\n') : value;
+                            html += `<div style="margin-left:20px; white-space: pre-wrap;">${preview || '(空)'}</div>`;
                         }
-                    };
-                    document.addEventListener('keydown', handleTitleKey);
+                    } else if (field.type === 'text') {
+                        html += `<div class="field ${isSelected ? 'menu-item selected' : ''}" style="margin-bottom:5px;">`;
+                        html += `<span>${field.label}</span>`;
+                        if (isEditing) {
+                            html += `<input type="text" id="quest-input-${field.name}" value="${value}" style="background:transparent; border:none; color:var(--text-color); font-family:inherit; font-size:18px; outline:none; width:calc(100% - 150px);">`;
+                        } else {
+                            html += `<span>${value || ''}</span>`;
+                        }
+                        html += `</div>`;
+                    } else if (field.type === 'select') {
+                        html += `<div class="field ${isSelected ? 'menu-item selected' : ''}" style="margin-bottom:5px;">`;
+                        html += `<span>${field.label}</span>`;
+                        html += `<span>${value || ''}</span>`;
+                        if (isEditing) {
+                            html += ' <span style="opacity:0.7;">(← → で選択)</span>';
+                        }
+                        html += `</div>`;
+                    }
+                });
+                
+                const saveSelected = this.questFieldIndex === this.questFields.length && !this.questEditMode;
+                html += `<div class="menu-item ${saveSelected ? 'selected' : ''}" style="margin-top:10px;">[保存]</div>`;
+                
+                content.innerHTML = html;
+                this.updateMenuItems();
+                
+                // Setup input/textarea event handlers
+                if (this.questEditMode) {
+                    const field = this.questFields[this.questFieldIndex];
                     
-                } else if (this.questEditStep === 2) {
-                    // 図3-2: Deadline input (8 digits: YYYYMMDD)
-                    content.innerHTML = `&gt; MISSION: ${this.questEditData.title}<br>&gt; DEADLINE: <span id="questDeadlineDisplay"></span><span class="cursor"></span>`;
-                    
-                    const display = document.getElementById('questDeadlineDisplay');
-                    let buffer = this.questEditData.deadline.replace(/-/g, '');
-                    display.textContent = buffer;
-                    
-                    const handleDeadlineKey = (e) => {
-                        if (e.key === 'Enter') {
-                            e.preventDefault();
-                            if (buffer.length === 8) {
-                                // Format as YYYY-MM-DD
-                                this.questEditData.deadline = `${buffer.slice(0,4)}-${buffer.slice(4,6)}-${buffer.slice(6,8)}`;
-                                document.removeEventListener('keydown', handleDeadlineKey);
-                                this.questEditStep++;
-                                this.showQuestEditStep();
+                    if (field.type === 'text') {
+                        setTimeout(() => {
+                            const input = document.getElementById(`quest-input-${field.name}`);
+                            if (input) {
+                                input.focus();
+                                input.addEventListener('input', (e) => {
+                                    this.questEditData[field.name] = e.target.value;
+                                });
+                                input.addEventListener('keydown', (e) => {
+                                    if (e.key === 'Enter' || e.key === 'ArrowDown') {
+                                        e.preventDefault();
+                                        this.questEditMode = false;
+                                        if (e.key === 'ArrowDown') {
+                                            this.questFieldIndex = Math.min(this.questFields.length, this.questFieldIndex + 1);
+                                        }
+                                        this.renderQuestInputScreen();
+                                    } else if (e.key === 'Escape') {
+                                        e.preventDefault();
+                                        this.questEditMode = false;
+                                        this.renderQuestInputScreen();
+                                    } else if (e.key === 'ArrowUp') {
+                                        e.preventDefault();
+                                        this.questEditMode = false;
+                                        this.questFieldIndex = Math.max(0, this.questFieldIndex - 1);
+                                        this.renderQuestInputScreen();
+                                    }
+                                });
                             }
-                        } else if (e.key === 'Backspace') {
-                            e.preventDefault();
-                            buffer = buffer.slice(0, -1);
-                            display.textContent = buffer;
-                        } else if (e.key >= '0' && e.key <= '9') {
-                            e.preventDefault();
-                            if (buffer.length < 8) {
-                                buffer += e.key;
-                                display.textContent = buffer;
+                        }, 0);
+                    } else if (field.type === 'textarea') {
+                        setTimeout(() => {
+                            const textarea = document.getElementById(`quest-textarea-${field.name}`);
+                            if (textarea) {
+                                textarea.focus();
+                                textarea.addEventListener('input', (e) => {
+                                    if (field.name === 'tasks') {
+                                        // Parse tasks
+                                        const taskLines = e.target.value.split('\n').filter(line => line.trim());
+                                        this.questEditData.tasks = taskLines.map(title => ({ title: title.trim(), completed: false }));
+                                    } else {
+                                        this.questEditData[field.name] = e.target.value;
+                                    }
+                                });
+                                textarea.addEventListener('keydown', (e) => {
+                                    if (e.key === 'ArrowDown') {
+                                        const cursorPosition = textarea.selectionStart;
+                                        const textAfterCursor = textarea.value.substring(cursorPosition);
+                                        const isOnLastLine = !textAfterCursor.includes('\n');
+                                        
+                                        if (isOnLastLine) {
+                                            e.preventDefault();
+                                            this.questEditMode = false;
+                                            this.questFieldIndex = Math.min(this.questFields.length, this.questFieldIndex + 1);
+                                            this.renderQuestInputScreen();
+                                        }
+                                    } else if (e.key === 'Escape') {
+                                        e.preventDefault();
+                                        this.questEditMode = false;
+                                        this.renderQuestInputScreen();
+                                    }
+                                });
                             }
-                        }
-                    };
-                    document.addEventListener('keydown', handleDeadlineKey);
-                    
-                } else if (this.questEditStep === 3) {
-                    // 図3-3: Cycle selection
-                    const cycles = ['ONCE', 'WEEKLY', 'MONTHLY'];
-                    let html = `&gt; MISSION: ${this.questEditData.title}<br>&gt; DEADLINE: ${this.questEditData.deadline}<br>&gt; CYCLE: `;
-                    cycles.forEach((c, i) => {
-                        const selected = c === this.questEditData.cycle ? ' class="menu-item selected"' : ' class="menu-item"';
-                        html += `<div${selected} id="cycle${i}">[${c}]</div>`;
-                    });
-                    content.innerHTML = html;
-                    
-                    this.updateMenuItems();
-                    
-                    const handleCycleKey = (e) => {
-                        if (e.key === 'ArrowUp') {
-                            e.preventDefault();
-                            this.moveSelection(-1);
-                        } else if (e.key === 'ArrowDown') {
-                            e.preventDefault();
-                            this.moveSelection(1);
-                        } else if (e.key === 'Enter' || e.key === 'ArrowRight') {
-                            e.preventDefault();
-                            this.questEditData.cycle = cycles[this.selectedMenuItem];
-                            document.removeEventListener('keydown', handleCycleKey);
-                            this.questEditStep++;
-                            this.showQuestEditStep();
-                        }
-                    };
-                    document.addEventListener('keydown', handleCycleKey);
-                    
-                } else if (this.questEditStep === 4) {
-                    // 図3-4: Description textarea
-                    content.innerHTML = `&gt; MISSION: ${this.questEditData.title}<br>&gt; DEADLINE: ${this.questEditData.deadline}<br>&gt; CYCLE: ${this.questEditData.cycle}<br>&gt; DESCRIPTION:<br><textarea id="questDescInput" rows="5" style="width:100%; background:#000; color:#22c55e; border:none; font-family:inherit; font-size:18px; padding:0; outline:none; resize:none; line-height:1.4;">${this.questEditData.description}</textarea>`;
-                    setTimeout(() => {
-                        const textarea = document.getElementById('questDescInput');
-                        textarea.focus();
-                        textarea.addEventListener('keydown', (e) => {
-                            // Move to next step with Ctrl+Enter
-                            if (e.key === 'Enter' && e.ctrlKey) {
-                                e.preventDefault();
-                                this.questEditData.description = textarea.value;
-                                this.questEditStep++;
-                                this.showQuestEditStep();
-                            }
-                        });
-                    }, 100);
-                    
-                } else if (this.questEditStep === 5) {
-                    // 図3-5: Tasks as menu items
-                    const descPreview = this.questEditData.description.substring(0, 30) + (this.questEditData.description.length > 30 ? '...' : '');
-                    
-                    let html = '<div class="menu-item">[戻る]</div>';
-                    html += '<div class="menu-item">[保存]</div>';
-                    html += `<div style="margin-top:10px;">&gt; MISSION: ${this.questEditData.title}</div>`;
-                    html += `<div>&gt; DEADLINE: ${this.questEditData.deadline}</div>`;
-                    html += `<div>&gt; CYCLE: ${this.questEditData.cycle}</div>`;
-                    html += `<div>&gt; DESCRIPTION:</div>`;
-                    html += `<div>[ ${descPreview} ]</div>`;
-                    html += `<div style="margin-top:10px;">&gt; TASK:</div>`;
-                    html += '<div class="menu-item">[+ 新規作成]</div>';
-                    
-                    this.questEditData.tasks.forEach((task, i) => {
-                        html += `<div class="menu-item" data-task-index="${i}">[${task.title}]</div>`;
-                    });
-                    
-                    content.innerHTML = html;
-                    
-                    // Setup menu buttons
-                    this.updateMenuItems();
-                    const items = Array.from(content.querySelectorAll('.menu-item'));
-                    
-                    items[0].onclick = () => this.showQuestList();
-                    items[1].onclick = () => this.saveQuest();
-                    items[2].onclick = () => this.addNewTask();
-                    
-                    // Task item clicks
-                    this.questEditData.tasks.forEach((task, i) => {
-                        const taskItem = items[3 + i];
-                        if (taskItem) {
-                            taskItem.onclick = () => this.editTask(i);
-                        }
-                    });
+                        }, 0);
+                    }
                 }
             },
 
-            addNewTask() {
-                this.showScreen('questEditScreen');
-                const content = document.getElementById('questEditContent');
+            handleQuestInputKey(e) {
+                if (this.currentScreen !== 'questEditScreen') return;
+                if (this.questEditMode) return; // Let input/textarea handle it
                 
-                content.innerHTML = `<div style="margin-bottom:10px;">新しいタスクを入力してください</div>`;
-                content.innerHTML += '<div>&gt; TASK: <span id="taskInputDisplay"></span><span class="cursor"></span></div>';
-                
-                const display = document.getElementById('taskInputDisplay');
-                let buffer = '';
-                display.textContent = buffer;
-                
-                const handleTaskInput = (e) => {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        const taskTitle = buffer.trim();
-                        if (taskTitle) {
-                            this.questEditData.tasks.push({
-                                title: taskTitle,
-                                completed: false
-                            });
+                if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    this.questFieldIndex = Math.max(0, this.questFieldIndex - 1);
+                    this.renderQuestInputScreen();
+                } else if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    this.questFieldIndex = Math.min(this.questFields.length, this.questFieldIndex + 1);
+                    this.renderQuestInputScreen();
+                } else if (e.key === 'Enter' || e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    if (this.questFieldIndex < this.questFields.length) {
+                        const field = this.questFields[this.questFieldIndex];
+                        this.questEditMode = true;
+                        if (field.type === 'select') {
+                            this.questCycleIndex = field.options.indexOf(this.questEditData[field.name] || field.options[0]);
+                            if (this.questCycleIndex === -1) this.questCycleIndex = 0;
+                            this.questEditData[field.name] = field.options[this.questCycleIndex];
                         }
-                        document.removeEventListener('keydown', handleTaskInput);
-                        this.questEditStep = 5;
-                        this.showQuestEditStep();
-                    } else if (e.key === 'Escape') {
-                        e.preventDefault();
-                        document.removeEventListener('keydown', handleTaskInput);
-                        this.questEditStep = 5;
-                        this.showQuestEditStep();
-                    } else if (e.key === 'Backspace') {
-                        e.preventDefault();
-                        buffer = buffer.slice(0, -1);
-                        display.textContent = buffer;
-                    } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
-                        e.preventDefault();
-                        buffer += e.key;
-                        display.textContent = buffer;
+                        this.renderQuestInputScreen();
+                    } else {
+                        // Save button
+                        this.saveQuestFromInput();
                     }
-                };
+                } else if (e.key === 'ArrowLeft' && this.questFieldIndex === this.questFields.length) {
+                    e.preventDefault();
+                    this.showQuestList();
+                }
                 
-                document.addEventListener('keydown', handleTaskInput);
+                // Handle CYCLE selection
+                if (this.questEditMode && this.questFields[this.questFieldIndex].type === 'select') {
+                    const field = this.questFields[this.questFieldIndex];
+                    if (e.key === 'ArrowLeft') {
+                        e.preventDefault();
+                        this.questCycleIndex = (this.questCycleIndex - 1 + field.options.length) % field.options.length;
+                        this.questEditData[field.name] = field.options[this.questCycleIndex];
+                        this.renderQuestInputScreen();
+                    } else if (e.key === 'ArrowRight') {
+                        e.preventDefault();
+                        this.questCycleIndex = (this.questCycleIndex + 1) % field.options.length;
+                        this.questEditData[field.name] = field.options[this.questCycleIndex];
+                        this.renderQuestInputScreen();
+                    } else if (e.key === 'Enter' || e.key === 'Escape') {
+                        e.preventDefault();
+                        this.questEditMode = false;
+                        this.renderQuestInputScreen();
+                    }
+                }
             },
 
-            editTask(index) {
-                this.showScreen('questEditScreen');
-                const content = document.getElementById('questEditContent');
+            saveQuestFromInput() {
+                // Validate
+                if (!this.questEditData.title.trim()) {
+                    this.addMessage('ミッション名を入力してください');
+                    return;
+                }
                 
-                const task = this.questEditData.tasks[index];
-                
-                content.innerHTML = `<div style="margin-bottom:10px;">タスクを編集</div>`;
-                content.innerHTML += '<div class="menu-item">[削除]</div>';
-                content.innerHTML += '<div class="menu-item">[戻る]</div>';
-                content.innerHTML += '<div style="margin-top:10px;">&gt; TASK: <span id="taskInputDisplay"></span><span class="cursor"></span></div>';
-                
-                const display = document.getElementById('taskInputDisplay');
-                let buffer = task.title;
-                display.textContent = buffer;
-                
-                this.updateMenuItems();
-                const items = content.querySelectorAll('.menu-item');
-                items[0].onclick = () => {
-                    this.questEditData.tasks.splice(index, 1);
-                    this.questEditStep = 5;
-                    this.showQuestEditStep();
-                };
-                items[1].onclick = () => {
-                    this.questEditStep = 5;
-                    this.showQuestEditStep();
-                };
-                
-                const handleTaskInput = (e) => {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        const taskTitle = buffer.trim();
-                        if (taskTitle) {
-                            this.questEditData.tasks[index].title = taskTitle;
-                        }
-                        document.removeEventListener('keydown', handleTaskInput);
-                        this.questEditStep = 5;
-                        this.showQuestEditStep();
-                    } else if (e.key === 'Escape') {
-                        e.preventDefault();
-                        document.removeEventListener('keydown', handleTaskInput);
-                        this.questEditStep = 5;
-                        this.showQuestEditStep();
-                    } else if (e.key === 'Backspace') {
-                        e.preventDefault();
-                        buffer = buffer.slice(0, -1);
-                        display.textContent = buffer;
-                    } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
-                        e.preventDefault();
-                        buffer += e.key;
-                        display.textContent = buffer;
-                    }
-                };
-                
-                document.addEventListener('keydown', handleTaskInput);
-            },
-
-            saveQuest() {
-                // Tasks are already in this.questEditData.tasks from menu items
-                
-                // Create quest object
                 const quest = {
                     id: this.isEditingQuest ? this.currentQuest.id : Date.now().toString(),
                     title: this.questEditData.title,
                     deadline: this.questEditData.deadline,
                     repeat: this.questEditData.cycle,
+                    cycle: this.questEditData.cycle, // For compatibility
                     description: this.questEditData.description,
                     tasks: this.questEditData.tasks,
                     completed: false,
+                    timestamp: this.isEditingQuest ? this.currentQuest.timestamp : Date.now(),
                     createdAt: this.isEditingQuest ? this.currentQuest.createdAt : Date.now()
                 };
                 
                 if (this.isEditingQuest) {
-                    // Update existing quest
                     this.quests[this.currentQuestIndex] = quest;
                 } else {
-                    // Add new quest
                     this.quests.push(quest);
                 }
                 
                 this.saveData();
                 this.syncData();
+                this.playSound('register.mp3', 0.5);
+                this.addMessage('保存しました');
+                this.showQuestList();
+            },
+
+
+            // New unified QUEST input system
+            showQuestInputScreen() {
+                this.showScreen('questEditScreen');
+                const titleDiv = document.getElementById('questEditTitle');
+                const content = document.getElementById('questEditContent');
+                
+                titleDiv.textContent = this.isEditingQuest ? 'QUEST EDIT MODE' : 'QUEST ENTRY MODE';
+                
+                // Define fields
+                this.questFields = [
+                    { name: 'title', label: '> MISSION:', type: 'text' },
+                    { name: 'deadline', label: '> DEADLINE:', type: 'text' },
+                    { name: 'cycle', label: '> CYCLE:', type: 'select', options: ['ONCE', 'WEEKLY', 'MONTHLY'] },
+                    { name: 'description', label: '> DESCRIPTION:', type: 'textarea' },
+                    { name: 'tasks', label: '> TASK:', type: 'textarea' }
+                ];
+                
+                this.questFieldIndex = 0;
+                this.questEditMode = false;
+                this.questCycleIndex = this.questFields[2].options.indexOf(this.questEditData.cycle);
+                
+                this.renderQuestInputScreen();
+            },
+
+            renderQuestInputScreen() {
+                const content = document.getElementById('questEditContent');
+                let html = '';
+                
+                this.questFields.forEach((field, index) => {
+                    const isSelected = index === this.questFieldIndex && !this.questEditMode;
+                    const isEditing = index === this.questFieldIndex && this.questEditMode;
+                    
+                    const value = this.questEditData[field.name];
+                    
+                    if (field.type === 'textarea') {
+                        html += `<div class="field ${isSelected ? 'menu-item selected' : 'field'}" style="margin-bottom:5px;">`;
+                        html += `<span>${field.label}</span>`;
+                        html += `</div>`;
+                        
+                        if (isEditing) {
+                            html += `<textarea id="quest-textarea-${field.name}" rows="5" style="width:100%; background:transparent; border:none; color:var(--text-color); font-family:inherit; font-size:18px; outline:none; resize:none; line-height:1.4;">${Array.isArray(value) ? value.map(t => t.title).join('\n') : value}</textarea>`;
+                        } else {
+                            const preview = Array.isArray(value) ? value.map(t => t.title).join('\n') : value;
+                            html += `<div style="margin-left:20px; white-space: pre-wrap;">${preview || '(空)'}</div>`;
+                        }
+                    } else if (field.type === 'text') {
+                        html += `<div class="field ${isSelected ? 'menu-item selected' : ''}" style="margin-bottom:5px;">`;
+                        html += `<span>${field.label}</span>`;
+                        if (isEditing) {
+                            html += `<input type="text" id="quest-input-${field.name}" value="${value}" style="background:transparent; border:none; color:var(--text-color); font-family:inherit; font-size:18px; outline:none; width:calc(100% - 150px);">`;
+                        } else {
+                            html += `<span>${value || ''}</span>`;
+                        }
+                        html += `</div>`;
+                    } else if (field.type === 'select') {
+                        html += `<div class="field ${isSelected ? 'menu-item selected' : ''}" style="margin-bottom:5px;">`;
+                        html += `<span>${field.label}</span>`;
+                        html += `<span>${value || ''}</span>`;
+                        if (isEditing) {
+                            html += ' <span style="opacity:0.7;">(← → で選択)</span>';
+                        }
+                        html += `</div>`;
+                    }
+                });
+                
+                const saveSelected = this.questFieldIndex === this.questFields.length && !this.questEditMode;
+                html += `<div class="menu-item ${saveSelected ? 'selected' : ''}" style="margin-top:10px;">[保存]</div>`;
+                
+                content.innerHTML = html;
+                this.updateMenuItems();
+                
+                // Setup input/textarea event handlers
+                if (this.questEditMode) {
+                    const field = this.questFields[this.questFieldIndex];
+                    
+                    if (field.type === 'text') {
+                        setTimeout(() => {
+                            const input = document.getElementById(`quest-input-${field.name}`);
+                            if (input) {
+                                input.focus();
+                                input.addEventListener('input', (e) => {
+                                    this.questEditData[field.name] = e.target.value;
+                                });
+                                input.addEventListener('keydown', (e) => {
+                                    if (e.key === 'Enter' || e.key === 'ArrowDown') {
+                                        e.preventDefault();
+                                        this.questEditMode = false;
+                                        if (e.key === 'ArrowDown') {
+                                            this.questFieldIndex = Math.min(this.questFields.length, this.questFieldIndex + 1);
+                                        }
+                                        this.renderQuestInputScreen();
+                                    } else if (e.key === 'Escape') {
+                                        e.preventDefault();
+                                        this.questEditMode = false;
+                                        this.renderQuestInputScreen();
+                                    } else if (e.key === 'ArrowUp') {
+                                        e.preventDefault();
+                                        this.questEditMode = false;
+                                        this.questFieldIndex = Math.max(0, this.questFieldIndex - 1);
+                                        this.renderQuestInputScreen();
+                                    }
+                                });
+                            }
+                        }, 0);
+                    } else if (field.type === 'textarea') {
+                        setTimeout(() => {
+                            const textarea = document.getElementById(`quest-textarea-${field.name}`);
+                            if (textarea) {
+                                textarea.focus();
+                                textarea.addEventListener('input', (e) => {
+                                    if (field.name === 'tasks') {
+                                        // Parse tasks
+                                        const taskLines = e.target.value.split('\n').filter(line => line.trim());
+                                        this.questEditData.tasks = taskLines.map(title => ({ title: title.trim(), completed: false }));
+                                    } else {
+                                        this.questEditData[field.name] = e.target.value;
+                                    }
+                                });
+                                textarea.addEventListener('keydown', (e) => {
+                                    if (e.key === 'ArrowDown') {
+                                        const cursorPosition = textarea.selectionStart;
+                                        const textAfterCursor = textarea.value.substring(cursorPosition);
+                                        const isOnLastLine = !textAfterCursor.includes('\n');
+                                        
+                                        if (isOnLastLine) {
+                                            e.preventDefault();
+                                            this.questEditMode = false;
+                                            this.questFieldIndex = Math.min(this.questFields.length, this.questFieldIndex + 1);
+                                            this.renderQuestInputScreen();
+                                        }
+                                    } else if (e.key === 'Escape') {
+                                        e.preventDefault();
+                                        this.questEditMode = false;
+                                        this.renderQuestInputScreen();
+                                    }
+                                });
+                            }
+                        }, 0);
+                    }
+                }
+            },
+
+            handleQuestInputKey(e) {
+                if (this.currentScreen !== 'questEditScreen') return;
+                if (this.questEditMode) return; // Let input/textarea handle it
+                
+                if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    this.questFieldIndex = Math.max(0, this.questFieldIndex - 1);
+                    this.renderQuestInputScreen();
+                } else if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    this.questFieldIndex = Math.min(this.questFields.length, this.questFieldIndex + 1);
+                    this.renderQuestInputScreen();
+                } else if (e.key === 'Enter' || e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    if (this.questFieldIndex < this.questFields.length) {
+                        const field = this.questFields[this.questFieldIndex];
+                        this.questEditMode = true;
+                        if (field.type === 'select') {
+                            this.questCycleIndex = field.options.indexOf(this.questEditData[field.name] || field.options[0]);
+                            if (this.questCycleIndex === -1) this.questCycleIndex = 0;
+                            this.questEditData[field.name] = field.options[this.questCycleIndex];
+                        }
+                        this.renderQuestInputScreen();
+                    } else {
+                        // Save button
+                        this.saveQuestFromInput();
+                    }
+                } else if (e.key === 'ArrowLeft' && this.questFieldIndex === this.questFields.length) {
+                    e.preventDefault();
+                    this.showQuestList();
+                }
+                
+                // Handle CYCLE selection
+                if (this.questEditMode && this.questFields[this.questFieldIndex].type === 'select') {
+                    const field = this.questFields[this.questFieldIndex];
+                    if (e.key === 'ArrowLeft') {
+                        e.preventDefault();
+                        this.questCycleIndex = (this.questCycleIndex - 1 + field.options.length) % field.options.length;
+                        this.questEditData[field.name] = field.options[this.questCycleIndex];
+                        this.renderQuestInputScreen();
+                    } else if (e.key === 'ArrowRight') {
+                        e.preventDefault();
+                        this.questCycleIndex = (this.questCycleIndex + 1) % field.options.length;
+                        this.questEditData[field.name] = field.options[this.questCycleIndex];
+                        this.renderQuestInputScreen();
+                    } else if (e.key === 'Enter' || e.key === 'Escape') {
+                        e.preventDefault();
+                        this.questEditMode = false;
+                        this.renderQuestInputScreen();
+                    }
+                }
+            },
+
+            saveQuestFromInput() {
+                // Validate
+                if (!this.questEditData.title.trim()) {
+                    this.addMessage('ミッション名を入力してください');
+                    return;
+                }
+                
+                const quest = {
+                    id: this.isEditingQuest ? this.currentQuest.id : Date.now().toString(),
+                    title: this.questEditData.title,
+                    deadline: this.questEditData.deadline,
+                    repeat: this.questEditData.cycle,
+                    cycle: this.questEditData.cycle,
+                    description: this.questEditData.description,
+                    tasks: this.questEditData.tasks,
+                    completed: false,
+                    timestamp: this.isEditingQuest ? this.currentQuest.timestamp : Date.now(),
+                    createdAt: this.isEditingQuest ? this.currentQuest.createdAt : Date.now()
+                };
+                
+                if (this.isEditingQuest) {
+                    this.quests[this.currentQuestIndex] = quest;
+                } else {
+                    this.quests.push(quest);
+                }
+                
+                this.saveData();
+                this.syncData();
+                this.playSound('register.mp3', 0.5);
                 this.addMessage('保存しました');
                 this.showQuestList();
             },
@@ -2261,7 +2648,7 @@ WELCOME TO TERMLINK`;
                 const quest = this.quests[index];
                 this.currentQuest = quest;
                 this.currentQuestIndex = index;
-                this.questEditStep = 1;
+                this.isEditingQuest = true;
                 this.questEditData = {
                     title: quest.title,
                     deadline: quest.deadline,
@@ -2269,28 +2656,43 @@ WELCOME TO TERMLINK`;
                     description: quest.description || '',
                     tasks: [...quest.tasks]
                 };
-                this.isEditingQuest = true;
-                this.showQuestEditStep();
+                this.showQuestInputScreen();
             },
 
             typeText(text, element, callback) {
+                // Cancel any existing typeText
+                if (this.typeTextTimeout) {
+                    clearTimeout(this.typeTextTimeout);
+                    this.typeTextTimeout = null;
+                }
+                
+                // Store current screen to detect screen changes
+                const startScreen = this.currentScreen;
+                
                 let index = 0;
                 const chars = text.split('');
                 
                 const type = () => {
+                    // Stop if screen changed
+                    if (this.currentScreen !== startScreen) {
+                        this.typeTextTimeout = null;
+                        return;
+                    }
+                    
                     if (index >= chars.length) {
+                        this.typeTextTimeout = null;
                         if (callback) callback();
                         return;
                     }
 
                     element.textContent += chars[index];
                     
-                    if (index % 3 === 0) { // Changed from 5 to 3
+                    if (index % 3 === 0) {
                         this.playPip();
                     }
 
                     index++;
-                    setTimeout(type, 30);
+                    this.typeTextTimeout = setTimeout(type, 30);
                 };
 
                 type();
@@ -2334,6 +2736,12 @@ WELCOME TO TERMLINK`;
             },
 
             showScreen(screenId) {
+                // Cancel any ongoing typeText animation
+                if (this.typeTextTimeout) {
+                    clearTimeout(this.typeTextTimeout);
+                    this.typeTextTimeout = null;
+                }
+                
                 document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
                 document.getElementById(screenId).classList.add('active');
                 this.currentScreen = screenId;
