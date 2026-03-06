@@ -143,11 +143,14 @@
     <div class="screen" id="homeScreen">
         <div class="terminal-text">
 WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK
-ASUKA IWANAGA PRIVATE TERMINAL
+<span id="homeTerminalName">ASUKA IWANAGA PRIVATE TERMINAL</span>
+<div style="text-align:right; margin-top:-20px;" id="homeDateTime"></div>
 
 <div id="homeMenu" style="margin-top:20px;"></div>
         </div>
-        <div class="bottom-right"><span class="cursor"></span></div>
+        <div style="position:fixed; bottom:30px; left:30px; right:30px; font-size:18px;" id="footerMessages">
+&gt; <span class="cursor"></span>
+        </div>
     </div>
 
     <!-- Log List Screen -->
@@ -308,41 +311,67 @@ ASUKA IWANAGA PRIVATE TERMINAL
             questSettingConfirm: false,
             logDeleteConfirm: false,
             questDeleteConfirm: false,
+            messageLog: [],
+            terminalName: 'ASUKA IWANAGA PRIVATE TERMINAL',
+            firstHomeVisit: true,
 
             init() {
-                this.loadData();
+                // Load terminal name from localStorage
+                const savedName = localStorage.getItem('terminalName');
+                if (savedName) {
+                    this.terminalName = savedName;
+                }
                 
-                // Check and reset recurring quests
+                this.loadData();
+                this.loadMessageLog();
                 this.checkQuestResets();
                 
-                // Initialize audio context on first user interaction
-                const enableAudio = () => {
-                    if (!this.audioContext) {
-                        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    }
-                    // Resume audio context if suspended
-                    if (this.audioContext.state === 'suspended') {
-                        this.audioContext.resume();
-                    }
-                    document.removeEventListener('click', enableAudio);
-                    document.removeEventListener('keydown', enableAudio);
-                };
-                document.addEventListener('click', enableAudio);
-                document.addEventListener('keydown', enableAudio);
+                // Check for stored credentials
+                const storedToken = localStorage.getItem('termToken');
+                const storedGistId = localStorage.getItem('termGistId');
                 
-                // Check if already logged in
-                if (this.githubToken && this.gistId) {
-                    // Validate credentials are not empty strings
-                    if (this.githubToken.trim() && this.gistId.trim()) {
-                        // Auto-login with stored credentials
-                        this.startLoginSequence(true);
-                    } else {
-                        // Invalid credentials, clear and start fresh
-                        localStorage.removeItem('termToken');
-                        localStorage.removeItem('termGistId');
-                        this.githubToken = '';
-                        this.gistId = '';
-                        this.startLoginSequence(false);
+                if (storedToken && storedGistId) {
+                    this.githubToken = storedToken;
+                    this.gistId = storedGistId;
+                    this.startLoginSequence(true);
+                } else {
+                    this.startLoginSequence(false);
+                }
+            },
+
+            addMessage(text) {
+                const now = new Date();
+                const timestamp = `${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+                this.messageLog.push({timestamp, message: text});
+                this.updateFooterMessages();
+                this.saveMessageLog();
+            },
+
+            updateFooterMessages() {
+                const footer = document.getElementById('footerMessages');
+                if (!footer) return;
+                
+                // Show last 3 messages
+                const lastMessages = this.messageLog.slice(-3);
+                let html = '';
+                lastMessages.forEach(log => {
+                    html += `&gt; ${log.timestamp} ${log.message}<br>`;
+                });
+                html += '&gt; <span class="cursor"></span>';
+                footer.innerHTML = html;
+            },
+
+            saveMessageLog() {
+                localStorage.setItem('messageLog', JSON.stringify(this.messageLog));
+            },
+
+            loadMessageLog() {
+                const saved = localStorage.getItem('messageLog');
+                if (saved) {
+                    this.messageLog = JSON.parse(saved);
+                }
+            },
+
                     }
                 } else {
                     // Start login sequence
@@ -503,7 +532,6 @@ ASUKA IWANAGA PRIVATE TERMINAL
                 const bootText = `
 ROBCO INDUSTRIES UNIFIED OPERATING SYSTEM
 COPYRIGHT 2075-2077 ROBCO INDUSTRIES
-2026-02-27 02:17
 
 WELCOME TO TERMLINK`;
                 
@@ -549,6 +577,7 @@ WELCOME TO TERMLINK`;
                 
                 // Wait 5 seconds then go home
                 setTimeout(() => {
+                    this.addMessage('ようこそ');
                     this.goHome();
                 }, 5000);
             },
@@ -924,14 +953,59 @@ WELCOME TO TERMLINK`;
             goHome() {
                 this.showScreen('homeScreen');
                 const menu = document.getElementById('homeMenu');
-                menu.innerHTML = `<div class="menu-item">[LOG]</div><div class="menu-item">[MEMO]</div><div class="menu-item">[QUEST]</div><div class="menu-item">[SOMEDAY]</div>`;
+                menu.innerHTML = `<div class="menu-item">[ログ]</div><div class="menu-item">[メモ]</div><div class="menu-item">[クエスト]</div><div class="menu-item">[設定]</div><div class="menu-item">[履歴]</div>`;
 
                 const items = menu.querySelectorAll('.menu-item');
                 items[0].onclick = () => this.showLogList();
                 items[1].onclick = () => this.showMemoList();
                 items[2].onclick = () => this.showQuestList();
-                items[3].onclick = () => this.showScreen('homeScreen');
+                items[3].onclick = () => this.showSettings();
+                items[4].onclick = () => this.showHistory();
 
+                this.updateMenuItems();
+                this.updateDateTime();
+                this.updateFooterMessages();
+                
+                // Add message only if not first visit
+                if (!this.firstHomeVisit) {
+                    this.addMessage('おかえりなさい');
+                }
+                this.firstHomeVisit = false;
+            },
+
+            updateDateTime() {
+                const dateTimeEl = document.getElementById('homeDateTime');
+                if (!dateTimeEl) return;
+                
+                const now = new Date();
+                const days = ['日', '月', '火', '水', '木', '金', '土'];
+                const dateStr = `${now.getFullYear()} ${String(now.getMonth()+1).padStart(2,'0')} ${String(now.getDate()).padStart(2,'0')} (${days[now.getDay()]}) ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+                dateTimeEl.textContent = dateStr;
+                
+                // Update every second
+                setTimeout(() => this.updateDateTime(), 1000);
+            },
+
+            showSettings() {
+                // Settings screen placeholder
+                alert('設定画面は実装中です');
+            },
+
+            showHistory() {
+                this.showScreen('homeScreen');
+                const menu = document.getElementById('homeMenu');
+                
+                let html = '<div style="margin-bottom:20px;">履歴</div>';
+                this.messageLog.forEach(log => {
+                    html += `<div>&gt; ${log.timestamp} ${log.message}</div>`;
+                });
+                html += '<div class="menu-item" style="margin-top:20px;">[戻る]</div>';
+                
+                menu.innerHTML = html;
+                
+                const items = menu.querySelectorAll('.menu-item');
+                items[0].onclick = () => this.goHome();
+                
                 this.updateMenuItems();
             },
 
