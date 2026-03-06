@@ -5,6 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ROBCO INDUSTRIES (TM) TERMLINK</title>
     <style>
+        :root {
+            /* Dark mode (default) */
+            --bg-color: #000;
+            --text-color: #22c55e;
+            --cursor-color: #22c55e;
+            --hover-bg: #22c55e;
+            --hover-text: #000;
+        }
+
+        body.light-mode {
+            /* Light mode (Notion-like) */
+            --bg-color: #ffffff;
+            --text-color: #37352f;
+            --cursor-color: #37352f;
+            --hover-bg: #e3e2df;
+            --hover-text: #37352f;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -13,10 +31,11 @@
 
         body {
             font-family: 'VT323', 'Courier New', monospace;
-            background: #000;
-            color: #22c55e;
+            background: var(--bg-color);
+            color: var(--text-color);
             overflow: hidden;
             line-height: 1.4;
+            transition: background-color 0.3s, color 0.3s;
         }
 
         .screen {
@@ -42,7 +61,7 @@
             display: inline-block;
             width: 12px;
             height: 20px;
-            background: #22c55e;
+            background: var(--cursor-color);
             animation: blink 1s infinite;
             margin-left: 2px;
         }
@@ -58,11 +77,12 @@
             line-height: 1.2;
             margin: 0;
             padding: 0;
+            transition: background-color 0.15s, color 0.15s;
         }
 
         .menu-item:hover, .menu-item.selected {
-            background: #22c55e;
-            color: #000;
+            background: var(--hover-bg);
+            color: var(--hover-text);
         }
 
         input[type="text"],
@@ -70,7 +90,7 @@
         textarea {
             background: transparent;
             border: none;
-            color: #22c55e;
+            color: var(--text-color);
             font-family: inherit;
             font-size: 18px;
             outline: none;
@@ -81,7 +101,7 @@
         .login-box {
             position: relative;
             z-index: 10;
-            background: #000;
+            background: var(--bg-color);
             padding: 20px;
         }
 
@@ -326,6 +346,10 @@ ASUKA IWANAGA PRIVATE TERMINAL
                 if (savedName) {
                     this.terminalName = savedName;
                 }
+                
+                // Load and apply color mode
+                const savedColorMode = localStorage.getItem('colorMode') || 'dark';
+                this.applyColorMode(savedColorMode);
                 
                 this.loadData();
                 this.loadMessageLog();
@@ -910,8 +934,42 @@ WELCOME TO TERMLINK`;
             },
 
             showSettings() {
-                // Settings screen placeholder
-                alert('設定画面は実装中です');
+                this.showScreen('homeScreen');
+                const menu = document.getElementById('homeMenu');
+                
+                const currentMode = localStorage.getItem('colorMode') || 'dark';
+                const modeText = currentMode === 'dark' ? 'ダークモード' : 'ライトモード';
+                
+                let html = '<div style="margin-bottom:20px;">設定</div>';
+                html += `<div class="menu-item">[カラーモード: ${modeText}]</div>`;
+                html += '<div class="menu-item">[戻る]</div>';
+                
+                menu.innerHTML = html;
+                
+                const items = menu.querySelectorAll('.menu-item');
+                items[0].onclick = () => this.toggleColorMode();
+                items[1].onclick = () => this.goHome();
+                
+                this.updateMenuItems();
+            },
+
+            toggleColorMode() {
+                const currentMode = localStorage.getItem('colorMode') || 'dark';
+                const newMode = currentMode === 'dark' ? 'light' : 'dark';
+                
+                localStorage.setItem('colorMode', newMode);
+                this.applyColorMode(newMode);
+                
+                // Refresh settings screen
+                this.showSettings();
+            },
+
+            applyColorMode(mode) {
+                if (mode === 'light') {
+                    document.body.classList.add('light-mode');
+                } else {
+                    document.body.classList.remove('light-mode');
+                }
             },
 
             showHistory() {
