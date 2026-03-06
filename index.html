@@ -332,6 +332,9 @@ ASUKA IWANAGA PRIVATE TERMINAL
                 this.loadMessageLog();
                 this.checkQuestResets();
                 
+                // Add keyboard event listener
+                document.addEventListener('keydown', (e) => this.handleKeyboard(e));
+                
                 // Check for stored credentials
                 const storedToken = localStorage.getItem('termToken');
                 const storedGistId = localStorage.getItem('termGistId');
@@ -463,6 +466,14 @@ ASUKA IWANAGA PRIVATE TERMINAL
 
             handleLoginInput(e) {
                 if (this.loginStep === 0) return;
+
+                // Initialize audio context on first interaction
+                if (!this.audioContext) {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (this.audioContext.state === 'suspended') {
+                    this.audioContext.resume();
+                }
 
                 if (e.key === 'Enter') {
                     e.preventDefault();
@@ -668,6 +679,8 @@ WELCOME TO TERMLINK`;
             },
 
             handleKeyboard(e) {
+                console.log('Key pressed:', e.key, 'Screen:', this.currentScreen);
+                
                 // Handle login input
                 if (this.currentScreen === 'loginScreen' && this.loginStep > 0) {
                     this.handleLoginInput(e);
@@ -687,15 +700,19 @@ WELCOME TO TERMLINK`;
                 // Arrow key navigation
                 if (e.key === 'ArrowUp') {
                     e.preventDefault();
+                    console.log('Moving up');
                     this.moveSelection(-1);
                 } else if (e.key === 'ArrowDown') {
                     e.preventDefault();
+                    console.log('Moving down');
                     this.moveSelection(1);
                 } else if (e.key === 'ArrowLeft') {
                     e.preventDefault();
+                    console.log('Going back');
                     this.goBack();
                 } else if (e.key === 'ArrowRight' || e.key === 'Enter') {
                     e.preventDefault();
+                    console.log('Selecting item');
                     this.selectCurrentItem();
                 }
             },
@@ -821,11 +838,6 @@ WELCOME TO TERMLINK`;
 
                 this.menuItems.forEach(item => item.classList.remove('selected'));
                 this.menuItems[this.selectedMenuItem].classList.add('selected');
-            },
-
-            selectCurrentItem() {
-                if (this.menuItems.length === 0) return;
-                this.menuItems[this.selectedMenuItem].click();
             },
 
             selectCurrentItem() {
