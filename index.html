@@ -1275,27 +1275,71 @@ WELCOME TO TERMLINK`;
             editMemo(index) {
                 this.currentMemo = this.memos[index];
                 this.currentMemoTitle = this.currentMemo.title;
-                this.memoEditMode = 'edit';
-                this.memoEditStep = 2; // Skip title, go straight to content
-                
                 this.terminalMode = 'memo_edit';
-                this.showScreen('terminalEditScreen');
-                
-                document.getElementById('terminalModeTitle').textContent = `MEMO: ${this.currentMemo.title}`;
-                document.getElementById('terminalInput').parentElement.innerHTML = '&gt; <textarea id="terminalInput" rows="15" style="width:95%; background:#000; color:#22c55e; border:none; font-family:inherit; font-size:18px; padding:0; outline:none; resize:none; line-height:1.4;"></textarea>';
-                
-                const textarea = document.getElementById('terminalInput');
-                textarea.value = this.currentMemo.text;
                 this.originalContent = this.currentMemo.text;
                 this.hasUnsavedChanges = false;
                 
-                // Track changes
-                textarea.addEventListener('input', () => {
-                    this.hasUnsavedChanges = (textarea.value !== this.originalContent);
+                this.showScreen('terminalEditScreen');
+                
+                document.getElementById('terminalModeTitle').textContent = `MEMO: ${this.currentMemo.title}`;
+                
+                // Setup button menu FIRST
+                const menu = document.getElementById('terminalEditMenu');
+                menu.innerHTML = '<div class="menu-item">[戻る]</div><div class="menu-item">[保存]</div>';
+                const items = menu.querySelectorAll('.menu-item');
+                items[0].onclick = () => {
+                    if (this.hasUnsavedChanges) {
+                        this.showUnsavedConfirm();
+                    } else {
+                        this.showMemoList();
+                    }
+                };
+                items[1].onclick = () => this.terminalSave();
+                
+                // Then setup textarea
+                const textarea = document.getElementById('terminalInput');
+                textarea.value = this.currentMemo.text;
+                textarea.disabled = false;
+                textarea.readOnly = false;
+                
+                // Remove old event listeners by cloning
+                const newTextarea = textarea.cloneNode(true);
+                textarea.parentNode.replaceChild(newTextarea, textarea);
+                newTextarea.value = this.currentMemo.text;
+                
+                // Track changes on new textarea
+                newTextarea.addEventListener('input', () => {
+                    this.hasUnsavedChanges = (newTextarea.value !== this.originalContent);
                 });
                 
-                this.setupCommandInput();
-                setTimeout(() => textarea.focus(), 100);
+                // Allow up arrow to move to menu from first line
+                newTextarea.addEventListener('keydown', (e) => {
+                    if (e.key === 'ArrowUp') {
+                        const cursorPosition = newTextarea.selectionStart;
+                        const textBeforeCursor = newTextarea.value.substring(0, cursorPosition);
+                        const isOnFirstLine = !textBeforeCursor.includes('\n');
+                        
+                        if (isOnFirstLine && cursorPosition === 0) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            // Blur the textarea to remove focus
+                            newTextarea.blur();
+                            // Focus on last menu item (保存)
+                            this.updateMenuItems();
+                            if (this.menuItems.length > 0) {
+                                this.selectedMenuItem = this.menuItems.length - 1;
+                                this.updateMenuSelection();
+                            }
+                        }
+                    }
+                });
+                
+                // Update menu items and focus on first item
+                this.updateMenuItems();
+                this.selectedMenuItem = 0;
+                this.updateMenuSelection();
+                
+                console.log('MEMO edit mode - menu focused');
             },
 
             showQuestList() {
