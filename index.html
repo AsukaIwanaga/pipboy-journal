@@ -788,28 +788,10 @@ WELCOME TO TERMLINK`;
                         document.getElementById('loadingText').style.display = 'none';
                         progressBar.style.display = 'none';
                         
-                        // Show "ようこそ" and Vault Boy
-                        this.showWelcomeScreen();
+                        // Show changelog first
+                        this.showChangelogScreen();
                     }
                 }, 40);
-            },
-
-            showWelcomeScreen() {
-                const welcomeText = document.getElementById('welcomeText');
-                welcomeText.innerHTML = `
-<div style="text-align:center; margin-bottom:20px;">
-    <img src="assets/vaultboy.gif" style="width:150px; height:150px; image-rendering: crisp-edges;">
-</div>
-<div>ようこそ</div>`;
-                
-                // Play welcome sound
-                this.playSound('welcome.mp3', 0.6);
-                
-                // Wait 5 seconds then show changelog
-                setTimeout(() => {
-                    this.addMessage('ようこそ');
-                    this.showChangelogScreen();
-                }, 5000);
             },
 
             showChangelogScreen() {
@@ -860,15 +842,34 @@ WELCOME TO TERMLINK`;
                             loadingDiv.innerHTML = '<div style="margin-top:20px;">&gt; 読み込んでいます...<span class="cursor"></span></div>';
                             content.appendChild(loadingDiv);
                             
-                            // Wait 3 seconds then go home
+                            // Wait 3 seconds then show welcome screen
                             setTimeout(() => {
-                                this.goHome();
+                                this.showWelcomeScreen();
                             }, 3000);
                         }, 500);
                     }
                 };
                 
                 displayLine();
+            },
+
+            showWelcomeScreen() {
+                this.showScreen('loadingScreen');
+                const welcomeText = document.getElementById('welcomeText');
+                welcomeText.innerHTML = `
+<div style="text-align:center; margin-bottom:20px;">
+    <img src="assets/vaultboy.gif" style="width:150px; height:150px; image-rendering: crisp-edges;">
+</div>
+<div>ようこそ</div>`;
+                
+                // Play welcome sound
+                this.playSound('welcome.mp3', 0.6);
+                
+                // Wait 5 seconds then go home
+                setTimeout(() => {
+                    this.addMessage('ようこそ');
+                    this.goHome();
+                }, 5000);
             },
 
             handleKeyboard(e) {
@@ -880,7 +881,7 @@ WELCOME TO TERMLINK`;
                     return;
                 }
                 
-                // Handle quest input screen
+                // Handle quest input screen (BEFORE input field check)
                 if (this.currentScreen === 'questEditScreen' && this.questFields) {
                     this.handleQuestInputKey(e);
                     return;
