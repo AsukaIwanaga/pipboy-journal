@@ -161,8 +161,8 @@ ASUKA IWANAGA PRIVATE TERMINAL
 
 <div id="logList" style="margin-top:20px;"></div>
         </div>
-        <div style="position:fixed; bottom:30px; right:30px; font-size:18px;">
-&gt; t:TOP <input type="text" id="logListCommandInput" style="width:50px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>
+        <div style="position:fixed; bottom:30px; left:30px; right:30px; font-size:18px;" id="footerMessages">
+&gt; <span class="cursor"></span>
         </div>
     </div>
 
@@ -172,10 +172,11 @@ ASUKA IWANAGA PRIVATE TERMINAL
 WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK
 ASUKA IWANAGA PRIVATE TERMINAL
 
+<div id="logViewMenu" style="margin-top:10px; margin-bottom:10px;"></div>
 <div id="logContent" style="margin-top:20px;"></div>
         </div>
-        <div style="position:fixed; bottom:30px; right:30px; font-size:18px;">
-&gt; d:DELETE b:BACK t:TOP <input type="text" id="logViewCommandInput" style="width:50px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>
+        <div style="position:fixed; bottom:30px; left:30px; right:30px; font-size:18px;" id="footerMessages">
+&gt; <span class="cursor"></span>
         </div>
     </div>
 
@@ -187,8 +188,8 @@ ASUKA IWANAGA PRIVATE TERMINAL
 
 <div id="memoList" style="margin-top:20px;"></div>
         </div>
-        <div style="position:fixed; bottom:30px; right:30px; font-size:18px;">
-&gt; t:TOP <input type="text" id="memoListCommandInput" style="width:50px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>
+        <div style="position:fixed; bottom:30px; left:30px; right:30px; font-size:18px;" id="footerMessages">
+&gt; <span class="cursor"></span>
         </div>
     </div>
 
@@ -216,8 +217,8 @@ ASUKA IWANAGA PRIVATE TERMINAL
 
 <div id="questList" style="margin-top:20px;"></div>
         </div>
-        <div style="position:fixed; bottom:30px; right:30px; font-size:18px;">
-&gt; t:TOP b:BACK <input type="text" id="questListCommandInput" style="width:50px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>
+        <div style="position:fixed; bottom:30px; left:30px; right:30px; font-size:18px;" id="footerMessages">
+&gt; <span class="cursor"></span>
         </div>
     </div>
 
@@ -227,10 +228,11 @@ ASUKA IWANAGA PRIVATE TERMINAL
 WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK
 ASUKA IWANAGA PRIVATE TERMINAL
 
+<div id="questViewMenu" style="margin-top:10px; margin-bottom:10px;"></div>
 <div id="questContent" style="margin-top:20px;"></div>
         </div>
-        <div style="position:fixed; bottom:30px; right:30px; font-size:18px;">
-&gt; e:EDIT d:DELETE b:BACK t:TOP <input type="text" id="questViewCommandInput" style="width:50px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>
+        <div style="position:fixed; bottom:30px; left:30px; right:30px; font-size:18px;" id="footerMessages">
+&gt; <span class="cursor"></span>
         </div>
     </div>
 
@@ -725,11 +727,7 @@ WELCOME TO TERMLINK`;
                 const content = textarea ? textarea.value.trim() : '';
                 
                 if (!content && this.terminalMode === 'log_edit' && !this.currentLog) {
-                    const commandInput = document.getElementById('commandInput');
-                    if (commandInput) {
-                        commandInput.parentElement.innerHTML = '&gt; 内容を入力してください <input type="text" id="commandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
-                        this.setupCommandInput();
-                    }
+                    this.addMessage('入力内容が空です');
                     return;
                 }
                 
@@ -747,6 +745,9 @@ WELCOME TO TERMLINK`;
                     }
                     this.saveData();
                     this.syncData();
+                    this.playSound('register.mp3', 0.5);
+                    this.addMessage('保存しました');
+                    this.showLogList();
                     
                 } else if (this.terminalMode === 'memo_edit') {
                     // Extract title from first line
@@ -767,31 +768,14 @@ WELCOME TO TERMLINK`;
                     }
                     this.saveData();
                     this.syncData();
-                }
-                
-                // Play save sound
-                this.playSound('register.mp3', 0.5);
-                
-                // Add message
-                this.addMessage('保存しました');
-                
-                // Show save confirmation
-                const commandInput = document.getElementById('commandInput');
-                if (commandInput) {
-                    commandInput.parentElement.innerHTML = '&gt; 保存しました。選択画面に戻りますか？ y:YES  n:NO % <input type="text" id="commandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
-                    this.setupCommandInput();
-                    this.savedConfirmMode = true;
+                    this.playSound('register.mp3', 0.5);
+                    this.addMessage('保存しました');
+                    this.showMemoList();
                 }
             },
 
             terminalCancel() {
-                this.addMessage('保存せずに終了しました');
-                const commandInput = document.getElementById('commandInput');
-                if (commandInput) {
-                    commandInput.parentElement.innerHTML = '&gt; キャンセルしました。選択画面に戻りますか？ y:YES  n:NO % <input type="text" id="commandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
-                    this.setupCommandInput();
-                    this.cancelConfirmMode = true;
-                }
+                // Not used anymore - handled by showUnsavedConfirm
             },
 
             updateMenuItems() {
@@ -1065,113 +1049,6 @@ WELCOME TO TERMLINK`;
                 this.updateMenuItems();
             },
 
-            setupCommandInput() {
-                const commandInput = document.getElementById('commandInput');
-                if (!commandInput) return;
-                
-                commandInput.value = '';
-                // Remove old listeners by replacing the element
-                const newInput = commandInput.cloneNode(true);
-                commandInput.parentNode.replaceChild(newInput, commandInput);
-                
-                newInput.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        const cmd = newInput.value.trim().toLowerCase();
-                        this.handleCommand(cmd);
-                        newInput.value = '';
-                        // Keep focus on command input
-                        setTimeout(() => {
-                            const currentInput = document.getElementById('commandInput');
-                            if (currentInput) currentInput.focus();
-                        }, 100);
-                    }
-                });
-                
-                // Auto-focus command input
-                newInput.focus();
-            },
-
-            handleCommand(cmd) {
-                const commandInput = document.getElementById('commandInput');
-                
-                // Handle y/n for save confirmation
-                if (this.savedConfirmMode) {
-                    if (cmd === 'y') {
-                        this.savedConfirmMode = false;
-                        if (this.terminalMode === 'log_edit') {
-                            this.showLogList();
-                        } else if (this.terminalMode === 'memo_edit') {
-                            this.showMemoList();
-                        }
-                        return;
-                    } else if (cmd === 'n') {
-                        this.savedConfirmMode = false;
-                        commandInput.parentElement.innerHTML = '&gt; <input type="text" id="commandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
-                        this.setupCommandInput();
-                        return;
-                    }
-                }
-                
-                // Handle y/n for cancel confirmation
-                if (this.cancelConfirmMode) {
-                    if (cmd === 'y') {
-                        this.cancelConfirmMode = false;
-                        if (this.terminalMode === 'log_edit') {
-                            this.showLogList();
-                        } else if (this.terminalMode === 'memo_edit') {
-                            this.showMemoList();
-                        }
-                        return;
-                    } else if (cmd === 'n') {
-                        this.cancelConfirmMode = false;
-                        commandInput.parentElement.innerHTML = '&gt; <input type="text" id="commandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
-                        this.setupCommandInput();
-                        return;
-                    }
-                }
-                
-                if (cmd === 's') {
-                    this.terminalSave();
-                } else if (cmd === 'c') {
-                    this.terminalCancel();
-                } else if (cmd === 'h') {
-                    this.terminalShowHelp();
-                } else if (cmd === 't') {
-                    if (this.hasUnsavedChanges) {
-                        commandInput.parentElement.innerHTML = '&gt; 戻る前に現在の状態を保存しますか？ s:SAVE  c:CANCEL % <input type="text" id="commandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
-                        this.setupCommandInput();
-                        document.getElementById('commandInput').focus();
-                    } else {
-                        this.goHome();
-                    }
-                } else if (cmd === 'b') {
-                    if (this.hasUnsavedChanges) {
-                        commandInput.parentElement.innerHTML = '&gt; 戻る前に現在の状態を保存しますか？ s:SAVE  c:CANCEL % <input type="text" id="commandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
-                        this.setupCommandInput();
-                        document.getElementById('commandInput').focus();
-                    } else {
-                        this.goBack();
-                    }
-                } else if (cmd === 'd') {
-                    // Delete command
-                    if (this.currentScreen === 'questViewScreen' && this.currentQuest) {
-                        this.deleteQuest(this.currentQuestIndex);
-                    } else if (this.currentScreen === 'logViewScreen' && this.currentLog) {
-                        this.deleteCurrentLog();
-                    }
-                } else if (cmd) {
-                    commandInput.parentElement.innerHTML = '&gt; 無効なコマンドです <input type="text" id="commandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
-                    this.setupCommandInput();
-                    setTimeout(() => {
-                        const currentInput = document.getElementById('commandInput');
-                        if (currentInput) {
-                            currentInput.parentElement.innerHTML = '&gt; <input type="text" id="commandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
-                            this.setupCommandInput();
-                        }
-                    }, 2000);
-                }
-            },
 
             viewLog(index) {
                 const sorted = [...this.logs].sort((a, b) => b.timestamp - a.timestamp);
@@ -1180,82 +1057,40 @@ WELCOME TO TERMLINK`;
                 this.currentLogIndex = index;
                 
                 this.showScreen('logViewScreen');
+                
+                // Setup menu
+                const menu = document.getElementById('logViewMenu');
+                menu.innerHTML = '<div class="menu-item">[削除]</div><div class="menu-item">[戻る]</div>';
+                const items = menu.querySelectorAll('.menu-item');
+                items[0].onclick = () => this.showDeleteLogConfirm();
+                items[1].onclick = () => this.showLogList();
+                this.updateMenuItems();
+                
+                // Show content
                 const content = document.getElementById('logContent');
-                
                 content.textContent = '';
-                
-                this.typeText(log.text, content, () => {
-                    // Setup command input after typing completes
-                    this.setupLogViewCommandInput();
-                });
+                this.typeText(log.text, content);
             },
 
-            setupLogViewCommandInput() {
-                const commandInput = document.getElementById('logViewCommandInput');
-                if (!commandInput) return;
-                
-                commandInput.value = '';
-                const newInput = commandInput.cloneNode(true);
-                commandInput.parentNode.replaceChild(newInput, commandInput);
-                newInput.focus();
-                
-                newInput.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        const cmd = newInput.value.trim().toLowerCase();
-                        
-                        // Handle delete confirmation
-                        if (this.logDeleteConfirm) {
-                            if (cmd === 'y') {
-                                this.logDeleteConfirm = false;
-                                const logId = this.currentLog.id;
-                                this.logs = this.logs.filter(l => l.id !== logId);
-                                this.saveData();
-                                this.syncData();
-                                this.addMessage('削除しました');
-                                this.showLogList();
-                                return;
-                            } else if (cmd === 'n') {
-                                this.logDeleteConfirm = false;
-                                this.addMessage('削除をキャンセルしました');
-                                newInput.parentElement.innerHTML = '&gt; <input type="text" id="logViewCommandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
-                                this.setupLogViewCommandInput();
-                                return;
-                            }
-                        }
-                        
-                        if (cmd === 'd') {
-                            this.deleteCurrentLog();
-                        } else if (cmd === 'b') {
-                            this.showLogList();
-                        } else if (cmd === 't') {
-                            this.goHome();
-                        } else if (cmd) {
-                            // Invalid command
-                            newInput.parentElement.innerHTML = '&gt; 無効なコマンドです <input type="text" id="logViewCommandInput" style="width:50px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
-                            this.setupLogViewCommandInput();
-                            setTimeout(() => {
-                                const currentInput = document.getElementById('logViewCommandInput');
-                                if (currentInput) {
-                                    currentInput.parentElement.innerHTML = '&gt; d:DELETE b:BACK t:TOP <input type="text" id="logViewCommandInput" style="width:50px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
-                                    this.setupLogViewCommandInput();
-                                }
-                            }, 2000);
-                            return;
-                        }
-                        newInput.value = '';
-                    }
-                });
+            showDeleteLogConfirm() {
+                const menu = document.getElementById('logViewMenu');
+                menu.innerHTML = '<div>このログを削除しますか？</div><div class="menu-item">[はい]</div><div class="menu-item">[いいえ]</div>';
+                const items = menu.querySelectorAll('.menu-item');
+                items[0].onclick = () => {
+                    const logId = this.currentLog.id;
+                    this.logs = this.logs.filter(l => l.id !== logId);
+                    this.saveData();
+                    this.syncData();
+                    this.addMessage('削除しました');
+                    this.showLogList();
+                };
+                items[1].onclick = () => {
+                    this.addMessage('削除をキャンセルしました');
+                    this.viewLog(this.currentLogIndex);
+                };
+                this.updateMenuItems();
             },
 
-            deleteCurrentLog() {
-                const commandInput = document.getElementById('logViewCommandInput');
-                if (commandInput) {
-                    commandInput.parentElement.innerHTML = '&gt; このログを削除しますか？ y:YES  n:NO % <input type="text" id="logViewCommandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
-                    this.logDeleteConfirm = true;
-                    this.setupLogViewCommandInput();
-                }
-            },
 
             showMemoList() {
                 this.showScreen('memoListScreen');
@@ -1993,6 +1828,16 @@ WELCOME TO TERMLINK`;
                 this.currentQuestIndex = index;
                 
                 this.showScreen('questViewScreen');
+                
+                // Setup menu
+                const menu = document.getElementById('questViewMenu');
+                menu.innerHTML = '<div class="menu-item">[編集]</div><div class="menu-item">[削除]</div><div class="menu-item">[戻る]</div>';
+                const items = menu.querySelectorAll('.menu-item');
+                items[0].onclick = () => this.editQuest(index);
+                items[1].onclick = () => this.showDeleteQuestConfirm();
+                items[2].onclick = () => this.showQuestList();
+                
+                // Show content
                 const content = document.getElementById('questContent');
                 
                 const completed = quest.tasks.filter(t => t.completed).length;
@@ -2001,7 +1846,7 @@ WELCOME TO TERMLINK`;
                 
                 let html = `<div>MISSION: ${quest.title}</div>`;
                 html += `<div>DDL: ${quest.deadline}</div>`;
-                html += `<div>CYC: ${quest.cycle}</div>`;
+                html += `<div>CYC: ${quest.repeat || quest.cycle}</div>`;
                 html += `<div>TGT: ${percent}%</div>`;
                 html += `<div>DES: ${quest.description}</div>`;
                 html += `<br><div>TASK:</div>`;
@@ -2013,68 +1858,35 @@ WELCOME TO TERMLINK`;
                 
                 content.innerHTML = html;
                 
-                this.updateMenuItems();
-                this.setupQuestViewCommandInput();
-            },
-
-            setupQuestViewCommandInput() {
-                const commandInput = document.getElementById('questViewCommandInput');
-                if (!commandInput) return;
-                
-                commandInput.value = '';
-                const newInput = commandInput.cloneNode(true);
-                commandInput.parentNode.replaceChild(newInput, commandInput);
-                newInput.focus();
-                
-                newInput.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        const cmd = newInput.value.trim().toLowerCase();
-                        
-                        // Handle delete confirmation
-                        if (this.questDeleteConfirm) {
-                            if (cmd === 'y') {
-                                this.questDeleteConfirm = false;
-                                this.quests.splice(this.currentQuestIndex, 1);
-                                this.saveData();
-                                this.syncData();
-                                this.addMessage('削除しました');
-                                this.showQuestList();
-                                return;
-                            } else if (cmd === 'n') {
-                                this.questDeleteConfirm = false;
-                                this.addMessage('削除をキャンセルしました');
-                                newInput.parentElement.innerHTML = '&gt; e:EDIT d:DELETE b:BACK t:TOP <input type="text" id="questViewCommandInput" style="width:50px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
-                                this.setupQuestViewCommandInput();
-                                return;
-                            }
-                        }
-                        
-                        if (cmd === 'e') {
-                            this.editQuest(this.currentQuestIndex);
-                        } else if (cmd === 'd') {
-                            this.deleteQuest(this.currentQuestIndex);
-                        } else if (cmd === 'b') {
-                            this.showQuestList();
-                        } else if (cmd === 't') {
-                            this.goHome();
-                        } else if (cmd) {
-                            // Invalid command
-                            newInput.parentElement.innerHTML = '&gt; 無効なコマンドです <input type="text" id="questViewCommandInput" style="width:50px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
-                            this.setupQuestViewCommandInput();
-                            setTimeout(() => {
-                                const currentInput = document.getElementById('questViewCommandInput');
-                                if (currentInput) {
-                                    currentInput.parentElement.innerHTML = '&gt; e:EDIT d:DELETE b:BACK t:TOP <input type="text" id="questViewCommandInput" style="width:50px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
-                                    this.setupQuestViewCommandInput();
-                                }
-                            }, 2000);
-                            return;
-                        }
-                        newInput.value = '';
+                // Setup task clicking
+                quest.tasks.forEach((task, i) => {
+                    const taskEl = document.getElementById(`task${i}`);
+                    if (taskEl) {
+                        taskEl.onclick = () => this.toggleTask(i);
                     }
                 });
+                
+                this.updateMenuItems();
             },
+
+            showDeleteQuestConfirm() {
+                const menu = document.getElementById('questViewMenu');
+                menu.innerHTML = '<div>このクエストを削除しますか？</div><div class="menu-item">[はい]</div><div class="menu-item">[いいえ]</div>';
+                const items = menu.querySelectorAll('.menu-item');
+                items[0].onclick = () => {
+                    this.quests.splice(this.currentQuestIndex, 1);
+                    this.saveData();
+                    this.syncData();
+                    this.addMessage('削除しました');
+                    this.showQuestList();
+                };
+                items[1].onclick = () => {
+                    this.addMessage('削除をキャンセルしました');
+                    this.viewQuest(this.currentQuestIndex);
+                };
+                this.updateMenuItems();
+            },
+
 
             toggleTask(taskIndex) {
                 if (!this.currentQuest) return;
@@ -2098,15 +1910,6 @@ WELCOME TO TERMLINK`;
                 this.saveData();
                 this.syncData();
                 this.viewQuest(this.currentQuestIndex);
-            },
-
-            deleteQuest(index) {
-                const commandInput = document.getElementById('questViewCommandInput');
-                if (commandInput) {
-                    commandInput.parentElement.innerHTML = '&gt; このクエストを削除しますか？ y:YES  n:NO % <input type="text" id="questViewCommandInput" style="width:50px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
-                    this.questDeleteConfirm = true;
-                    this.setupQuestViewCommandInput();
-                }
             },
 
             moveTaskUp() {
