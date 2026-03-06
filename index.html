@@ -279,6 +279,10 @@ ASUKA IWANAGA PRIVATE TERMINAL
             selectedMenuItem: 0,
             menuItems: [],
             
+            // Memo categories
+            memoCategories: ["仕事", "プライベート", "買い物", "未分類"],
+            currentCategory: null,
+            
             // Terminal input system
             terminalMode: null,
             terminalBuffer: [],
@@ -756,11 +760,13 @@ WELCOME TO TERMLINK`;
                         this.currentMemo.text = content;
                         this.currentMemo.title = title;
                         this.currentMemo.timestamp = Date.now();
+                        // Keep existing category
                     } else {
                         this.memos.push({
                             id: Date.now().toString(),
                             title: title,
                             text: content,
+                            category: this.currentCategory || '未分類',
                             timestamp: Date.now()
                         });
                     }
@@ -768,7 +774,13 @@ WELCOME TO TERMLINK`;
                     this.syncData();
                     this.playSound('register.mp3', 0.5);
                     this.addMessage('保存しました');
-                    this.showMemoList();
+                    
+                    // Return to category view if in category
+                    if (this.currentCategory) {
+                        this.showMemosInCategory(this.currentCategory);
+                    } else {
+                        this.showMemoList();
+                    }
                 }
             },
 
@@ -1049,7 +1061,11 @@ WELCOME TO TERMLINK`;
                     if (this.terminalMode === 'log_edit') {
                         this.showLogList();
                     } else if (this.terminalMode === 'memo_edit') {
-                        this.showMemoList();
+                        if (this.currentCategory) {
+                            this.showMemosInCategory(this.currentCategory);
+                        } else {
+                            this.showMemoList();
+                        }
                     }
                 };
                 items[1].onclick = () => {
@@ -1063,7 +1079,11 @@ WELCOME TO TERMLINK`;
                             if (this.terminalMode === 'log_edit') {
                                 this.showLogList();
                             } else if (this.terminalMode === 'memo_edit') {
-                                this.showMemoList();
+                                if (this.currentCategory) {
+                                    this.showMemosInCategory(this.currentCategory);
+                                } else {
+                                    this.showMemoList();
+                                }
                             }
                         }
                     };
@@ -1117,51 +1137,100 @@ WELCOME TO TERMLINK`;
 
 
             showMemoList() {
+                this.currentCategory = null;
                 this.showScreen('memoListScreen');
                 const list = document.getElementById('memoList');
                 
                 let html = '<div class="menu-item">[+ 新規作成]</div>';
-                this.memos.forEach((memo, i) => {
-                    const preview = memo.text.substring(0, 30).replace(/\n/g, ' ');
-                    html += `<div class="menu-item">[${memo.title}   ---${preview}]</div>`;
+                
+                // Show categories with count
+                this.memoCategories.forEach(category => {
+                    const count = this.memos.filter(m => (m.category || '未分類') === category).length;
+                    html += `<div class="menu-item">[📁 ${category}] (${count})</div>`;
                 });
-                html += '<div class="menu-item" >[戻る]</div>';
+                
+                html += '<div class="menu-item">[全てのメモ]</div>';
+                html += '<div class="menu-item">[戻る]</div>';
                 list.innerHTML = html;
 
                 const items = list.querySelectorAll('.menu-item');
-                items[0].onclick = () => this.newMemo();
-                this.memos.forEach((memo, i) => {
-                    items[i + 1].onclick = () => this.viewMemo(i);
+                let index = 0;
+                
+                items[index++].onclick = () => this.showCategorySelect();
+                
+                this.memoCategories.forEach(category => {
+                    items[index++].onclick = () => this.showMemosInCategory(category);
                 });
-                items[items.length - 1].onclick = () => this.goHome();
+                
+                items[index++].onclick = () => this.showMemosInCategory(null); // All memos
+                items[index++].onclick = () => this.goHome();
 
                 this.updateMenuItems();
+            },
+
+            showCategorySelect() {
+                this.showScreen('memoListScreen');
+                const list = document.getElementById('memoList');
                 
-                // Setup command input
-                const commandInput = document.getElementById('memoListCommandInput');
-                if (commandInput) {
-                    commandInput.value = '';
-                    const newInput = commandInput.cloneNode(true);
-                    commandInput.parentNode.replaceChild(newInput, commandInput);
-                    
-                    newInput.addEventListener('keydown', (e) => {
-                        if (e.key === 'ArrowUp') {
-                            e.preventDefault();
-                            if (this.menuItems.length > 0) {
-                                this.selectedMenuItem = this.menuItems.length - 1;
-                                this.updateMenuSelection();
-                                this.menuItems[this.selectedMenuItem].focus();
-                            }
-                        } else if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            const cmd = newInput.value.trim().toLowerCase();
-                            if (cmd === 't') {
-                                this.goHome();
-                            }
-                            newInput.value = '';
-                        }
-                    });
-                }
+                let html = '<div style="margin-bottom:10px;">カテゴリを選択してください</div>';
+                this.memoCategories.forEach(category => {
+                    html += `<div class="menu-item">[${category}]</div>`;
+                });
+                html += '<div class="menu-item">[戻る]</div>';
+                list.innerHTML = html;
+
+                const items = list.querySelectorAll('.menu-item');
+                this.memoCategories.forEach((category, i) => {
+                    items[i].onclick = () => this.newMemoWithCategory(category);
+                });
+                items[items.length - 1].onclick = () => this.showMemoList();
+
+                this.updateMenuItems();
+            },
+
+            newMemoWithCategory(category) {
+                this.currentCategory = category;
+                this.newMemo();
+            },
+
+            showMemosInCategory(category) {
+                this.currentCategory = category;
+                this.showScreen('memoListScreen');
+                const list = document.getElementById('memoList');
+                
+                const filteredMemos = category 
+                    ? this.memos.filter(m => (m.category || '未分類') === category)
+                    : this.memos;
+                
+                const title = category ? `📁 ${category}` : '全てのメモ';
+                let html = `<div style="margin-bottom:10px;">${title}</div>`;
+                html += '<div class="menu-item">[+ 新規作成]</div>';
+                
+                filteredMemos.forEach((memo, i) => {
+                    const firstLine = memo.text.split('\n')[0].substring(0, 50);
+                    const date = new Date(memo.timestamp);
+                    const dateStr = `${date.getFullYear()}年${String(date.getMonth()+1).padStart(2,'0')}月${String(date.getDate()).padStart(2,'0')}日`;
+                    html += `<div class="menu-item" data-memo-id="${memo.id}">[${dateStr}   ---${firstLine}]</div>`;
+                });
+                
+                html += '<div class="menu-item">[戻る]</div>';
+                list.innerHTML = html;
+
+                const items = list.querySelectorAll('.menu-item');
+                let index = 0;
+                
+                items[index++].onclick = () => category ? this.newMemoWithCategory(category) : this.showCategorySelect();
+                
+                filteredMemos.forEach((memo) => {
+                    items[index++].onclick = () => {
+                        const fullIndex = this.memos.findIndex(m => m.id === memo.id);
+                        this.viewMemo(fullIndex);
+                    };
+                });
+                
+                items[index++].onclick = () => this.showMemoList();
+
+                this.updateMenuItems();
             },
 
             viewMemo(index) {
@@ -1176,7 +1245,13 @@ WELCOME TO TERMLINK`;
                 menu.innerHTML = '<div class="menu-item">[編集]</div><div class="menu-item">[戻る]</div>';
                 const items = menu.querySelectorAll('.menu-item');
                 items[0].onclick = () => this.editMemo(index);
-                items[1].onclick = () => this.showMemoList();
+                items[1].onclick = () => {
+                    if (this.currentCategory) {
+                        this.showMemosInCategory(this.currentCategory);
+                    } else {
+                        this.showMemoList();
+                    }
+                };
                 this.updateMenuItems();
                 
                 // Show content
@@ -1190,7 +1265,6 @@ WELCOME TO TERMLINK`;
                 this.terminalMode = 'memo_edit';
                 this.originalContent = '';
                 this.hasUnsavedChanges = false;
-                this.currentMemoTitle = ''; // Will be set from first line
                 
                 this.showScreen('terminalEditScreen');
                 
@@ -1256,14 +1330,13 @@ WELCOME TO TERMLINK`;
 
             editMemo(index) {
                 this.currentMemo = this.memos[index];
-                this.currentMemoTitle = this.currentMemo.title;
                 this.terminalMode = 'memo_edit';
                 this.originalContent = this.currentMemo.text;
                 this.hasUnsavedChanges = false;
                 
                 this.showScreen('terminalEditScreen');
                 
-                document.getElementById('terminalModeTitle').textContent = `MEMO: ${this.currentMemo.title}`;
+                document.getElementById('terminalModeTitle').textContent = 'MEMO EDIT MODE';
                 
                 // Setup button menu FIRST
                 const menu = document.getElementById('terminalEditMenu');
@@ -1831,8 +1904,13 @@ WELCOME TO TERMLINK`;
                                 const textBeforeCursor = textarea.value.substring(0, cursorPosition);
                                 const isOnFirstLine = !textBeforeCursor.includes('\n');
                                 
-                                if (isOnFirstLine && cursorPosition === textBeforeCursor.length) {
+                                // Move to menu when on first line AND at the beginning
+                                if (isOnFirstLine && cursorPosition === 0) {
                                     e.preventDefault();
+                                    e.stopPropagation();
+                                    // Blur the textarea
+                                    textarea.blur();
+                                    // Focus on last menu item (保存)
                                     this.updateMenuItems();
                                     if (this.menuItems.length > 0) {
                                         this.selectedMenuItem = this.menuItems.length - 1;
