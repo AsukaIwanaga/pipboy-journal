@@ -293,10 +293,14 @@ ASUKA IWANAGA PRIVATE TERMINAL
     <script>
         /**
          * ROBCO TERMINAL SYSTEM
-         * Version: 2.2.3
+         * Version: 2.2.4
          * Last Updated: 2026-03-06
          * 
          * CHANGELOG:
+         * 
+         * v2.2.4 (2026-03-06)
+         * - QUESTタスクチェック時のフォーカス保持機能追加
+         * - タスクチェック後も同じタスクにフォーカスが残る
          * 
          * v2.2.3 (2026-03-06)
          * - QUEST設定画面を新仕様に対応（メニューボタン方式）
@@ -345,9 +349,17 @@ ASUKA IWANAGA PRIVATE TERMINAL
          * - 基本的なターミナルUI
          */
         
-        const VERSION = '2.2.3';
+        const VERSION = '2.2.4';
         
         const CHANGELOG = [
+            {
+                version: '2.2.4',
+                date: '2026-03-06',
+                changes: [
+                    'QUESTタスクチェック時のフォーカス保持機能追加',
+                    'タスクチェック後も同じタスクにフォーカスが残る'
+                ]
+            },
             {
                 version: '2.2.3',
                 date: '2026-03-06',
@@ -2537,7 +2549,7 @@ WELCOME TO TERMLINK`;
                 }
             },
 
-            viewQuest(index) {
+            viewQuest(index, keepSelectedIndex = null) {
                 const quest = this.quests[index];
                 this.currentQuest = quest;
                 this.currentQuestIndex = index;
@@ -2582,6 +2594,12 @@ WELCOME TO TERMLINK`;
                 });
                 
                 this.updateMenuItems();
+                
+                // Restore selection if specified
+                if (keepSelectedIndex !== null) {
+                    this.selectedMenuItem = keepSelectedIndex;
+                    this.updateMenuSelection();
+                }
             },
 
             showDeleteQuestConfirm() {
@@ -2624,7 +2642,11 @@ WELCOME TO TERMLINK`;
                 
                 this.saveData();
                 this.syncData();
-                this.viewQuest(this.currentQuestIndex);
+                
+                // Preserve current selection (menu items + task items)
+                // Menu has 3 items ([編集][削除][戻る]), tasks start at index 3
+                const currentSelection = this.selectedMenuItem;
+                this.viewQuest(this.currentQuestIndex, currentSelection);
             },
 
             moveTaskUp() {
