@@ -142,7 +142,7 @@
     <!-- Home Screen -->
     <div class="screen" id="homeScreen">
         <div class="terminal-text">
-WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK 2
+WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK
 <span id="homeTerminalName">ASUKA IWANAGA PRIVATE TERMINAL</span>
 <div style="text-align:right; margin-top:-20px;" id="homeDateTime"></div>
 
@@ -794,13 +794,25 @@ WELCOME TO TERMLINK`;
                 
                 // Check if trying to go down from last item
                 if (direction === 1 && this.selectedMenuItem === this.menuItems.length - 1) {
-                    // Move to command input
-                    this.menuItems[this.selectedMenuItem].classList.remove('selected');
+                    // If on terminalEditScreen, move to textarea
+                    if (this.currentScreen === 'terminalEditScreen') {
+                        this.menuItems[this.selectedMenuItem].classList.remove('selected');
+                        const textarea = document.getElementById('terminalInput');
+                        if (textarea) {
+                            textarea.focus();
+                            // Place cursor at the beginning
+                            textarea.setSelectionRange(0, 0);
+                            return;
+                        }
+                    }
+                    
+                    // Otherwise check for command input (legacy)
                     const commandInput = document.getElementById('commandInput') || 
                                        document.getElementById('questCommandInput') || 
                                        document.getElementById('logListCommandInput') ||
                                        document.getElementById('memoListCommandInput');
                     if (commandInput) {
+                        this.menuItems[this.selectedMenuItem].classList.remove('selected');
                         commandInput.focus();
                         return;
                     }
@@ -970,34 +982,8 @@ WELCOME TO TERMLINK`;
                 this.showScreen('terminalEditScreen');
                 
                 document.getElementById('terminalModeTitle').textContent = 'LOG ENTRY MODE';
-                const textarea = document.getElementById('terminalInput');
-                textarea.value = '';
                 
-                // Track changes
-                textarea.addEventListener('input', () => {
-                    this.hasUnsavedChanges = (textarea.value !== this.originalContent);
-                });
-                
-                // Allow up arrow to move to menu from first line
-                textarea.addEventListener('keydown', (e) => {
-                    if (e.key === 'ArrowUp') {
-                        const cursorPosition = textarea.selectionStart;
-                        const textBeforeCursor = textarea.value.substring(0, cursorPosition);
-                        const isOnFirstLine = !textBeforeCursor.includes('\n');
-                        
-                        if (isOnFirstLine && cursorPosition === textBeforeCursor.length) {
-                            e.preventDefault();
-                            // Focus on last menu item
-                            if (this.menuItems.length > 0) {
-                                this.selectedMenuItem = this.menuItems.length - 1;
-                                this.updateMenuSelection();
-                                this.menuItems[this.selectedMenuItem].focus();
-                            }
-                        }
-                    }
-                });
-                
-                // Setup button menu
+                // Setup button menu FIRST
                 const menu = document.getElementById('terminalEditMenu');
                 menu.innerHTML = '<div class="menu-item">[戻る]</div><div class="menu-item">[保存]</div>';
                 const items = menu.querySelectorAll('.menu-item');
@@ -1009,10 +995,47 @@ WELCOME TO TERMLINK`;
                     }
                 };
                 items[1].onclick = () => this.terminalSave();
-                this.updateMenuItems();
                 
-                // Focus textarea
-                setTimeout(() => textarea.focus(), 100);
+                // Then setup textarea
+                const textarea = document.getElementById('terminalInput');
+                textarea.value = '';
+                textarea.disabled = false;
+                textarea.readOnly = false;
+                
+                // Remove old event listeners by cloning
+                const newTextarea = textarea.cloneNode(true);
+                textarea.parentNode.replaceChild(newTextarea, textarea);
+                
+                // Track changes on new textarea
+                newTextarea.addEventListener('input', () => {
+                    this.hasUnsavedChanges = (newTextarea.value !== this.originalContent);
+                });
+                
+                // Allow up arrow to move to menu from first line
+                newTextarea.addEventListener('keydown', (e) => {
+                    if (e.key === 'ArrowUp') {
+                        const cursorPosition = newTextarea.selectionStart;
+                        const textBeforeCursor = newTextarea.value.substring(0, cursorPosition);
+                        const isOnFirstLine = !textBeforeCursor.includes('\n');
+                        
+                        if (isOnFirstLine && cursorPosition === 0) {
+                            e.preventDefault();
+                            // Focus on last menu item (保存)
+                            this.updateMenuItems();
+                            if (this.menuItems.length > 0) {
+                                this.selectedMenuItem = this.menuItems.length - 1;
+                                this.updateMenuSelection();
+                            }
+                        }
+                    }
+                });
+                
+                // Update menu items and focus on first item
+                this.updateMenuItems();
+                this.selectedMenuItem = 0;
+                this.updateMenuSelection();
+                
+                console.log('LOG entry mode - menu focused');
             },
 
             showUnsavedConfirm() {
@@ -1187,34 +1210,8 @@ WELCOME TO TERMLINK`;
                 this.showScreen('terminalEditScreen');
                 
                 document.getElementById('terminalModeTitle').textContent = 'MEMO ENTRY MODE';
-                const textarea = document.getElementById('terminalInput');
-                textarea.value = '';
                 
-                // Track changes
-                textarea.addEventListener('input', () => {
-                    this.hasUnsavedChanges = (textarea.value !== this.originalContent);
-                });
-                
-                // Allow up arrow to move to menu from first line
-                textarea.addEventListener('keydown', (e) => {
-                    if (e.key === 'ArrowUp') {
-                        const cursorPosition = textarea.selectionStart;
-                        const textBeforeCursor = textarea.value.substring(0, cursorPosition);
-                        const isOnFirstLine = !textBeforeCursor.includes('\n');
-                        
-                        if (isOnFirstLine && cursorPosition === textBeforeCursor.length) {
-                            e.preventDefault();
-                            // Focus on last menu item
-                            if (this.menuItems.length > 0) {
-                                this.selectedMenuItem = this.menuItems.length - 1;
-                                this.updateMenuSelection();
-                                this.menuItems[this.selectedMenuItem].focus();
-                            }
-                        }
-                    }
-                });
-                
-                // Setup button menu
+                // Setup button menu FIRST
                 const menu = document.getElementById('terminalEditMenu');
                 menu.innerHTML = '<div class="menu-item">[戻る]</div><div class="menu-item">[保存]</div>';
                 const items = menu.querySelectorAll('.menu-item');
@@ -1226,10 +1223,47 @@ WELCOME TO TERMLINK`;
                     }
                 };
                 items[1].onclick = () => this.terminalSave();
-                this.updateMenuItems();
                 
-                // Focus textarea
-                setTimeout(() => textarea.focus(), 100);
+                // Then setup textarea
+                const textarea = document.getElementById('terminalInput');
+                textarea.value = '';
+                textarea.disabled = false;
+                textarea.readOnly = false;
+                
+                // Remove old event listeners by cloning
+                const newTextarea = textarea.cloneNode(true);
+                textarea.parentNode.replaceChild(newTextarea, textarea);
+                
+                // Track changes on new textarea
+                newTextarea.addEventListener('input', () => {
+                    this.hasUnsavedChanges = (newTextarea.value !== this.originalContent);
+                });
+                
+                // Allow up arrow to move to menu from first line
+                newTextarea.addEventListener('keydown', (e) => {
+                    if (e.key === 'ArrowUp') {
+                        const cursorPosition = newTextarea.selectionStart;
+                        const textBeforeCursor = newTextarea.value.substring(0, cursorPosition);
+                        const isOnFirstLine = !textBeforeCursor.includes('\n');
+                        
+                        if (isOnFirstLine && cursorPosition === 0) {
+                            e.preventDefault();
+                            // Focus on last menu item (保存)
+                            this.updateMenuItems();
+                            if (this.menuItems.length > 0) {
+                                this.selectedMenuItem = this.menuItems.length - 1;
+                                this.updateMenuSelection();
+                            }
+                        }
+                    }
+                });
+                
+                // Update menu items and focus on first item
+                this.updateMenuItems();
+                this.selectedMenuItem = 0;
+                this.updateMenuSelection();
+                
+                console.log('MEMO entry mode - menu focused');
             },
 
             editMemo(index) {
