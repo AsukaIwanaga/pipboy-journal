@@ -199,13 +199,11 @@ ASUKA IWANAGA PRIVATE TERMINAL
 WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK
 ASUKA IWANAGA PRIVATE TERMINAL
 
+<div id="memoViewMenu" style="margin-top:10px; margin-bottom:10px;"></div>
 <div id="memoContent" style="margin-top:20px;"></div>
         </div>
-        <div style="position:fixed; bottom:60px; left:30px; font-size:18px;">
-e:EDIT  h:HELP  b:BACK  t:TOP
-        </div>
-        <div style="position:fixed; bottom:30px; left:30px; right:30px; display:flex; justify-content:flex-end; font-size:18px;">
-&gt; <input type="text" id="memoViewCommandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>
+        <div style="position:fixed; bottom:30px; left:30px; right:30px; font-size:18px;" id="footerMessages">
+&gt; <span class="cursor"></span>
         </div>
     </div>
 
@@ -1172,35 +1170,19 @@ WELCOME TO TERMLINK`;
                 this.currentMemoIndex = index;
                 
                 this.showScreen('memoViewScreen');
+                
+                // Setup menu
+                const menu = document.getElementById('memoViewMenu');
+                menu.innerHTML = '<div class="menu-item">[編集]</div><div class="menu-item">[戻る]</div>';
+                const items = menu.querySelectorAll('.menu-item');
+                items[0].onclick = () => this.editMemo(index);
+                items[1].onclick = () => this.showMemoList();
+                this.updateMenuItems();
+                
+                // Show content
                 const content = document.getElementById('memoContent');
-                
                 content.textContent = '';
-                
-                this.typeText(memo.text, content, () => {
-                    // Setup command input after typing completes
-                    const commandInput = document.getElementById('memoViewCommandInput');
-                    if (commandInput) {
-                        commandInput.value = '';
-                        commandInput.focus();
-                        commandInput.onkeydown = null;
-                        commandInput.addEventListener('keydown', (e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                                e.preventDefault();
-                                const cmd = commandInput.value.trim().toLowerCase();
-                                if (cmd === 'e') {
-                                    this.editMemo(index);
-                                } else if (cmd === 'h') {
-                                    this.terminalShowHelp();
-                                } else if (cmd === 'b') {
-                                    this.showMemoList();
-                                } else if (cmd === 't') {
-                                    this.goHome();
-                                }
-                                commandInput.value = '';
-                            }
-                        });
-                    }
-                });
+                this.typeText(memo.text, content);
             },
 
             newMemo() {
