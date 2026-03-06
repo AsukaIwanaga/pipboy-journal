@@ -626,7 +626,7 @@ ASUKA IWANAGA PRIVATE TERMINAL
 ROBCO INDUSTRIES UNIFIED OPERATING SYSTEM
 COPYRIGHT 2075-2077 ROBCO INDUSTRIES
 
-WELCOME TO TERMLINK 2`;
+WELCOME TO TERMLINK`;
                 
                 this.typeText(bootText, display, () => {
                     setTimeout(() => {
@@ -660,10 +660,10 @@ WELCOME TO TERMLINK 2`;
             showWelcomeScreen() {
                 const welcomeText = document.getElementById('welcomeText');
                 welcomeText.innerHTML = `
-<div style="text-align:center; margin-bottom:0px;">
-    <img src="assets/vaultboy.gif" style="width:100px; height:100px; image-rendering: crisp-edges;">
+<div style="text-align:center; margin-bottom:20px;">
+    <img src="assets/vaultboy.gif" style="width:150px; height:150px; image-rendering: crisp-edges;">
 </div>
-<div>ようこそ!</div>`;
+<div>ようこそ</div>`;
                 
                 // Play welcome sound
                 this.playSound('welcome.mp3', 0.6);
@@ -1020,6 +1020,9 @@ WELCOME TO TERMLINK 2`;
                         
                         if (isOnFirstLine && cursorPosition === 0) {
                             e.preventDefault();
+                            e.stopPropagation();
+                            // Blur the textarea to remove focus
+                            newTextarea.blur();
                             // Focus on last menu item (保存)
                             this.updateMenuItems();
                             if (this.menuItems.length > 0) {
@@ -1248,6 +1251,9 @@ WELCOME TO TERMLINK 2`;
                         
                         if (isOnFirstLine && cursorPosition === 0) {
                             e.preventDefault();
+                            e.stopPropagation();
+                            // Blur the textarea to remove focus
+                            newTextarea.blur();
                             // Focus on last menu item (保存)
                             this.updateMenuItems();
                             if (this.menuItems.length > 0) {
