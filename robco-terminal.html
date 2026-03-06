@@ -372,13 +372,13 @@ ASUKA IWANAGA PRIVATE TERMINAL
                 }
             },
 
-                    }
-                } else {
-                    // Start login sequence
-                    this.startLoginSequence(false);
-                }
+            loginStep: 0,
+            loginInputBuffer: '',
+            loginToken: '',
+            loginGistId: '',
 
-                document.addEventListener('keydown', (e) => this.handleKeyboard(e));
+            startLoginSequence(autoLogin) {
+                const display = document.getElementById('loginDisplay');
                 
                 // Add paste event listener for GIST ID and TOKEN
                 document.addEventListener('paste', (e) => {
@@ -392,15 +392,6 @@ ASUKA IWANAGA PRIVATE TERMINAL
                         }
                     }
                 });
-            },
-
-            loginStep: 0,
-            loginInputBuffer: '',
-            loginToken: '',
-            loginGistId: '',
-
-            startLoginSequence(autoLogin) {
-                const display = document.getElementById('loginDisplay');
                 
                 const now = new Date();
                 const version = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
@@ -864,6 +855,9 @@ WELCOME TO TERMLINK`;
                 // Play save sound
                 this.playSound('register.mp3', 0.5);
                 
+                // Add message
+                this.addMessage('保存しました');
+                
                 // Show save confirmation
                 const commandInput = document.getElementById('commandInput');
                 if (commandInput) {
@@ -874,6 +868,7 @@ WELCOME TO TERMLINK`;
             },
 
             terminalCancel() {
+                this.addMessage('保存せずに終了しました');
                 const commandInput = document.getElementById('commandInput');
                 if (commandInput) {
                     commandInput.parentElement.innerHTML = '&gt; キャンセルしました。選択画面に戻りますか？ y:YES  n:NO % <input type="text" id="commandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
@@ -982,8 +977,10 @@ WELCOME TO TERMLINK`;
                 const dateStr = `${now.getFullYear()} ${String(now.getMonth()+1).padStart(2,'0')} ${String(now.getDate()).padStart(2,'0')} (${days[now.getDay()]}) ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
                 dateTimeEl.textContent = dateStr;
                 
-                // Update every second
-                setTimeout(() => this.updateDateTime(), 1000);
+                // Update every second only if still on home screen
+                if (this.currentScreen === 'homeScreen') {
+                    setTimeout(() => this.updateDateTime(), 1000);
+                }
             },
 
             showSettings() {
@@ -1231,10 +1228,12 @@ WELCOME TO TERMLINK`;
                                 this.logs = this.logs.filter(l => l.id !== logId);
                                 this.saveData();
                                 this.syncData();
+                                this.addMessage('削除しました');
                                 this.showLogList();
                                 return;
                             } else if (cmd === 'n') {
                                 this.logDeleteConfirm = false;
+                                this.addMessage('削除をキャンセルしました');
                                 newInput.parentElement.innerHTML = '&gt; <input type="text" id="logViewCommandInput" style="width:200px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
                                 this.setupLogViewCommandInput();
                                 return;
@@ -2095,10 +2094,12 @@ WELCOME TO TERMLINK`;
                                 this.quests.splice(this.currentQuestIndex, 1);
                                 this.saveData();
                                 this.syncData();
+                                this.addMessage('削除しました');
                                 this.showQuestList();
                                 return;
                             } else if (cmd === 'n') {
                                 this.questDeleteConfirm = false;
+                                this.addMessage('削除をキャンセルしました');
                                 newInput.parentElement.innerHTML = '&gt; e:EDIT d:DELETE b:BACK t:TOP <input type="text" id="questViewCommandInput" style="width:50px; background:#000; color:#22c55e; border:none; border-bottom:1px solid #22c55e; font-family:inherit; font-size:18px; outline:none;"><span class="cursor"></span>';
                                 this.setupQuestViewCommandInput();
                                 return;
@@ -2134,12 +2135,20 @@ WELCOME TO TERMLINK`;
             toggleTask(taskIndex) {
                 if (!this.currentQuest) return;
                 
-                this.currentQuest.tasks[taskIndex].completed = !this.currentQuest.tasks[taskIndex].completed;
+                const wasCompleted = this.currentQuest.tasks[taskIndex].completed;
+                this.currentQuest.tasks[taskIndex].completed = !wasCompleted;
+                
+                // Add message
+                if (!wasCompleted) {
+                    this.addMessage('タスクの完了を登録しました');
+                }
                 
                 // Check if all tasks completed
                 const allCompleted = this.currentQuest.tasks.every(t => t.completed);
-                if (allCompleted && this.currentQuest.tasks.length > 0) {
+                if (allCompleted && this.currentQuest.tasks.length > 0 && !wasCompleted) {
                     this.playSound('celebrate.mp3', 0.6);
+                    this.addMessage('全てのタスクが完了しました！');
+                    this.addMessage('クエストの完了を登録しました');
                 }
                 
                 this.saveData();
