@@ -302,10 +302,15 @@ ASUKA IWANAGA PRIVATE TERMINAL
     <script>
         /**
          * ROBCO TERMINAL SYSTEM
-         * Version: 2.4.2
+         * Version: 2.5.0
          * Last Updated: 2026-03-10
          * 
          * CHANGELOG:
+         * 
+         * v2.5.0 (2026-03-10)
+         * - メモにチェックボックス機能追加（[]を☐に、[x]を☑に変換）
+         * - メモの空白行を保持するよう修正
+         * - 時計画面を追加（ホーム画面から選択可能）
          * 
          * v2.4.2 (2026-03-10)
          * - ようこそ画面のレイアウトを改善
@@ -404,9 +409,18 @@ ASUKA IWANAGA PRIVATE TERMINAL
          * - 基本的なターミナルUI
          */
         
-        const VERSION = '2.4.2';
+        const VERSION = '2.5.0';
         
         const CHANGELOG = [
+            {
+                version: '2.5.0',
+                date: '2026-03-10',
+                changes: [
+                    'メモにチェックボックス機能追加（[]を☐に、[x]を☑に変換）',
+                    'メモの空白行を保持するよう修正',
+                    '時計画面を追加（ホーム画面から選択可能）'
+                ]
+            },
             {
                 version: '2.4.2',
                 date: '2026-03-10',
@@ -589,6 +603,7 @@ ASUKA IWANAGA PRIVATE TERMINAL
             selectedMenuItem: 0,
             menuItems: [],
             typeTextTimeout: null,
+            clockInterval: null,
             
             // Memo directories (formerly categories)
             memoDirectories: JSON.parse(localStorage.getItem('memoDirectories') || '["仕事", "プライベート", "買い物"]'),
@@ -1290,14 +1305,15 @@ WELCOME TO TERMLINK`;
             goHome() {
                 this.showScreen('homeScreen');
                 const menu = document.getElementById('homeMenu');
-                menu.innerHTML = `<div class="menu-item">[ログ]</div><div class="menu-item">[メモ]</div><div class="menu-item">[クエスト]</div><div class="menu-item">[設定]</div><div class="menu-item">[履歴]</div>`;
+                menu.innerHTML = `<div class="menu-item">[ログ]</div><div class="menu-item">[メモ]</div><div class="menu-item">[クエスト]</div><div class="menu-item">[設定]</div><div class="menu-item">[時計]</div><div class="menu-item">[履歴]</div>`;
 
                 const items = menu.querySelectorAll('.menu-item');
                 items[0].onclick = () => this.showLogList();
                 items[1].onclick = () => this.showMemoList();
                 items[2].onclick = () => this.showQuestList();
                 items[3].onclick = () => this.showSettings();
-                items[4].onclick = () => this.showHistory();
+                items[4].onclick = () => this.showClock();
+                items[5].onclick = () => this.showHistory();
 
                 this.updateMenuItems();
                 this.updateDateTime();
@@ -1442,6 +1458,55 @@ WELCOME TO TERMLINK`;
                     document.body.classList.add('gray-mode');
                 }
                 // dark mode is the default (no class needed)
+            },
+
+            showClock() {
+                this.showScreen('homeScreen');
+                const menu = document.getElementById('homeMenu');
+                
+                let html = '<div style="margin-bottom:20px;">時計</div>';
+                html += '<div id="bigClock" style="font-size:48px; text-align:center; margin:50px 0;"></div>';
+                html += '<div class="menu-item">[戻る]</div>';
+                
+                menu.innerHTML = html;
+                
+                const items = menu.querySelectorAll('.menu-item');
+                items[0].onclick = () => {
+                    if (this.clockInterval) {
+                        clearInterval(this.clockInterval);
+                        this.clockInterval = null;
+                    }
+                    this.goHome();
+                };
+                
+                this.updateMenuItems();
+                
+                // Update clock immediately
+                this.updateBigClock();
+                
+                // Update clock every second
+                this.clockInterval = setInterval(() => this.updateBigClock(), 1000);
+            },
+
+            updateBigClock() {
+                const clockElement = document.getElementById('bigClock');
+                if (!clockElement) {
+                    if (this.clockInterval) {
+                        clearInterval(this.clockInterval);
+                        this.clockInterval = null;
+                    }
+                    return;
+                }
+                
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                const seconds = String(now.getSeconds()).padStart(2, '0');
+                
+                clockElement.innerHTML = `${year}/${month}/${day}<br>${hours}:${minutes}:${seconds}`;
             },
 
             showHistory() {
@@ -1903,9 +1968,23 @@ WELCOME TO TERMLINK`;
                     // Long memo: display line by line with auto-scroll
                     this.displayMemoLineByLine(memo.text, content);
                 } else {
-                    // Short memo: display character by character (original behavior)
-                    this.typeText(memo.text, content);
+                    // Short memo: display character by character, then convert checkboxes
+                    this.typeText(memo.text, content, () => {
+                        this.convertCheckboxesInElement(content);
+                    });
                 }
+            },
+
+            convertCheckboxesInElement(element) {
+                let html = element.textContent;
+                
+                // Replace [x] or [X] with checked checkbox
+                html = html.replace(/\[x\]/gi, '☑');
+                
+                // Replace [] with unchecked checkbox
+                html = html.replace(/\[\s*\]/g, '☐');
+                
+                element.innerHTML = html.replace(/\n/g, '<br>');
             },
 
             displayMemoLineByLine(text, element) {
@@ -1915,10 +1994,31 @@ WELCOME TO TERMLINK`;
                 const displayNextLine = () => {
                     if (lineIndex < lines.length) {
                         const lineDiv = document.createElement('div');
-                        lineDiv.textContent = lines[lineIndex];
+                        const line = lines[lineIndex];
+                        
+                        // Check if line contains checkbox pattern []
+                        const checkboxPattern = /\[\s*\]/g;
+                        const checkedPattern = /\[x\]/gi;
+                        
+                        if (checkboxPattern.test(line) || checkedPattern.test(line)) {
+                            // Parse line with checkboxes
+                            let processedLine = line;
+                            
+                            // Replace [x] or [X] with checked checkbox
+                            processedLine = processedLine.replace(/\[x\]/gi, '☑');
+                            
+                            // Replace [] with unchecked checkbox
+                            processedLine = processedLine.replace(/\[\s*\]/g, '☐');
+                            
+                            lineDiv.innerHTML = processedLine;
+                        } else {
+                            // Regular line (preserve empty lines)
+                            lineDiv.textContent = line || '\u00A0'; // Use non-breaking space for empty lines
+                        }
+                        
                         element.appendChild(lineDiv);
                         
-                        // Play pip sound for each line
+                        // Play pip sound for each line (including empty ones)
                         this.playSound('pip.mp3', 0.3);
                         
                         // Auto-scroll to bottom (use requestAnimationFrame to ensure DOM is rendered)
