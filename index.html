@@ -23,6 +23,15 @@
             --hover-text: #37352f;
         }
 
+        body.gray-mode {
+            /* Gray mode (Claude app dark theme) */
+            --bg-color: #2F2F2F;
+            --text-color: #E8E8E8;
+            --cursor-color: #E8E8E8;
+            --hover-bg: #4A4A4A;
+            --hover-text: #FFFFFF;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -30,7 +39,7 @@
         }
 
         body {
-            font-family: 'VT323', 'Courier New', monospace;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'Consolas', 'Courier New', monospace;
             background: var(--bg-color);
             color: var(--text-color);
             overflow: hidden;
@@ -227,7 +236,7 @@ WELCOME TO ROBCO INDUSTRIES (TM) TERMLINK
 ASUKA IWANAGA PRIVATE TERMINAL
 
 <div id="memoViewMenu" style="margin-top:10px; margin-bottom:10px;"></div>
-<div id="memoContent" style="margin-top:20px;"></div>
+<div id="memoContent" style="margin-top:20px; max-height:calc(100vh - 300px); overflow-y:auto;"></div>
         </div>
         <div style="position:fixed; bottom:30px; left:30px; right:30px; font-size:18px;" id="footerMessages">
 &gt; <span class="cursor"></span>
@@ -293,10 +302,27 @@ ASUKA IWANAGA PRIVATE TERMINAL
     <script>
         /**
          * ROBCO TERMINAL SYSTEM
-         * Version: 2.3.0
-         * Last Updated: 2026-03-06
+         * Version: 2.4.0
+         * Last Updated: 2026-03-10
          * 
          * CHANGELOG:
+         * 
+         * v2.4.0 (2026-03-10)
+         * - グレーモード追加（Claudeアプリのダークテーマ風）
+         * - カラーモードが3種類に（ダーク/ライト/グレー）
+         * - フォントを等幅フォントに変更
+         * - カラーモード切り替えがサイクル式に
+         * 
+         * v2.3.2 (2026-03-06)
+         * - メモ表示を改善（15行超の場合）
+         * - 15行超のメモは1行ずつ表示
+         * - 行ごとにpip音を再生
+         * - 自動スクロール機能追加
+         * 
+         * v2.3.1 (2026-03-06)
+         * - メモ一覧の表示形式を変更
+         * - 日付と区切り線を削除
+         * - 1行目のみ20文字まで表示
          * 
          * v2.3.0 (2026-03-06)
          * - QUEST一覧画面の構造を変更
@@ -369,9 +395,38 @@ ASUKA IWANAGA PRIVATE TERMINAL
          * - 基本的なターミナルUI
          */
         
-        const VERSION = '2.3.0';
+        const VERSION = '2.4.0';
         
         const CHANGELOG = [
+            {
+                version: '2.4.0',
+                date: '2026-03-10',
+                changes: [
+                    'グレーモード追加（Claudeアプリのダークテーマ風）',
+                    'カラーモードが3種類に（ダーク/ライト/グレー）',
+                    'フォントを等幅フォントに変更',
+                    'カラーモード切り替えがサイクル式に'
+                ]
+            },
+            {
+                version: '2.3.2',
+                date: '2026-03-06',
+                changes: [
+                    'メモ表示を改善（15行超の場合）',
+                    '15行超のメモは1行ずつ表示',
+                    '行ごとにpip音を再生',
+                    '自動スクロール機能追加'
+                ]
+            },
+            {
+                version: '2.3.1',
+                date: '2026-03-06',
+                changes: [
+                    'メモ一覧の表示形式を変更',
+                    '日付と区切り線を削除',
+                    '1行目のみ20文字まで表示'
+                ]
+            },
             {
                 version: '2.3.0',
                 date: '2026-03-06',
@@ -1240,7 +1295,11 @@ WELCOME TO TERMLINK`;
                 const menu = document.getElementById('homeMenu');
                 
                 const currentMode = localStorage.getItem('colorMode') || 'dark';
-                const modeText = currentMode === 'dark' ? 'ダークモード' : 'ライトモード';
+                const modeText = {
+                    'dark': 'ダークモード',
+                    'light': 'ライトモード',
+                    'gray': 'グレーモード'
+                }[currentMode];
                 
                 // Get authentication info
                 const gistId = this.gistId || localStorage.getItem('termGistId') || '未設定';
@@ -1326,7 +1385,9 @@ WELCOME TO TERMLINK`;
 
             toggleColorMode() {
                 const currentMode = localStorage.getItem('colorMode') || 'dark';
-                const newMode = currentMode === 'dark' ? 'light' : 'dark';
+                const modes = ['dark', 'light', 'gray'];
+                const currentIndex = modes.indexOf(currentMode);
+                const newMode = modes[(currentIndex + 1) % modes.length];
                 
                 localStorage.setItem('colorMode', newMode);
                 this.applyColorMode(newMode);
@@ -1336,11 +1397,16 @@ WELCOME TO TERMLINK`;
             },
 
             applyColorMode(mode) {
+                // Remove all mode classes first
+                document.body.classList.remove('light-mode', 'gray-mode');
+                
+                // Apply new mode class
                 if (mode === 'light') {
                     document.body.classList.add('light-mode');
-                } else {
-                    document.body.classList.remove('light-mode');
+                } else if (mode === 'gray') {
+                    document.body.classList.add('gray-mode');
                 }
+                // dark mode is the default (no class needed)
             },
 
             showHistory() {
@@ -1646,10 +1712,8 @@ WELCOME TO TERMLINK`;
                 html += '<div class="menu-item">[+ 新規作成]</div>';
                 
                 filteredMemos.forEach((memo) => {
-                    const firstLine = memo.text.split('\n')[0].substring(0, 50);
-                    const date = new Date(memo.timestamp);
-                    const dateStr = `${date.getFullYear()}年${String(date.getMonth()+1).padStart(2,'0')}月${String(date.getDate()).padStart(2,'0')}日`;
-                    html += `<div class="menu-item" data-memo-id="${memo.id}">[${dateStr}   ---${firstLine}]</div>`;
+                    const firstLine = memo.text.split('\n')[0].substring(0, 20);
+                    html += `<div class="menu-item" data-memo-id="${memo.id}">[${firstLine}]</div>`;
                 });
                 
                 html += '<div class="menu-item">[戻る]</div>';
@@ -1796,7 +1860,41 @@ WELCOME TO TERMLINK`;
                 
                 const content = document.getElementById('memoContent');
                 content.textContent = '';
-                this.typeText(memo.text, content);
+                
+                // Count lines
+                const lines = memo.text.split('\n');
+                
+                if (lines.length > 15) {
+                    // Long memo: display line by line with auto-scroll
+                    this.displayMemoLineByLine(memo.text, content);
+                } else {
+                    // Short memo: display character by character (original behavior)
+                    this.typeText(memo.text, content);
+                }
+            },
+
+            displayMemoLineByLine(text, element) {
+                const lines = text.split('\n');
+                let lineIndex = 0;
+                
+                const displayNextLine = () => {
+                    if (lineIndex < lines.length) {
+                        const lineDiv = document.createElement('div');
+                        lineDiv.textContent = lines[lineIndex];
+                        element.appendChild(lineDiv);
+                        
+                        // Play pip sound for each line
+                        this.playSound('pip.mp3', 0.3);
+                        
+                        // Auto-scroll to bottom
+                        element.scrollTop = element.scrollHeight;
+                        
+                        lineIndex++;
+                        setTimeout(displayNextLine, 100); // 100ms per line
+                    }
+                };
+                
+                displayNextLine();
             },
 
             newMemo() {
