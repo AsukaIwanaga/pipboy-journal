@@ -161,8 +161,8 @@
 
     <!-- Changelog Screen -->
     <div class="screen" id="changelogScreen">
-        <div class="terminal-text" style="padding:30px;">
-<div id="changelogContent"></div>
+        <div class="terminal-text" style="padding:30px; height:100vh; overflow:hidden;">
+<div id="changelogContent" style="height:calc(100vh - 60px); overflow-y:auto;"></div>
         </div>
     </div>
 
@@ -293,10 +293,14 @@ ASUKA IWANAGA PRIVATE TERMINAL
     <script>
         /**
          * ROBCO TERMINAL SYSTEM
-         * Version: 2.2.5
+         * Version: 2.2.6
          * Last Updated: 2026-03-06
          * 
          * CHANGELOG:
+         * 
+         * v2.2.6 (2026-03-06)
+         * - 変更履歴画面に自動スクロール機能追加
+         * - 行が追加されるたびに自動的に下にスクロール
          * 
          * v2.2.5 (2026-03-06)
          * - GitHub API認証方式を修正（Bearer トークンに対応）
@@ -354,9 +358,17 @@ ASUKA IWANAGA PRIVATE TERMINAL
          * - 基本的なターミナルUI
          */
         
-        const VERSION = '2.2.5';
+        const VERSION = '2.2.6';
         
         const CHANGELOG = [
+            {
+                version: '2.2.6',
+                date: '2026-03-06',
+                changes: [
+                    '変更履歴画面に自動スクロール機能追加',
+                    '行が追加されるたびに自動的に下にスクロール'
+                ]
+            },
             {
                 version: '2.2.5',
                 date: '2026-03-06',
@@ -909,6 +921,10 @@ WELCOME TO TERMLINK`;
                             div.style.marginTop = '10px';
                         }
                         content.appendChild(div);
+                        
+                        // Auto-scroll to bottom
+                        content.scrollTop = content.scrollHeight;
+                        
                         lineIndex++;
                         setTimeout(displayLine, 125); // 8 lines/second
                     } else {
@@ -917,6 +933,9 @@ WELCOME TO TERMLINK`;
                             const loadingDiv = document.createElement('div');
                             loadingDiv.innerHTML = '<div style="margin-top:20px;">&gt; 読み込んでいます...<span class="cursor"></span></div>';
                             content.appendChild(loadingDiv);
+                            
+                            // Auto-scroll to bottom
+                            content.scrollTop = content.scrollHeight;
                             
                             // Wait 3 seconds then show welcome screen
                             setTimeout(() => {
