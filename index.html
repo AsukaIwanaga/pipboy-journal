@@ -293,10 +293,21 @@ ASUKA IWANAGA PRIVATE TERMINAL
     <script>
         /**
          * ROBCO TERMINAL SYSTEM
-         * Version: 2.2.6
+         * Version: 2.3.0
          * Last Updated: 2026-03-06
          * 
          * CHANGELOG:
+         * 
+         * v2.3.0 (2026-03-06)
+         * - QUEST一覧画面の構造を変更
+         * - 定期クエスト（WEEKLY/MONTHLY/DAILY）は完了に移動しない
+         * - [定期クエストの管理]メニュー追加
+         * - [SETTING]を[設定]に変更
+         * 
+         * v2.2.7 (2026-03-06)
+         * - 設定画面に認証情報表示機能を追加
+         * - Gist IDとトークンを確認可能に
+         * - トークンはマスク表示でセキュリティ配慮
          * 
          * v2.2.6 (2026-03-06)
          * - 変更履歴画面に自動スクロール機能追加
@@ -358,9 +369,28 @@ ASUKA IWANAGA PRIVATE TERMINAL
          * - 基本的なターミナルUI
          */
         
-        const VERSION = '2.2.6';
+        const VERSION = '2.3.0';
         
         const CHANGELOG = [
+            {
+                version: '2.3.0',
+                date: '2026-03-06',
+                changes: [
+                    'QUEST一覧画面の構造を変更',
+                    '定期クエスト（WEEKLY/MONTHLY/DAILY）は完了に移動しない',
+                    '[定期クエストの管理]メニュー追加',
+                    '[SETTING]を[設定]に変更'
+                ]
+            },
+            {
+                version: '2.2.7',
+                date: '2026-03-06',
+                changes: [
+                    '設定画面に認証情報表示機能を追加',
+                    'Gist IDとトークンを確認可能に',
+                    'トークンはマスク表示でセキュリティ配慮'
+                ]
+            },
             {
                 version: '2.2.6',
                 date: '2026-03-06',
@@ -1212,15 +1242,84 @@ WELCOME TO TERMLINK`;
                 const currentMode = localStorage.getItem('colorMode') || 'dark';
                 const modeText = currentMode === 'dark' ? 'ダークモード' : 'ライトモード';
                 
+                // Get authentication info
+                const gistId = this.gistId || localStorage.getItem('termGistId') || '未設定';
+                const token = this.githubToken || localStorage.getItem('termToken') || '未設定';
+                
+                // Mask token for security (show only first 7 chars and last 4 chars)
+                let maskedToken = '未設定';
+                if (token !== '未設定' && token.length > 11) {
+                    maskedToken = token.substring(0, 7) + '...' + token.substring(token.length - 4);
+                }
+                
                 let html = '<div style="margin-bottom:20px;">設定</div>';
                 html += `<div class="menu-item">[カラーモード: ${modeText}]</div>`;
+                html += `<div class="menu-item">[認証情報を表示]</div>`;
                 html += '<div class="menu-item">[戻る]</div>';
                 
                 menu.innerHTML = html;
                 
                 const items = menu.querySelectorAll('.menu-item');
                 items[0].onclick = () => this.toggleColorMode();
-                items[1].onclick = () => this.goHome();
+                items[1].onclick = () => this.showAuthInfo();
+                items[2].onclick = () => this.goHome();
+                
+                this.updateMenuItems();
+            },
+
+            showAuthInfo() {
+                this.showScreen('homeScreen');
+                const menu = document.getElementById('homeMenu');
+                
+                const gistId = this.gistId || localStorage.getItem('termGistId') || '未設定';
+                const token = this.githubToken || localStorage.getItem('termToken') || '未設定';
+                
+                // Mask token for security
+                let maskedToken = '未設定';
+                if (token !== '未設定' && token.length > 11) {
+                    maskedToken = token.substring(0, 7) + '...' + token.substring(token.length - 4);
+                }
+                
+                let html = '<div style="margin-bottom:20px;">認証情報</div>';
+                html += '<div style="margin-bottom:10px; font-size:16px; opacity:0.8;">━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>';
+                html += `<div style="margin-bottom:5px;">GIST ID:</div>`;
+                html += `<div style="margin-left:20px; margin-bottom:15px; word-break:break-all;">${gistId}</div>`;
+                html += `<div style="margin-bottom:5px;">TOKEN:</div>`;
+                html += `<div style="margin-left:20px; margin-bottom:15px;">${maskedToken}</div>`;
+                html += '<div style="margin-bottom:10px; font-size:16px; opacity:0.8;">━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>';
+                html += '<div class="menu-item">[完全なトークンを表示]</div>';
+                html += '<div class="menu-item">[戻る]</div>';
+                
+                menu.innerHTML = html;
+                
+                const items = menu.querySelectorAll('.menu-item');
+                items[0].onclick = () => this.showFullToken();
+                items[1].onclick = () => this.showSettings();
+                
+                this.updateMenuItems();
+            },
+
+            showFullToken() {
+                this.showScreen('homeScreen');
+                const menu = document.getElementById('homeMenu');
+                
+                const gistId = this.gistId || localStorage.getItem('termGistId') || '未設定';
+                const token = this.githubToken || localStorage.getItem('termToken') || '未設定';
+                
+                let html = '<div style="margin-bottom:20px;">完全な認証情報</div>';
+                html += '<div style="margin-bottom:10px; font-size:14px; color:#ff6b6b;">⚠ 他人に見せないでください</div>';
+                html += '<div style="margin-bottom:10px; font-size:16px; opacity:0.8;">━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>';
+                html += `<div style="margin-bottom:5px;">GIST ID:</div>`;
+                html += `<div style="margin-left:20px; margin-bottom:15px; word-break:break-all; font-size:14px;">${gistId}</div>`;
+                html += `<div style="margin-bottom:5px;">TOKEN:</div>`;
+                html += `<div style="margin-left:20px; margin-bottom:15px; word-break:break-all; font-size:14px;">${token}</div>`;
+                html += '<div style="margin-bottom:10px; font-size:16px; opacity:0.8;">━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>';
+                html += '<div class="menu-item">[戻る]</div>';
+                
+                menu.innerHTML = html;
+                
+                const items = menu.querySelectorAll('.menu-item');
+                items[0].onclick = () => this.showAuthInfo();
                 
                 this.updateMenuItems();
             },
@@ -1930,54 +2029,58 @@ WELCOME TO TERMLINK`;
                 this.showScreen('questListScreen');
                 const list = document.getElementById('questList');
                 
-                // Separate completed and incomplete quests
-                const incomplete = this.quests.filter(q => 
-                    q.tasks.length === 0 || q.tasks.some(t => !t.completed)
+                // Separate quests by type and completion
+                // Recurring quests (WEEKLY/MONTHLY/DAILY) never go to completed section
+                const incompleteOnce = this.quests.filter(q => 
+                    q.cycle === 'ONCE' && (q.tasks.length === 0 || q.tasks.some(t => !t.completed))
                 );
-                const complete = this.quests.filter(q => 
-                    q.tasks.length > 0 && q.tasks.every(t => t.completed)
+                const completeOnce = this.quests.filter(q => 
+                    q.cycle === 'ONCE' && q.tasks.length > 0 && q.tasks.every(t => t.completed)
                 );
                 
                 // Sort completed quests
                 if (this.questSettings.sortOrder === 'deadline') {
-                    complete.sort((a, b) => a.deadline.localeCompare(b.deadline));
+                    completeOnce.sort((a, b) => a.deadline.localeCompare(b.deadline));
                 } else if (this.questSettings.sortOrder === 'title') {
-                    complete.sort((a, b) => a.title.localeCompare(b.title));
+                    completeOnce.sort((a, b) => a.title.localeCompare(b.title));
                 } else {
                     // created order - use timestamp
-                    complete.sort((a, b) => a.timestamp - b.timestamp);
+                    completeOnce.sort((a, b) => a.timestamp - b.timestamp);
                 }
                 
-                let html = '<div class="menu-item">[+ 新規作成]</div><div class="menu-item">[SETTING]</div>';
+                let html = '<div class="menu-item">[+ 新規作成]</div>';
+                html += '<div class="menu-item">[定期クエストの管理]</div>';
+                html += '<div class="menu-item">[設定]</div>';
                 
-                incomplete.forEach((quest, i) => {
+                // Show incomplete ONCE quests
+                incompleteOnce.forEach((quest) => {
                     const completed = quest.tasks.filter(t => t.completed).length;
                     const total = quest.tasks.length;
                     const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
-                    const cycleStr = quest.cycle !== 'NONE' ? ` cyc:${quest.cycle}` : '';
-                    html += `<div class="menu-item" data-quest-id="${quest.id}">[${quest.title} ddl:${quest.deadline}${cycleStr} task:${percent}%]</div>`;
+                    html += `<div class="menu-item" data-quest-id="${quest.id}">[${quest.title} ddl:${quest.deadline} cyc:ONCE task:${percent}%]</div>`;
                 });
                 
-                if (complete.length > 0) {
+                // Show completed ONCE quests section
+                if (completeOnce.length > 0) {
                     html += '<br><br><br><br><br>';
                     html += '<div style="text-align:center;">--- 完了ミッション ---</div>';
-                    complete.forEach((quest, i) => {
-                        const cycleStr = quest.cycle !== 'NONE' ? ` cyc:${quest.cycle}` : '';
-                        html += `<div class="menu-item" data-quest-id="${quest.id}">[${quest.title} ddl:${quest.deadline}${cycleStr} task:100%]</div>`;
+                    completeOnce.forEach((quest) => {
+                        html += `<div class="menu-item" data-quest-id="${quest.id}">[${quest.title} ddl:${quest.deadline} cyc:ONCE task:100%]</div>`;
                     });
                 }
                 
-                html += '<div class="menu-item" >[戻る]</div>';
+                html += '<div class="menu-item">[戻る]</div>';
                 
                 list.innerHTML = html;
 
                 const items = list.querySelectorAll('.menu-item');
                 items[0].onclick = () => this.newQuest();
-                items[1].onclick = () => this.showQuestSettings();
+                items[1].onclick = () => this.showRecurringQuests();
+                items[2].onclick = () => this.showQuestSettings();
                 
                 // Set onclick for quests and back button
                 let backButtonIndex = -1;
-                for (let i = 2; i < items.length; i++) {
+                for (let i = 3; i < items.length; i++) {
                     const questId = items[i].getAttribute('data-quest-id');
                     if (questId) {
                         const questIndex = this.quests.findIndex(q => q.id === questId);
@@ -1995,32 +2098,52 @@ WELCOME TO TERMLINK`;
                 }
 
                 this.updateMenuItems();
+            },
+
+            showRecurringQuests() {
+                this.showScreen('questListScreen');
+                const list = document.getElementById('questList');
                 
-                // Setup command input for quest list
-                const commandInput = document.getElementById('questListCommandInput');
-                if (commandInput) {
-                    commandInput.value = '';
-                    const newInput = commandInput.cloneNode(true);
-                    commandInput.parentNode.replaceChild(newInput, commandInput);
-                    
-                    newInput.addEventListener('keydown', (e) => {
-                        if (e.key === 'ArrowUp') {
-                            e.preventDefault();
-                            if (this.menuItems.length > 0) {
-                                this.selectedMenuItem = this.menuItems.length - 1;
-                                this.updateMenuSelection();
-                                this.menuItems[this.selectedMenuItem].focus();
-                            }
-                        } else if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            const cmd = newInput.value.trim().toLowerCase();
-                            if (cmd === 't' || cmd === 'b') {
-                                this.goHome();
-                            }
-                            newInput.value = '';
-                        }
+                // Get all recurring quests
+                const recurringQuests = this.quests.filter(q => 
+                    q.cycle === 'WEEKLY' || q.cycle === 'MONTHLY' || q.cycle === 'DAILY'
+                );
+                
+                let html = '<div style="margin-bottom:20px;">定期クエストの管理</div>';
+                
+                if (recurringQuests.length === 0) {
+                    html += '<div style="margin-bottom:20px; opacity:0.7;">定期クエストがありません</div>';
+                } else {
+                    recurringQuests.forEach((quest) => {
+                        const completed = quest.tasks.filter(t => t.completed).length;
+                        const total = quest.tasks.length;
+                        const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+                        html += `<div class="menu-item" data-quest-id="${quest.id}">[${quest.title} ddl:${quest.deadline} cyc:${quest.cycle} task:${percent}%]</div>`;
                     });
                 }
+                
+                html += '<div class="menu-item">[戻る]</div>';
+                
+                list.innerHTML = html;
+                
+                const items = list.querySelectorAll('.menu-item');
+                let itemIndex = 0;
+                
+                // Set onclick for recurring quests
+                recurringQuests.forEach((quest) => {
+                    items[itemIndex].onclick = () => {
+                        const questIndex = this.quests.findIndex(q => q.id === quest.id);
+                        if (questIndex !== -1) {
+                            this.viewQuest(questIndex);
+                        }
+                    };
+                    itemIndex++;
+                });
+                
+                // Back button
+                items[items.length - 1].onclick = () => this.showQuestList();
+                
+                this.updateMenuItems();
             },
 
             showQuestSettings() {
