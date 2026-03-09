@@ -164,7 +164,7 @@
         <div class="terminal-text" style="padding-top:20vh; text-align:center;">
 <span id="loadingText">LOADING...</span>
 <div id="progressBar" style="margin-top:20px;"></div>
-<div id="welcomeText" style="margin-top:40px; font-size:24px;"></div>
+<div id="welcomeText" style="font-size:24px;"></div>
         </div>
     </div>
 
@@ -302,10 +302,19 @@ ASUKA IWANAGA PRIVATE TERMINAL
     <script>
         /**
          * ROBCO TERMINAL SYSTEM
-         * Version: 2.4.0
+         * Version: 2.4.2
          * Last Updated: 2026-03-10
          * 
          * CHANGELOG:
+         * 
+         * v2.4.2 (2026-03-10)
+         * - ようこそ画面のレイアウトを改善
+         * - Vault Boy GIF上部の余白を削除
+         * - 画面中央に配置
+         * 
+         * v2.4.1 (2026-03-10)
+         * - メモの自動スクロールタイミングを修正
+         * - requestAnimationFrameを使用して確実にスクロール
          * 
          * v2.4.0 (2026-03-10)
          * - グレーモード追加（Claudeアプリのダークテーマ風）
@@ -395,9 +404,26 @@ ASUKA IWANAGA PRIVATE TERMINAL
          * - 基本的なターミナルUI
          */
         
-        const VERSION = '2.4.0';
+        const VERSION = '2.4.2';
         
         const CHANGELOG = [
+            {
+                version: '2.4.2',
+                date: '2026-03-10',
+                changes: [
+                    'ようこそ画面のレイアウトを改善',
+                    'Vault Boy GIF上部の余白を削除',
+                    '画面中央に配置'
+                ]
+            },
+            {
+                version: '2.4.1',
+                date: '2026-03-10',
+                changes: [
+                    'メモの自動スクロールタイミングを修正',
+                    'requestAnimationFrameを使用して確実にスクロール'
+                ]
+            },
             {
                 version: '2.4.0',
                 date: '2026-03-10',
@@ -1036,6 +1062,15 @@ WELCOME TO TERMLINK`;
             showWelcomeScreen() {
                 this.showScreen('loadingScreen');
                 const welcomeText = document.getElementById('welcomeText');
+                
+                // Reset parent padding for welcome screen
+                const terminalText = welcomeText.parentElement;
+                terminalText.style.paddingTop = '10vh';
+                terminalText.style.display = 'flex';
+                terminalText.style.flexDirection = 'column';
+                terminalText.style.alignItems = 'center';
+                terminalText.style.justifyContent = 'center';
+                
                 welcomeText.innerHTML = `
 <div style="text-align:center; margin-bottom:20px;">
     <img src="assets/vaultboy.gif" style="width:150px; height:150px; image-rendering: crisp-edges;">
@@ -1886,8 +1921,12 @@ WELCOME TO TERMLINK`;
                         // Play pip sound for each line
                         this.playSound('pip.mp3', 0.3);
                         
-                        // Auto-scroll to bottom
-                        element.scrollTop = element.scrollHeight;
+                        // Auto-scroll to bottom (use requestAnimationFrame to ensure DOM is rendered)
+                        requestAnimationFrame(() => {
+                            requestAnimationFrame(() => {
+                                element.scrollTop = element.scrollHeight;
+                            });
+                        });
                         
                         lineIndex++;
                         setTimeout(displayNextLine, 100); // 100ms per line
