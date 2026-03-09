@@ -302,10 +302,15 @@ ASUKA IWANAGA PRIVATE TERMINAL
     <script>
         /**
          * ROBCO TERMINAL SYSTEM
-         * Version: 2.5.0
+         * Version: 2.5.1
          * Last Updated: 2026-03-10
          * 
          * CHANGELOG:
+         * 
+         * v2.5.1 (2026-03-10)
+         * - 時計のサイズを大幅に拡大（レスポンシブ対応）
+         * - clamp関数でウィンドウサイズに応じて自動調整
+         * - 最小120px、最大400px、理想15vw
          * 
          * v2.5.0 (2026-03-10)
          * - メモにチェックボックス機能追加（[]を☐に、[x]を☑に変換）
@@ -409,9 +414,18 @@ ASUKA IWANAGA PRIVATE TERMINAL
          * - 基本的なターミナルUI
          */
         
-        const VERSION = '2.5.0';
+        const VERSION = '2.5.1';
         
         const CHANGELOG = [
+            {
+                version: '2.5.1',
+                date: '2026-03-10',
+                changes: [
+                    '時計のサイズを大幅に拡大（レスポンシブ対応）',
+                    'clamp関数でウィンドウサイズに応じて自動調整',
+                    '最小120px、最大400px、理想15vw'
+                ]
+            },
             {
                 version: '2.5.0',
                 date: '2026-03-10',
@@ -1465,7 +1479,7 @@ WELCOME TO TERMLINK`;
                 const menu = document.getElementById('homeMenu');
                 
                 let html = '<div style="margin-bottom:20px;">時計</div>';
-                html += '<div id="bigClock" style="font-size:48px; text-align:center; margin:50px 0;"></div>';
+                html += '<div id="bigClock" style="font-size:clamp(120px, 15vw, 400px); text-align:center; margin:50px 0; line-height:1.2;"></div>';
                 html += '<div class="menu-item">[戻る]</div>';
                 
                 menu.innerHTML = html;
